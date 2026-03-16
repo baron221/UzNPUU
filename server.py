@@ -2,9 +2,12 @@ import os, json
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from dotenv import load_dotenv
 
-load_dotenv()  # load .env if exists (local dev)
+load_dotenv()
 print("🔑 ENV CHECK — GROQ_API_KEY:", "SET" if os.environ.get("GROQ_API_KEY") else "MISSING")
 print("🔑 ENV CHECK — BOT_TOKEN:", "SET" if os.environ.get("BOT_TOKEN") else "MISSING")
+
+# Always resolve paths relative to this file's location
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 from file_loader import load_knowledge_base
 from ai_responder import setup_ai, get_answer, parse_qa_pairs
@@ -12,7 +15,7 @@ from logger import get_stats, get_logs
 import ai_responder
 
 load_dotenv()
-knowledge_base = load_knowledge_base("knowledge/")
+knowledge_base = load_knowledge_base(os.path.join(BASE_DIR, "knowledge/"))
 clients = setup_ai()
 ai_responder._cached_pairs = parse_qa_pairs(knowledge_base)
 
@@ -23,9 +26,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path in ['/', '/index.html']:
-            self.serve_file('miniapp/index.html', 'text/html')
+            self.serve_file(os.path.join(BASE_DIR, 'miniapp', 'index.html'), 'text/html')
         elif self.path == '/admin' or self.path == '/admin.html':
-            self.serve_file('miniapp/admin.html', 'text/html')
+            self.serve_file(os.path.join(BASE_DIR, 'miniapp', 'admin.html'), 'text/html')
         elif self.path == '/api/stats':
             self.send_json(get_stats())
         elif self.path == '/api/logs':
