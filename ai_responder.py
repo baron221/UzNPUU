@@ -4,9 +4,10 @@ from groq import Groq
 from lang_detector import detect_lang, get_response
 
 def setup_ai():
-    api_key = os.getenv("GROQ_API_KEY")
+    api_key = os.environ.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
     if not api_key:
-        raise ValueError("GROQ_API_KEY not found in .env file!")
+        print("❌ GROQ_API_KEY not found! Available env vars:", list(os.environ.keys()))
+        raise ValueError("GROQ_API_KEY not found! Please set it in Railway Variables tab.")
     client = Groq(api_key=api_key)
     print("✅ Groq AI ready (Llama 3.3-70b) — Free!")
     return {"groq": client}

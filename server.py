@@ -1,6 +1,11 @@
 import os, json
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from dotenv import load_dotenv
+
+load_dotenv()  # load .env if exists (local dev)
+print("🔑 ENV CHECK — GROQ_API_KEY:", "SET" if os.environ.get("GROQ_API_KEY") else "MISSING")
+print("🔑 ENV CHECK — BOT_TOKEN:", "SET" if os.environ.get("BOT_TOKEN") else "MISSING")
+
 from file_loader import load_knowledge_base
 from ai_responder import setup_ai, get_answer, parse_qa_pairs
 from logger import get_stats, get_logs
