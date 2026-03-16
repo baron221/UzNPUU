@@ -1,0 +1,199 @@
+import os
+import re
+from groq import Groq
+from lang_detector import detect_lang, get_response
+
+def setup_ai():
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY not found in .env file!")
+    client = Groq(api_key=api_key)
+    print("✅ Groq AI ready (Llama 3.3-70b) — Free!")
+    return {"groq": client}
+
+def chunk_knowledge_base(knowledge_base: str, chunk_size: int = 500) -> list:
+    chunks = []
+    overlap = 100
+    start = 0
+    while start < len(knowledge_base):
+        end = start + chunk_size
+        chunk = knowledge_base[start:end]
+        if chunk.strip():
+            chunks.append(chunk)
+        start += chunk_size - overlap
+    return chunks
+
+def parse_qa_pairs(knowledge_base: str) -> list:
+    pairs = []
+    blocks = re.split(
+        r'(?=\d+[\.\)]\s*(?:Savol|savol)?[:.\s])|(?=(?:Savol|SAVOL)\s*[:.\n])',
+        knowledge_base
+    )
+    for block in blocks:
+        block = block.strip()
+        if not block:
+            continue
+        match = re.split(r'(?:Javob|JAVOB|javob)\s*[:.\n]', block, maxsplit=1)
+        if len(match) == 2:
+            question_part = re.sub(r'^\d+[\.\)]\s*(?:Savol|savol)?\s*[:.\n]?', '', match[0]).strip()
+            answer_part = match[1].strip()
+            if question_part and answer_part:
+                pairs.append({"question": question_part, "answer": answer_part})
+        else:
+            if len(block) > 30:
+                pairs.append({"question": block[:200], "answer": block})
+    print(f"📋 Parsed {len(pairs)} Q&A pairs from documents")
+    return pairs
+
+def find_relevant_chunks(question: str, chunks: list, client, top_n: int = 5) -> str:
+    if not chunks:
+        return ""
+    index = "\n".join(f"[{i}] {chunk[:120].strip().replace(chr(10), ' ')}..." for i, chunk in enumerate(chunks))
+    check = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {"role": "system", "content": f"Return ONLY the {top_n} most relevant chunk numbers as comma-separated. Example: 2,7,12\nCHUNKS:\n{index}"},
+            {"role": "user", "content": f"Question: {question}"}
+        ],
+        max_tokens=30,
+    )
+    raw = check.choices[0].message.content.strip()
+    try:
+        indices = [int(x.strip()) for x in raw.split(",") if x.strip().isdigit()]
+        return "\n\n".join(chunks[i] for i in indices if i < len(chunks))
+    except:
+        return "\n\n".join(chunks[:top_n])
+
+def find_relevant_pairs(question: str, pairs: list, client, top_n: int = 5) -> str:
+    if not pairs:
+        return ""
+    q_lower = question.lower()
+    pre_filtered = [(i, p) for i, p in enumerate(pairs)
+        if any(word in p['question'].lower() or word in p['answer'].lower()
+               for word in q_lower.split() if len(word) > 2)]
+    working_pairs = pre_filtered if len(pre_filtered) >= 3 else list(enumerate(pairs))
+    if not working_pairs:
+        return ""
+    filtered_index = "\n".join(f"[{orig_i}] {p['question'][:100].strip()}" for orig_i, p in working_pairs[:50])
+    check = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {"role": "system", "content": f"Return ONLY the {top_n} most relevant index numbers as comma-separated.\nFAQ:\n{filtered_index}"},
+            {"role": "user", "content": f"Student question: {question}"}
+        ],
+        max_tokens=30,
+    )
+    raw = check.choices[0].message.content.strip()
+    try:
+        indices = [int(x.strip()) for x in raw.split(",") if x.strip().isdigit()]
+        selected = [f"Savol: {pairs[i]['question']}\nJavob: {pairs[i]['answer']}" for i in indices if i < len(pairs)]
+        return "\n\n---\n\n".join(selected)
+    except:
+        return "\n\n---\n\n".join(f"Savol: {p['question']}\nJavob: {p['answer']}" for _, p in working_pairs[:top_n])
+
+def classify_question(question: str, client) -> str:
+    check = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {"role": "system", "content": """Classify into: GENERAL, VAGUE, or UNIVERSITY.
+GENERAL: greetings, thanks, bye, casual chat, bot questions
+VAGUE: single keyword about university (to'lov, imtihon, jadval, stipendiya, HEMIS, оплата, расписание, payment, schedule)
+UNIVERSITY: complete question about university
+Reply ONE word only."""},
+            {"role": "user", "content": question}
+        ],
+        max_tokens=5,
+    )
+    result = check.choices[0].message.content.strip().upper()
+    if "GENERAL" in result: return "GENERAL"
+    if "VAGUE" in result: return "VAGUE"
+    return "UNIVERSITY"
+
+def generate_options(question: str, pairs: list) -> list:
+    q_lower = question.lower().strip()
+    matched = []
+    for p in pairs:
+        if any(word in p['question'].lower() for word in q_lower.split() if len(word) > 2):
+            label = p['question'].strip()
+            if len(label) > 60: label = label[:57] + "..."
+            matched.append(label)
+    seen = set()
+    options = []
+    for m in matched:
+        if m not in seen:
+            seen.add(m)
+            options.append(m)
+        if len(options) == 4: break
+    return options
+
+_cached_pairs = None
+
+def get_answer(question: str, knowledge_base: str, clients: dict) -> tuple:
+    """Returns (answer_text, options_list, lang, category)"""
+    global _cached_pairs
+    client = clients["groq"]
+
+    # Detect language
+    lang = detect_lang(question)
+
+    if _cached_pairs is None:
+        _cached_pairs = parse_qa_pairs(knowledge_base)
+
+    category = classify_question(question, client)
+    print(f"🏷️  [{category}][{lang}] {question[:50]}...")
+
+    # ── GENERAL ───────────────────────────────────────────────────────────────
+    if category == "GENERAL":
+        q = question.lower().strip()
+        if any(w in q for w in ["assalomu","salom","hello","hi","hey","привет","здравствуйте"]):
+            return get_response("greeting", lang), [], lang, "GENERAL"
+        if any(w in q for w in ["rahmat","tashakkur","спасибо","thanks","thank"]):
+            return get_response("thanks", lang), [], lang, "GENERAL"
+        if any(w in q for w in ["xayr","bye","goodbye","пока","до свидания"]):
+            return get_response("bye", lang), [], lang, "GENERAL"
+        if any(w in q for w in ["kimsan","kim san","nima qila","who are you","что умеешь","кто ты","vazifang"]):
+            return get_response("whoami", lang), [], lang, "GENERAL"
+        if any(w in q for w in ["qalaysan","yaxshimisan","how are you","как дела"]):
+            return get_response("howru", lang), [], lang, "GENERAL"
+        return "Savolingizni aniqroq yozing! 😊", [], lang, "GENERAL"
+
+    # ── VAGUE ─────────────────────────────────────────────────────────────────
+    elif category == "VAGUE":
+        options = generate_options(question, _cached_pairs)
+        if options:
+            return get_response("clarify", lang), options, lang, "VAGUE"
+        category = "UNIVERSITY"
+
+    # ── UNIVERSITY ────────────────────────────────────────────────────────────
+    if category == "UNIVERSITY":
+        relevant_context = find_relevant_pairs(question, _cached_pairs, client, top_n=5)
+        print(f"🎯 ~{len(relevant_context)//4} tokens used")
+
+        if not relevant_context.strip():
+            return get_response("not_found", lang), [], lang, "UNANSWERED"
+
+        lang_instruction = {
+            "uz": "Javobni O'ZBEK tilida bering.",
+            "ru": "Отвечайте на РУССКОМ языке.",
+            "en": "Answer in ENGLISH."
+        }.get(lang, "Answer in Uzbek.")
+
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": f"""You are a strict document-based university assistant for OʻzMPU.
+RULES:
+1. Answer ONLY using the documents below. No extra info.
+2. If not found: respond with the not-found message.
+3. {lang_instruction}
+4. Be concise. Use bullet points for lists.
+
+=== DOCUMENTS ===
+{relevant_context}"""},
+                {"role": "user", "content": question}
+            ],
+            max_tokens=1024,
+        )
+        return completion.choices[0].message.content.strip(), [], lang, "UNIVERSITY"
+
+    return get_response("error", lang), [], lang, "ERROR"

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OʻzMPU Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07080f;--s1:#0d1020;--s2:#131629;--card:#181d2e;
+  --border:rgba(120,150,255,0.12);--border2:rgba(120,150,255,0.22);
+  --accent:#7c8fff;--accent2:#ff8c69;--accent3:#52d9a4;--red:#ff6b6b;
+  --text:#eef0f8;--muted:#6b7299;--muted2:#8890b8;--r:16px;--r2:12px;
+}
+body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;min-height:100vh;font-size:14px}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
+
+/* ── LOGIN ── */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:32px;width:100%;max-width:380px;text-align:center}
+.login-icon{font-size:40px;margin-bottom:16px}
+.login-title{font-family:'Playfair Display',serif;font-size:24px;margin-bottom:6px}
+.login-sub{font-size:12px;color:var(--muted2);margin-bottom:24px}
+.login-input{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:var(--r2);padding:12px 14px;color:var(--text);font-family:'Sora',sans-serif;font-size:14px;outline:none;margin-bottom:12px;transition:border-color 0.2s}
+.login-input:focus{border-color:var(--accent)}
+.login-input::placeholder{color:var(--muted)}
+.login-btn{width:100%;background:linear-gradient(135deg,var(--accent),#5561d4);border:none;border-radius:var(--r2);padding:13px;color:#fff;font-family:'Sora',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:opacity 0.2s}
+.login-btn:hover{opacity:0.9}
+.login-err{font-size:12px;color:var(--red);margin-top:8px}
+
+/* ── DASHBOARD ── */
+.dash{display:none}
+.topbar{background:var(--s1);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.topbar-logo{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),#5561d4);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.topbar-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700}
+.topbar-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.logout-btn{background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.25);border-radius:8px;padding:6px 14px;color:var(--red);font-family:'Sora',sans-serif;font-size:12px;cursor:pointer;transition:all 0.2s}
+.logout-btn:hover{background:rgba(255,107,107,0.2)}
+
+.main{padding:20px 24px;max-width:1100px;margin:0 auto}
+
+/* tabs */
+.tab-row{display:flex;gap:4px;margin-bottom:20px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r2);padding:4px}
+.tab-btn{flex:1;padding:9px;border:none;background:none;color:var(--muted2);font-family:'Sora',sans-serif;font-size:12px;cursor:pointer;border-radius:10px;transition:all 0.2s;font-weight:500}
+.tab-btn.active{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.tab-page{display:none}.tab-page.active{display:block}
+
+/* stat cards */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:0.06}
+.stat-card.blue::before{background:var(--accent)}
+.stat-card.orange::before{background:var(--accent2)}
+.stat-card.green::before{background:var(--accent3)}
+.stat-card.red::before{background:var(--red)}
+.stat-icon{font-size:20px;margin-bottom:10px}
+.stat-num{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;line-height:1;margin-bottom:4px}
+.stat-lbl{font-size:11px;color:var(--muted)}
+.stat-card.blue .stat-num{color:var(--accent)}
+.stat-card.orange .stat-num{color:var(--accent2)}
+.stat-card.green .stat-num{color:var(--accent3)}
+.stat-card.red .stat-num{color:var(--red)}
+
+/* charts */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+@media(max-width:600px){.charts-grid{grid-template-columns:1fr}}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+.chart-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.chart-wrap{position:relative;height:180px}
+
+/* lang badges */
+.lang-bars{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.lang-row{display:flex;align-items:center;gap:10px;font-size:12px}
+.lang-name{width:24px;color:var(--muted2)}
+.lang-bar-wrap{flex:1;background:var(--s2);border-radius:99px;height:8px;overflow:hidden}
+.lang-bar{height:100%;border-radius:99px;transition:width 0.6s ease}
+.lang-count{font-size:11px;color:var(--muted);width:30px;text-align:right}
+
+/* logs table */
+.logs-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.logs-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+.refresh-btn{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;color:var(--muted2);font-family:'Sora',sans-serif;font-size:11px;cursor:pointer;transition:all 0.2s}
+.refresh-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+.filter-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.filter-btn{background:var(--s2);border:1px solid var(--border);border-radius:99px;padding:5px 12px;font-size:11px;color:var(--muted2);cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.2s}
+.filter-btn.active{background:rgba(124,143,255,0.15);border-color:var(--accent);color:var(--accent)}
+
+.log-item{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:13px 15px;margin-bottom:7px;transition:border-color 0.2s}
+.log-item:hover{border-color:var(--border2)}
+.log-item.unanswered{border-left:3px solid var(--red)}
+.log-item.general{border-left:3px solid var(--muted)}
+.log-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;gap:8px}
+.log-user{font-size:12px;font-weight:500;color:var(--accent)}
+.log-meta{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.tag{font-size:10px;padding:2px 8px;border-radius:99px;font-weight:500}
+.tag-uz{background:rgba(82,217,164,0.12);color:var(--accent3)}
+.tag-ru{background:rgba(255,107,107,0.12);color:var(--red)}
+.tag-en{background:rgba(124,143,255,0.12);color:var(--accent)}
+.tag-time{font-size:10px;color:var(--muted)}
+.log-q{font-size:13px;color:var(--text);margin-bottom:5px;font-weight:500}
+.log-a{font-size:12px;color:var(--muted2);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+.empty{text-align:center;padding:40px;color:var(--muted);font-size:13px}
+.loading{text-align:center;padding:30px;color:var(--muted);font-size:13px}
+
+/* unanswered page */
+.unans-item{background:var(--card);border:1px solid rgba(255,107,107,0.25);border-radius:var(--r2);padding:13px 15px;margin-bottom:8px}
+.unans-q{font-size:13px;font-weight:500;color:var(--text);margin-bottom:5px}
+.unans-meta{font-size:11px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <div class="login-icon">🔐</div>
+    <div class="login-title">Admin Panel</div>
+    <div class="login-sub">OʻzMPU Bot boshqaruv paneli</div>
+    <input class="login-input" type="password" id="passInput" placeholder="Parol kiriting..." onkeydown="if(event.key==='Enter')login()"/>
+    <button class="login-btn" onclick="login()">Kirish →</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dash" id="dash">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">🎓</div>
+      <div>
+        <div class="topbar-title">OʻzMPU Admin</div>
+        <div class="topbar-sub">Bot boshqaruv paneli</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="logout()">Chiqish</button>
+  </div>
+
+  <div class="main">
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="switchTab('overview',this)">📊 Umumiy</button>
+      <button class="tab-btn" onclick="switchTab('logs',this)">💬 Savollar</button>
+      <button class="tab-btn" onclick="switchTab('unanswered',this)">❓ Javobsiz</button>
+    </div>
+
+    <!-- OVERVIEW TAB -->
+    <div class="tab-page active" id="tab-overview">
+      <div class="stats-grid" id="statsGrid">
+        <div class="loading">Yuklanmoqda...</div>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-title">So'nggi 7 kun faolligi</div>
+          <div class="chart-wrap"><canvas id="activityChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Kategoriyalar</div>
+          <div class="chart-wrap"><canvas id="catChart"></canvas></div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Til taqsimoti</div>
+        <div class="lang-bars" id="langBars"></div>
+      </div>
+    </div>
+
+    <!-- LOGS TAB -->
+    <div class="tab-page" id="tab-logs">
+      <div class="logs-header">
+        <div class="logs-title">Barcha savollar</div>
+        <button class="refresh-btn" onclick="loadLogs()">↻ Yangilash</button>
+      </div>
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="filterLogs('all',this)">Barchasi</button>
+        <button class="filter-btn" onclick="filterLogs('uz',this)">🇺🇿 Uzbek</button>
+        <button class="filter-btn" onclick="filterLogs('ru',this)">🇷🇺 Rus</button>
+        <button class="filter-btn" onclick="filterLogs('en',this)">🇬🇧 Ingliz</button>
+        <button class="filter-btn" onclick="filterLogs('unanswered',this)">❓ Javobsiz</button>
+      </div>
+      <div id="logsList"><div class="loading">Yuklanmoqda...</div></div>
+    </div>
+
+    <!-- UNANSWERED TAB -->
+    <div class="tab-page" id="tab-unanswered">
+      <div class="logs-header">
+        <div class="logs-title">Javobsiz savollar</div>
+        <button class="refresh-btn" onclick="loadLogs()">↻ Yangilash</button>
+      </div>
+      <div id="unansweredList"><div class="loading">Yuklanmoqda...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let allLogs = [];
+let actChart, catChartObj;
+
+async function login() {
+  const pass = document.getElementById('passInput').value;
+  const r = await fetch('/api/auth', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pass})});
+  const d = await r.json();
+  if (d.ok) {
+    document.getElementById('loginWrap').style.display = 'none';
+    document.getElementById('dash').style.display = 'block';
+    loadAll();
+  } else {
+    document.getElementById('loginErr').textContent = "Parol noto'g'ri!";
+  }
+}
+
+function logout() {
+  document.getElementById('loginWrap').style.display = 'flex';
+  document.getElementById('dash').style.display = 'none';
+  document.getElementById('passInput').value = '';
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+async function loadAll() {
+  await loadStats();
+  await loadLogs();
+}
+
+async function loadStats() {
+  const r = await fetch('/api/stats');
+  const s = await r.json();
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card blue"><div class="stat-icon">💬</div><div class="stat-num">${s.total}</div><div class="stat-lbl">Jami savollar</div></div>
+    <div class="stat-card green"><div class="stat-icon">✅</div><div class="stat-num">${s.answered}</div><div class="stat-lbl">Javob berildi</div></div>
+    <div class="stat-card red"><div class="stat-icon">❓</div><div class="stat-num">${s.unanswered}</div><div class="stat-lbl">Javobsiz</div></div>
+    <div class="stat-card orange"><div class="stat-icon">👤</div><div class="stat-num">${s.users}</div><div class="stat-lbl">Foydalanuvchilar</div></div>
+  `;
+
+  // Activity chart
+  const days = Object.keys(s.daily || {});
+  const counts = Object.values(s.daily || {});
+  if (actChart) actChart.destroy();
+  actChart = new Chart(document.getElementById('activityChart'), {
+    type: 'bar',
+    data: {
+      labels: days.map(d => d.slice(5)),
+      datasets: [{
+        data: counts,
+        backgroundColor: 'rgba(124,143,255,0.35)',
+        borderColor: '#7c8fff',
+        borderWidth: 1.5,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {legend: {display: false}},
+      scales: {
+        x: {grid: {color: 'rgba(255,255,255,0.04)'}, ticks: {color: '#6b7299', font: {size: 11}}},
+        y: {grid: {color: 'rgba(255,255,255,0.04)'}, ticks: {color: '#6b7299', font: {size: 11}}}
+      }
+    }
+  });
+
+  // Category doughnut
+  const cats = s.categories || {};
+  const catColors = {'UNIVERSITY':'#7c8fff','GENERAL':'#52d9a4','VAGUE':'#ff8c69','UNANSWERED':'#ff6b6b','ERROR':'#888'};
+  if (catChartObj) catChartObj.destroy();
+  catChartObj = new Chart(document.getElementById('catChart'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(cats),
+      datasets: [{
+        data: Object.values(cats),
+        backgroundColor: Object.keys(cats).map(k => catColors[k] || '#7c8fff'),
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {legend: {position: 'bottom', labels: {color: '#8890b8', font: {size: 11}, padding: 10}}}
+    }
+  });
+
+  // Lang bars
+  const langs = s.langs || {};
+  const total = Object.values(langs).reduce((a, b) => a + b, 0) || 1;
+  const langColors = {uz: '#52d9a4', ru: '#ff6b6b', en: '#7c8fff'};
+  const langNames = {uz: '🇺🇿', ru: '🇷🇺', en: '🇬🇧'};
+  document.getElementById('langBars').innerHTML = Object.entries(langs).map(([lang, count]) => `
+    <div class="lang-row">
+      <div class="lang-name">${langNames[lang] || lang}</div>
+      <div class="lang-bar-wrap">
+        <div class="lang-bar" style="width:${Math.round(count/total*100)}%;background:${langColors[lang]||'#7c8fff'}"></div>
+      </div>
+      <div class="lang-count">${count}</div>
+    </div>
+  `).join('') || '<div style="color:var(--muted);font-size:12px">Ma\'lumot yo\'q</div>';
+}
+
+async function loadLogs() {
+  const r = await fetch('/api/logs');
+  const d = await r.json();
+  allLogs = d.logs || [];
+  renderLogs(allLogs);
+  renderUnanswered(allLogs.filter(l => !l.answered));
+}
+
+function filterLogs(type, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (type === 'all') renderLogs(allLogs);
+  else if (type === 'unanswered') renderLogs(allLogs.filter(l => !l.answered));
+  else renderLogs(allLogs.filter(l => l.lang === type));
+}
+
+function renderLogs(logs) {
+  const c = document.getElementById('logsList');
+  if (!logs.length) { c.innerHTML = '<div class="empty">Hech qanday savol yo\'q</div>'; return; }
+  const langTag = {uz: 'tag-uz', ru: 'tag-ru', en: 'tag-en'};
+  c.innerHTML = logs.map(l => `
+    <div class="log-item ${!l.answered ? 'unanswered' : ''} ${l.category === 'GENERAL' ? 'general' : ''}">
+      <div class="log-top">
+        <div class="log-user">@${l.username}</div>
+        <div class="log-meta">
+          <span class="tag ${langTag[l.lang] || 'tag-uz'}">${l.lang?.toUpperCase() || 'UZ'}</span>
+          <span class="tag-time">${l.time || ''}</span>
+        </div>
+      </div>
+      <div class="log-q">${l.question}</div>
+      <div class="log-a">${l.answer}</div>
+    </div>
+  `).join('');
+}
+
+function renderUnanswered(logs) {
+  const c = document.getElementById('unansweredList');
+  if (!logs.length) { c.innerHTML = '<div class="empty">✅ Barcha savollarga javob berilgan!</div>'; return; }
+  c.innerHTML = logs.map(l => `
+    <div class="unans-item">
+      <div class="unans-q">${l.question}</div>
+      <div class="unans-meta">@${l.username} · ${l.date} ${l.time} · ${l.lang?.toUpperCase()}</div>
+    </div>
+  `).join('');
+}
+</script>
+</body>
+</html>
