@@ -92,7 +92,9 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
 if __name__ == '__main__':
-    port = int(os.getenv("PORT", 8080))
-    print(f"🌐 Server: http://localhost:{port}")
-    print(f"🔐 Admin:  http://localhost:{port}/admin")
-    HTTPServer(('0.0.0.0', port), Handler).serve_forever()
+    port = int(os.environ.get("PORT", 8080))
+    print(f"🌐 Server starting on port {port}...")
+    print(f"🔐 Admin: /admin")
+    server = HTTPServer(('0.0.0.0', port), Handler)
+    print(f"✅ Server live on port {port}")
+    server.serve_forever()
