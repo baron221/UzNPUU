@@ -34,7 +34,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path.split("?")[0]
         if path in ['/', '/admin.html']:
-            self.serve_file(os.path.join(BASE_DIR, 'miniapp', 'admin.html'), 'text/html')
+            self.serve_file(os.path.join(BASE_DIR, 'admin.html'), 'text/html')
         elif path in ['/admin', '/admin.html']:
             self.serve_file(os.path.join(BASE_DIR, 'miniapp', 'admin.html'), 'text/html')
         elif path == '/api/stats':
