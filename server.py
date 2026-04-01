@@ -16,6 +16,7 @@ from ai_responder import setup_ai, get_answer, parse_qa_pairs
 from logger import get_stats, get_logs
 import ai_responder
 
+# Global state
 knowledge_base = load_knowledge_base(os.path.join(BASE_DIR, "knowledge"))
 clients = setup_ai()
 ai_responder._cached_pairs = parse_qa_pairs(knowledge_base)
@@ -27,25 +28,32 @@ def reload_knowledge():
     global knowledge_base
     knowledge_base = load_knowledge_base(os.path.join(BASE_DIR, "knowledge"))
     ai_responder._cached_pairs = parse_qa_pairs(knowledge_base)
-    print(f"🔄 Reloaded: {len(ai_responder._cached_pairs)} pairs")
+    print(f"🔄 Knowledge reloaded: {len(ai_responder._cached_pairs)} pairs")
 
 
 class Handler(BaseHTTPRequestHandler):
 
-    def log_message(self, *a): pass
+    def log_message(self, *a):
+        pass
 
     def do_GET(self):
         path = self.path.split("?")[0]
-        if path == '/health':
-            self.send_json({"status": "ok", "pairs": len(ai_responder._cached_pairs or [])})
+        if path in ['/', '/index.html']:
+            self.serve_file(os.path.join(BASE_DIR, 'miniapp', 'index.html'), 'text/html')
+        elif path in ['/admin', '/admin.html']:
+            self.serve_file(os.path.join(BASE_DIR, 'miniapp', 'admin.html'), 'text/html')
         elif path == '/api/stats':
             self.send_json(get_stats())
         elif path == '/api/logs':
             self.send_json({"logs": get_logs()[-50:][::-1]})
         elif path == '/api/files':
             self.handle_list_files()
+        elif path == '/health':
+            self.send_json({"status": "ok"})
         else:
-            self.send_json({"status": "running", "message": "OʻzMPU Bot API"})
+            self.send_response(404)
+            self.end_headers()
+            self.wfile.write(b'Not found')
 
     def do_POST(self):
         length = int(self.headers.get('Content-Length', 0))
@@ -56,12 +64,13 @@ class Handler(BaseHTTPRequestHandler):
             self.handle_ask(body)
         elif path == '/api/auth':
             self.handle_auth(body)
-        elif path == '/api/delete':
-            self.handle_delete(body)
         elif path == '/api/upload':
             self.handle_upload(length, body)
+        elif path == '/api/delete':
+            self.handle_delete(body)
         else:
-            self.send_response(404); self.end_headers()
+            self.send_response(404)
+            self.end_headers()
 
     def do_OPTIONS(self):
         self.send_response(200)
@@ -106,10 +115,56 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json({"files": [], "error": str(e)})
 
+    def handle_upload(self, length, body):
+        try:
+            ct = self.headers.get('Content-Type', '')
+            if 'boundary=' not in ct:
+                self.send_json({"ok": False, "error": "Invalid content type"}); return
+
+            boundary = ct.split('boundary=')[1].strip().encode()
+            parts = body.split(b'--' + boundary)
+            filename = None
+            filedata = None
+
+            for part in parts:
+                if b'Content-Disposition' not in part:
+                    continue
+                if b'filename=' not in part:
+                    continue
+                header_end = part.find(b'\r\n\r\n')
+                if header_end == -1:
+                    continue
+                header = part[:header_end].decode('utf-8', errors='ignore')
+                data = part[header_end + 4:]
+                if data.endswith(b'\r\n'):
+                    data = data[:-2]
+                for h in header.split('\r\n'):
+                    if 'filename=' in h:
+                        fn = h.split('filename=')[1].strip().strip('"')
+                        filename = os.path.basename(fn)
+                filedata = data
+
+            if not filename or filedata is None:
+                self.send_json({"ok": False, "error": "No file found in request"}); return
+
+            allowed = ('.pdf', '.docx', '.txt', '.xlsx', '.md')
+            if not filename.lower().endswith(allowed):
+                self.send_json({"ok": False, "error": "File type not allowed"}); return
+
+            save_path = os.path.join(BASE_DIR, 'knowledge', filename)
+            with open(save_path, 'wb') as f:
+                f.write(filedata)
+            reload_knowledge()
+            self.send_json({"ok": True, "filename": filename, "pairs": len(ai_responder._cached_pairs)})
+        except Exception as e:
+            self.send_json({"ok": False, "error": str(e)})
+
     def handle_delete(self, body):
         try:
             data = json.loads(body)
             filename = os.path.basename(data.get('filename', ''))
+            if not filename:
+                self.send_json({"ok": False, "error": "No filename"}); return
             fp = os.path.join(BASE_DIR, 'knowledge', filename)
             if os.path.exists(fp):
                 os.remove(fp)
@@ -120,39 +175,19 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json({"ok": False, "error": str(e)})
 
-    def handle_upload(self, length, body):
+    def serve_file(self, path, ct):
         try:
-            ct = self.headers.get('Content-Type', '')
-            if 'boundary=' not in ct:
-                self.send_json({"ok": False, "error": "Invalid content type"}); return
-            boundary = ct.split('boundary=')[1].strip().encode()
-            parts = body.split(b'--' + boundary)
-            filename = None
-            filedata = None
-            for part in parts:
-                if b'Content-Disposition' not in part or b'filename=' not in part:
-                    continue
-                header_end = part.find(b'\r\n\r\n')
-                if header_end == -1: continue
-                header = part[:header_end].decode('utf-8', errors='ignore')
-                data = part[header_end + 4:]
-                if data.endswith(b'\r\n'): data = data[:-2]
-                for h in header.split('\r\n'):
-                    if 'filename=' in h:
-                        filename = os.path.basename(h.split('filename=')[1].strip().strip('"'))
-                filedata = data
-            if not filename or filedata is None:
-                self.send_json({"ok": False, "error": "No file found"}); return
-            allowed = ('.pdf', '.docx', '.txt', '.xlsx', '.md')
-            if not filename.lower().endswith(allowed):
-                self.send_json({"ok": False, "error": "File type not allowed"}); return
-            save_path = os.path.join(BASE_DIR, 'knowledge', filename)
-            with open(save_path, 'wb') as f:
-                f.write(filedata)
-            reload_knowledge()
-            self.send_json({"ok": True, "filename": filename, "pairs": len(ai_responder._cached_pairs)})
-        except Exception as e:
-            self.send_json({"ok": False, "error": str(e)})
+            with open(path, 'rb') as f:
+                content = f.read()
+            self.send_response(200)
+            self.send_header('Content-Type', ct + '; charset=utf-8')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(content)
+        except FileNotFoundError:
+            self.send_response(404)
+            self.end_headers()
+            self.wfile.write(f'File not found: {path}'.encode())
 
     def send_json(self, data):
         body = json.dumps(data, ensure_ascii=False).encode('utf-8')
@@ -165,5 +200,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    print(f"🚀 Starting on port {PORT}")
-    HTTPServer(('0.0.0.0', PORT), Handler).serve_forever()
+    print(f"🚀 Starting server on port {PORT}")
+    server = HTTPServer(('0.0.0.0', PORT), Handler)
+    print(f"✅ Server live on port {PORT}")
+    server.serve_forever()
