@@ -382,7 +382,7 @@ async function loadFiles() {
   const r = await fetch('/api/files');
   const d = await r.json();
   if (!d.files.length) {
-    c.innerHTML = '<div class="empty">Hech qanday fayl yo'q</div>'; return;
+    c.innerHTML = '<div class="empty">Hech qanday fayl yoq</div>'; return;
   }
   c.innerHTML = d.files.map(f => `
     <div class="file-item" id="file-${btoa(f.name)}">
