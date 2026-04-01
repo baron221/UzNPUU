@@ -1,7 +1,5 @@
 import os
 import json
-import cgi
-import io
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from dotenv import load_dotenv
 
@@ -120,20 +118,42 @@ class Handler(BaseHTTPRequestHandler):
     def handle_upload(self, length, body):
         try:
             ct = self.headers.get('Content-Type', '')
-            environ = {
-                'REQUEST_METHOD': 'POST',
-                'CONTENT_TYPE': ct,
-                'CONTENT_LENGTH': str(length),
-            }
-            form = cgi.FieldStorage(fp=io.BytesIO(body), environ=environ, keep_blank_values=True)
-            uploaded = form['file']
-            filename = os.path.basename(uploaded.filename)
+            if 'boundary=' not in ct:
+                self.send_json({"ok": False, "error": "Invalid content type"}); return
+
+            boundary = ct.split('boundary=')[1].strip().encode()
+            parts = body.split(b'--' + boundary)
+            filename = None
+            filedata = None
+
+            for part in parts:
+                if b'Content-Disposition' not in part:
+                    continue
+                if b'filename=' not in part:
+                    continue
+                header_end = part.find(b'\r\n\r\n')
+                if header_end == -1:
+                    continue
+                header = part[:header_end].decode('utf-8', errors='ignore')
+                data = part[header_end + 4:]
+                if data.endswith(b'\r\n'):
+                    data = data[:-2]
+                for h in header.split('\r\n'):
+                    if 'filename=' in h:
+                        fn = h.split('filename=')[1].strip().strip('"')
+                        filename = os.path.basename(fn)
+                filedata = data
+
+            if not filename or filedata is None:
+                self.send_json({"ok": False, "error": "No file found in request"}); return
+
             allowed = ('.pdf', '.docx', '.txt', '.xlsx', '.md')
             if not filename.lower().endswith(allowed):
                 self.send_json({"ok": False, "error": "File type not allowed"}); return
+
             save_path = os.path.join(BASE_DIR, 'knowledge', filename)
             with open(save_path, 'wb') as f:
-                f.write(uploaded.file.read())
+                f.write(filedata)
             reload_knowledge()
             self.send_json({"ok": True, "filename": filename, "pairs": len(ai_responder._cached_pairs)})
         except Exception as e:
