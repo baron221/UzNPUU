@@ -33,8 +33,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = self.path.split("?")[0]
-        if path in ['/', '/admin.html']:
-            self.serve_file(os.path.join(BASE_DIR, 'admin.html'), 'text/html')
+        if path in ['/', '/index.html']:
+            self.serve_file(os.path.join(BASE_DIR, 'miniapp', 'index.html'), 'text/html')
         elif path in ['/admin', '/admin.html']:
             self.serve_file(os.path.join(BASE_DIR, 'miniapp', 'admin.html'), 'text/html')
         elif path == '/api/stats':
@@ -72,6 +72,70 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"ok": data.get('password') == ADMIN_PASSWORD})
             except:
                 self.send_json({"ok": False})
+
+        elif path == '/api/upload':
+            try:
+                import cgi, io
+                ct = self.headers.get('Content-Type', '')
+                environ = {
+                    'REQUEST_METHOD': 'POST',
+                    'CONTENT_TYPE': ct,
+                    'CONTENT_LENGTH': length,
+                }
+                form = cgi.FieldStorage(
+                    fp=io.BytesIO(body),
+                    environ=environ,
+                    keep_blank_values=True
+                )
+                uploaded = form['file']
+                filename = os.path.basename(uploaded.filename)
+                allowed = ('.pdf', '.docx', '.txt', '.xlsx', '.md')
+                if not filename.lower().endswith(allowed):
+                    self.send_json({"ok": False, "error": "File type not allowed"}); return
+                save_path = os.path.join(BASE_DIR, 'knowledge', filename)
+                with open(save_path, 'wb') as f:
+                    f.write(uploaded.file.read())
+                # Reload knowledge base
+                global knowledge_base
+                knowledge_base = load_knowledge_base(os.path.join(BASE_DIR, 'knowledge'))
+                ai_responder._cached_pairs = parse_qa_pairs(knowledge_base)
+                print(f"📄 New file uploaded: {filename}")
+                self.send_json({"ok": True, "filename": filename, "pairs": len(ai_responder._cached_pairs)})
+            except Exception as e:
+                self.send_json({"ok": False, "error": str(e)})
+
+        elif path == '/api/files':
+            try:
+                folder = os.path.join(BASE_DIR, 'knowledge')
+                files = []
+                for f in os.listdir(folder):
+                    fp = os.path.join(folder, f)
+                    files.append({
+                        "name": f,
+                        "size": round(os.path.getsize(fp) / 1024, 1),
+                        "ext": os.path.splitext(f)[1].lower()
+                    })
+                self.send_json({"files": files})
+            except Exception as e:
+                self.send_json({"files": [], "error": str(e)})
+
+        elif path == '/api/delete':
+            try:
+                data = json.loads(body)
+                filename = os.path.basename(data.get('filename', ''))
+                if not filename:
+                    self.send_json({"ok": False, "error": "No filename"}); return
+                fp = os.path.join(BASE_DIR, 'knowledge', filename)
+                if os.path.exists(fp):
+                    os.remove(fp)
+                    global knowledge_base
+                    knowledge_base = load_knowledge_base(os.path.join(BASE_DIR, 'knowledge'))
+                    ai_responder._cached_pairs = parse_qa_pairs(knowledge_base)
+                    self.send_json({"ok": True})
+                else:
+                    self.send_json({"ok": False, "error": "File not found"})
+            except Exception as e:
+                self.send_json({"ok": False, "error": str(e)})
         else:
             self.send_response(404)
             self.end_headers()

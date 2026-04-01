@@ -145,6 +145,7 @@ body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;min-he
       <button class="tab-btn active" onclick="switchTab('overview',this)">📊 Umumiy</button>
       <button class="tab-btn" onclick="switchTab('logs',this)">💬 Savollar</button>
       <button class="tab-btn" onclick="switchTab('unanswered',this)">❓ Javobsiz</button>
+      <button class="tab-btn" onclick="switchTab('files',this)">📁 Fayllar</button>
     </div>
 
     <!-- OVERVIEW TAB -->
@@ -191,6 +192,29 @@ body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;min-he
         <button class="refresh-btn" onclick="loadLogs()">↻ Yangilash</button>
       </div>
       <div id="unansweredList"><div class="loading">Yuklanmoqda...</div></div>
+    </div>
+  <!-- FILES TAB -->
+    <div class="tab-page" id="tab-files">
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
+        <input type="file" id="fileInput" class="upload-input" accept=".pdf,.docx,.txt,.xlsx,.md" onchange="uploadFile(this.files[0])"/>
+        <div class="upload-icon">📄</div>
+        <div class="upload-title">Fayl yuklash uchun bosing yoki sudrab olib keling</div>
+        <div class="upload-sub">PDF, DOCX, TXT, XLSX, MD — max 10MB</div>
+      </div>
+
+      <div class="upload-progress" id="uploadProgress">
+        <div style="font-size:13px;color:var(--muted2)" id="uploadProgressText">Yuklanmoqda...</div>
+        <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+      </div>
+
+      <div class="success-msg" id="successMsg"></div>
+      <div class="error-msg" id="errorMsg"></div>
+
+      <div class="logs-header">
+        <div class="logs-title">Yuklangan fayllar</div>
+        <button class="refresh-btn" onclick="loadFiles()">↻ Yangilash</button>
+      </div>
+      <div id="filesList"><div class="loading">Yuklanmoqda...</div></div>
     </div>
   </div>
 </div>
@@ -347,6 +371,118 @@ function renderUnanswered(logs) {
       <div class="unans-meta">@${l.username} · ${l.date} ${l.time} · ${l.lang?.toUpperCase()}</div>
     </div>
   `).join('');
+}
+
+// ── Files ──────────────────────────────────────────────────────────────────
+const EXT_ICONS = {'.pdf':'📕','.docx':'📘','.txt':'📄','.xlsx':'📊','.md':'📝'};
+
+async function loadFiles() {
+  const c = document.getElementById('filesList');
+  c.innerHTML = '<div class="loading">Yuklanmoqda...</div>';
+  const r = await fetch('/api/files');
+  const d = await r.json();
+  if (!d.files.length) {
+    c.innerHTML = '<div class="empty">Hech qanday fayl yo'q</div>'; return;
+  }
+  c.innerHTML = d.files.map(f => `
+    <div class="file-item" id="file-${btoa(f.name)}">
+      <div class="file-icon">${EXT_ICONS[f.ext] || '📄'}</div>
+      <div class="file-info">
+        <div class="file-name">${f.name}</div>
+        <div class="file-size">${f.size} KB</div>
+      </div>
+      <button class="file-del" onclick="deleteFile('${f.name}')">🗑 O'chirish</button>
+    </div>
+  `).join('');
+}
+
+async function deleteFile(name) {
+  if (!confirm(`"${name}" faylini o'chirasizmi?`)) return;
+  const r = await fetch('/api/delete', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({filename: name})
+  });
+  const d = await r.json();
+  if (d.ok) {
+    showSuccess(`✅ "${name}" o'chirildi!`);
+    loadFiles();
+  } else {
+    showError(`❌ Xatolik: ${d.error}`);
+  }
+}
+
+async function uploadFile(file) {
+  if (!file) return;
+  const maxSize = 10 * 1024 * 1024;
+  if (file.size > maxSize) { showError('❌ Fayl 10MB dan katta!'); return; }
+
+  hideMessages();
+  const progress = document.getElementById('uploadProgress');
+  const progressBar = document.getElementById('progressBar');
+  const progressText = document.getElementById('uploadProgressText');
+  progress.style.display = 'block';
+  progressText.textContent = `Yuklanmoqda: ${file.name}`;
+  progressBar.style.width = '30%';
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    progressBar.style.width = '60%';
+    const r = await fetch('/api/upload', {method: 'POST', body: formData});
+    progressBar.style.width = '100%';
+    const d = await r.json();
+    progress.style.display = 'none';
+    progressBar.style.width = '0%';
+
+    if (d.ok) {
+      showSuccess(`✅ "${d.filename}" muvaffaqiyatli yuklandi! ${d.pairs} ta savol-javob qayta yuklandi.`);
+      loadFiles();
+      document.getElementById('fileInput').value = '';
+    } else {
+      showError(`❌ Xatolik: ${d.error}`);
+    }
+  } catch(e) {
+    progress.style.display = 'none';
+    showError(`❌ Yuklashda xatolik: ${e.message}`);
+  }
+}
+
+function dragOver(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.add('drag');
+}
+function dragLeave(e) {
+  document.getElementById('uploadZone').classList.remove('drag');
+}
+function dropFile(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) uploadFile(file);
+}
+
+function showSuccess(msg) {
+  const el = document.getElementById('successMsg');
+  el.textContent = msg; el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 5000);
+}
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg; el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 5000);
+}
+function hideMessages() {
+  document.getElementById('successMsg').style.display = 'none';
+  document.getElementById('errorMsg').style.display = 'none';
+}
+
+// Load files when tab opens
+const origSwitch = switchTab;
+window.switchTab = function(name, btn) {
+  origSwitch(name, btn);
+  if (name === 'files') loadFiles();
 }
 </script>
 </body>
