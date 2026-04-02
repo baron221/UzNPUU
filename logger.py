@@ -1,15 +1,12 @@
-"""
-logger.py — Logs every student question & answer to a JSON file.
-Used by the admin dashboard to show analytics.
-"""
 import json
 import os
 from datetime import datetime
 
-LOG_FILE = "logs/chat_logs.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_FILE = os.path.join(BASE_DIR, "logs", "chat_logs.json")
 
 def ensure_log_file():
-    os.makedirs("logs", exist_ok=True)
+    os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
     if not os.path.exists(LOG_FILE):
         with open(LOG_FILE, "w") as f:
             json.dump([], f)
@@ -36,10 +33,10 @@ def log_message(user_id: str, username: str, question: str, answer: str, lang: s
         "answered": "topilmadi" not in answer.lower() and "not found" not in answer.lower()
     })
 
-    # Keep last 1000 logs
     logs = logs[-1000:]
     with open(LOG_FILE, "w", encoding="utf-8") as f:
         json.dump(logs, f, ensure_ascii=False, indent=2)
+    print(f"📝 Logged: {question[:40]}...")
 
 def get_logs():
     ensure_log_file()
@@ -73,7 +70,6 @@ def get_stats():
         if d:
             daily[d] = daily.get(d, 0) + 1
 
-    # Last 7 days only
     from datetime import date, timedelta
     last7 = [(date.today() - timedelta(days=i)).isoformat() for i in range(6, -1, -1)]
     daily_chart = {d: daily.get(d, 0) for d in last7}
