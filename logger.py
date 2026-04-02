@@ -1,26 +1,50 @@
-import json
+"""
+logger.py — In-memory log store shared between bot and server.
+Works on Railway where bot and server run in the same process via main.py.
+"""
 import os
-from datetime import datetime
+import json
+from datetime import datetime, date, timedelta
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_FILE = os.path.join(BASE_DIR, "logs", "chat_logs.json")
 
-def ensure_log_file():
-    os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
-    if not os.path.exists(LOG_FILE):
-        with open(LOG_FILE, "w") as f:
-            json.dump([], f)
+# In-memory store — shared when running via main.py
+_logs = []
+_loaded = False
 
-def log_message(user_id: str, username: str, question: str, answer: str, lang: str, category: str):
-    ensure_log_file()
+
+def _load_from_file():
+    global _logs, _loaded
+    if _loaded:
+        return
+    _loaded = True
     try:
-        with open(LOG_FILE, "r", encoding="utf-8") as f:
-            logs = json.load(f)
-    except:
-        logs = []
+        os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+        if os.path.exists(LOG_FILE):
+            with open(LOG_FILE, "r", encoding="utf-8") as f:
+                _logs = json.load(f)
+            print(f"📂 Loaded {len(_logs)} existing logs")
+    except Exception as e:
+        print(f"⚠️ Could not load logs: {e}")
+        _logs = []
 
-    logs.append({
-        "id": len(logs) + 1,
+
+def _save_to_file():
+    try:
+        os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+        with open(LOG_FILE, "w", encoding="utf-8") as f:
+            json.dump(_logs[-1000:], f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"⚠️ Could not save logs: {e}")
+
+
+def log_message(user_id, username, question, answer, lang, category):
+    global _logs
+    _load_from_file()
+
+    _logs.append({
+        "id": len(_logs) + 1,
         "timestamp": datetime.now().isoformat(),
         "date": datetime.now().strftime("%Y-%m-%d"),
         "time": datetime.now().strftime("%H:%M"),
@@ -33,23 +57,28 @@ def log_message(user_id: str, username: str, question: str, answer: str, lang: s
         "answered": "topilmadi" not in answer.lower() and "not found" not in answer.lower()
     })
 
-    logs = logs[-1000:]
-    with open(LOG_FILE, "w", encoding="utf-8") as f:
-        json.dump(logs, f, ensure_ascii=False, indent=2)
-    print(f"📝 Logged: {question[:40]}...")
+    # Keep last 1000
+    if len(_logs) > 1000:
+        _logs = _logs[-1000:]
+
+    _save_to_file()
+    print(f"📝 Logged [{lang}]: {question[:40]}...")
+
 
 def get_logs():
-    ensure_log_file()
-    try:
-        with open(LOG_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except:
-        return []
+    _load_from_file()
+    return _logs
+
 
 def get_stats():
-    logs = get_logs()
+    _load_from_file()
+    logs = _logs
+
     if not logs:
-        return {"total": 0, "answered": 0, "unanswered": 0, "users": 0, "langs": {}, "categories": {}, "daily": {}}
+        return {
+            "total": 0, "answered": 0, "unanswered": 0,
+            "users": 0, "langs": {}, "categories": {}, "daily": {}
+        }
 
     answered = sum(1 for l in logs if l.get("answered", True))
     users = len(set(l["user_id"] for l in logs))
@@ -70,7 +99,6 @@ def get_stats():
         if d:
             daily[d] = daily.get(d, 0) + 1
 
-    from datetime import date, timedelta
     last7 = [(date.today() - timedelta(days=i)).isoformat() for i in range(6, -1, -1)]
     daily_chart = {d: daily.get(d, 0) for d in last7}
 
