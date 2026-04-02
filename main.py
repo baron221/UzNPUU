@@ -20,6 +20,11 @@ ai_responder._cached_pairs = parse_qa_pairs(knowledge_base)
 print(f"✅ Ready: {len(ai_responder._cached_pairs)} Q&A pairs")
 
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
+RAILWAY_URL = os.environ.get("RAILWAY_URL", "")
+
+# Load mini app HTML
+from miniapp_html import get_miniapp_html
+MINIAPP_HTML = get_miniapp_html(RAILWAY_URL)
 
 # ── Import admin HTML ──────────────────────────────────────────────────────────
 try:
@@ -38,6 +43,8 @@ class Handler(BaseHTTPRequestHandler):
         path = self.path.split("?")[0]
         if path == '/health':
             self.send_json({"status": "ok", "pairs": len(ai_responder._cached_pairs or []), "logs": len(logger._logs)})
+        elif path in ['/', '/index.html']:
+            self.send_html(MINIAPP_HTML)
         elif path in ['/admin', '/admin.html']:
             self.send_html(ADMIN_HTML)
         elif path == '/api/stats':
