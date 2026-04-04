@@ -1,116 +1,112 @@
-<!DOCTYPE html>
+def get_admin_html():
+    return '''<!DOCTYPE html>
 <html lang="uz">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>OʻzMPU Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#07080f;--s1:#0d1020;--s2:#131629;--card:#181d2e;
-  --border:rgba(120,150,255,0.12);--border2:rgba(120,150,255,0.22);
-  --accent:#7c8fff;--accent2:#ff8c69;--accent3:#52d9a4;--red:#ff6b6b;
-  --text:#eef0f8;--muted:#6b7299;--muted2:#8890b8;--r:16px;--r2:12px;
-}
-body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;min-height:100vh;font-size:14px}
+:root{--bg:#07080f;--s1:#0d1020;--s2:#131629;--card:#181d2e;--border:rgba(120,150,255,0.12);--border2:rgba(120,150,255,0.22);--accent:#7c8fff;--accent2:#ff8c69;--accent3:#52d9a4;--red:#ff6b6b;--text:#eef0f8;--muted:#6b7299;--muted2:#8890b8;--r:16px;--r2:12px}
+body{background:var(--bg);color:var(--text);font-family:"Sora",sans-serif;min-height:100vh;font-size:14px}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
 
-/* ── LOGIN ── */
 .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.login-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:32px;width:100%;max-width:380px;text-align:center}
-.login-icon{font-size:40px;margin-bottom:16px}
-.login-title{font-family:'Playfair Display',serif;font-size:24px;margin-bottom:6px}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:32px;width:100%;max-width:400px;text-align:center}
+.login-icon{font-size:44px;margin-bottom:16px}
+.login-title{font-family:"Playfair Display",serif;font-size:26px;margin-bottom:6px}
 .login-sub{font-size:12px;color:var(--muted2);margin-bottom:24px}
-.login-input{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:var(--r2);padding:12px 14px;color:var(--text);font-family:'Sora',sans-serif;font-size:14px;outline:none;margin-bottom:12px;transition:border-color 0.2s}
-.login-input:focus{border-color:var(--accent)}
-.login-input::placeholder{color:var(--muted)}
-.login-btn{width:100%;background:linear-gradient(135deg,var(--accent),#5561d4);border:none;border-radius:var(--r2);padding:13px;color:#fff;font-family:'Sora',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:opacity 0.2s}
-.login-btn:hover{opacity:0.9}
-.login-err{font-size:12px;color:var(--red);margin-top:8px}
+.inp{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:var(--r2);padding:12px 14px;color:var(--text);font-family:"Sora",sans-serif;font-size:14px;outline:none;margin-bottom:10px;transition:border-color 0.2s}
+.inp:focus{border-color:var(--accent)}
+.inp::placeholder{color:var(--muted)}
+.btn-primary{width:100%;background:linear-gradient(135deg,var(--accent),#5561d4);border:none;border-radius:var(--r2);padding:13px;color:#fff;font-family:"Sora",sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:opacity 0.2s}
+.btn-primary:hover{opacity:0.9}
+.err{font-size:12px;color:var(--red);margin-top:8px;min-height:18px}
 
-/* ── DASHBOARD ── */
 .dash{display:none}
-.topbar{background:var(--s1);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.topbar-left{display:flex;align-items:center;gap:10px}
-.topbar-logo{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),#5561d4);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
-.topbar-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700}
-.topbar-sub{font-size:10px;color:var(--muted);margin-top:1px}
-.logout-btn{background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.25);border-radius:8px;padding:6px 14px;color:var(--red);font-family:'Sora',sans-serif;font-size:12px;cursor:pointer;transition:all 0.2s}
-.logout-btn:hover{background:rgba(255,107,107,0.2)}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:var(--s1);border-right:1px solid var(--border);padding:20px 0;z-index:100;overflow-y:auto}
+.sidebar-logo{padding:0 20px 20px;border-bottom:1px solid var(--border);margin-bottom:10px}
+.sidebar-title{font-family:"Playfair Display",serif;font-size:18px;font-weight:700}
+.sidebar-sub{font-size:10px;color:var(--muted);margin-top:2px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;cursor:pointer;color:var(--muted2);font-size:13px;transition:all 0.2s;border-left:3px solid transparent}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,0.04)}
+.nav-item.active{color:var(--accent);background:rgba(124,143,255,0.08);border-left-color:var(--accent)}
+.nav-icon{font-size:16px;width:20px;text-align:center}
+.nav-section{font-size:9px;letter-spacing:2px;color:var(--muted);padding:16px 20px 6px;text-transform:uppercase}
 
-.main{padding:20px 24px;max-width:1100px;margin:0 auto}
+.content{margin-left:220px;padding:24px;min-height:100vh}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.page-title{font-family:"Playfair Display",serif;font-size:24px;font-weight:700}
+.page-sub{font-size:12px;color:var(--muted2);margin-top:3px}
 
-/* tabs */
-.tab-row{display:flex;gap:4px;margin-bottom:20px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r2);padding:4px}
-.tab-btn{flex:1;padding:9px;border:none;background:none;color:var(--muted2);font-family:'Sora',sans-serif;font-size:12px;cursor:pointer;border-radius:10px;transition:all 0.2s;font-weight:500}
-.tab-btn.active{background:var(--card);color:var(--text);border:1px solid var(--border)}
-.tab-page{display:none}.tab-page.active{display:block}
-
-/* stat cards */
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
-.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;position:relative;overflow:hidden}
-.stat-card::before{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:0.06}
-.stat-card.blue::before{background:var(--accent)}
-.stat-card.orange::before{background:var(--accent2)}
-.stat-card.green::before{background:var(--accent3)}
-.stat-card.red::before{background:var(--red)}
-.stat-icon{font-size:20px;margin-bottom:10px}
-.stat-num{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;line-height:1;margin-bottom:4px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+.stat-icon{font-size:22px;margin-bottom:10px}
+.stat-num{font-family:"Playfair Display",serif;font-size:28px;font-weight:700;line-height:1;margin-bottom:4px}
 .stat-lbl{font-size:11px;color:var(--muted)}
-.stat-card.blue .stat-num{color:var(--accent)}
-.stat-card.orange .stat-num{color:var(--accent2)}
-.stat-card.green .stat-num{color:var(--accent3)}
-.stat-card.red .stat-num{color:var(--red)}
+.c-blue{color:var(--accent)}.c-green{color:var(--accent3)}.c-red{color:var(--red)}.c-orange{color:var(--accent2)}.c-purple{color:#b08fff}
 
-/* charts */
-.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
-@media(max-width:600px){.charts-grid{grid-template-columns:1fr}}
+.charts-grid{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:20px}
+@media(max-width:800px){.charts-grid{grid-template-columns:1fr}}
 .chart-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px}
 .chart-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
-.chart-wrap{position:relative;height:180px}
+.chart-wrap{position:relative;height:200px}
 
-/* lang badges */
-.lang-bars{display:flex;flex-direction:column;gap:8px;margin-top:4px}
-.lang-row{display:flex;align-items:center;gap:10px;font-size:12px}
-.lang-name{width:24px;color:var(--muted2)}
-.lang-bar-wrap{flex:1;background:var(--s2);border-radius:99px;height:8px;overflow:hidden}
-.lang-bar{height:100%;border-radius:99px;transition:width 0.6s ease}
-.lang-count{font-size:11px;color:var(--muted);width:30px;text-align:right}
+.table-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px}
+.table-header{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.table-title{font-size:13px;font-weight:500}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 16px;text-align:left;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);background:var(--s2)}
+td{padding:11px 16px;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.04)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,0.02)}
 
-/* logs table */
-.logs-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.logs-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
-.refresh-btn{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;color:var(--muted2);font-family:'Sora',sans-serif;font-size:11px;cursor:pointer;transition:all 0.2s}
-.refresh-btn:hover{border-color:var(--accent);color:var(--accent)}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:500}
+.badge-green{background:rgba(82,217,164,0.12);color:var(--accent3)}
+.badge-red{background:rgba(255,107,107,0.12);color:var(--red)}
+.badge-blue{background:rgba(124,143,255,0.12);color:var(--accent)}
+.badge-orange{background:rgba(255,140,105,0.12);color:var(--accent2)}
 
-.filter-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
-.filter-btn{background:var(--s2);border:1px solid var(--border);border-radius:99px;padding:5px 12px;font-size:11px;color:var(--muted2);cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.2s}
-.filter-btn.active{background:rgba(124,143,255,0.15);border-color:var(--accent);color:var(--accent)}
+.btn{padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-family:"Sora",sans-serif;font-size:12px;font-weight:500;transition:all 0.2s}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn-blue{background:rgba(124,143,255,0.15);color:var(--accent);border:1px solid rgba(124,143,255,0.3)}
+.btn-blue:hover{background:rgba(124,143,255,0.25)}
+.btn-red{background:rgba(255,107,107,0.1);color:var(--red);border:1px solid rgba(255,107,107,0.25)}
+.btn-red:hover{background:rgba(255,107,107,0.2)}
+.btn-green{background:rgba(82,217,164,0.1);color:var(--accent3);border:1px solid rgba(82,217,164,0.25)}
 
-.log-item{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:13px 15px;margin-bottom:7px;transition:border-color 0.2s}
-.log-item:hover{border-color:var(--border2)}
-.log-item.unanswered{border-left:3px solid var(--red)}
-.log-item.general{border-left:3px solid var(--muted)}
-.log-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;gap:8px}
-.log-user{font-size:12px;font-weight:500;color:var(--accent)}
-.log-meta{display:flex;gap:6px;align-items:center;flex-shrink:0}
-.tag{font-size:10px;padding:2px 8px;border-radius:99px;font-weight:500}
-.tag-uz{background:rgba(82,217,164,0.12);color:var(--accent3)}
-.tag-ru{background:rgba(255,107,107,0.12);color:var(--red)}
-.tag-en{background:rgba(124,143,255,0.12);color:var(--accent)}
-.tag-time{font-size:10px;color:var(--muted)}
-.log-q{font-size:13px;color:var(--text);margin-bottom:5px;font-weight:500}
-.log-a{font-size:12px;color:var(--muted2);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;padding:20px}
+.modal-bg.open{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.modal-title{font-family:"Playfair Display",serif;font-size:20px;margin-bottom:20px}
+.form-row{margin-bottom:14px}
+.form-label{font-size:12px;color:var(--muted2);margin-bottom:6px;display:block}
+.form-inp{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:var(--r2);padding:10px 13px;color:var(--text);font-family:"Sora",sans-serif;font-size:13px;outline:none;transition:border-color 0.2s}
+.form-inp:focus{border-color:var(--accent)}
+.form-inp::placeholder{color:var(--muted)}
+select.form-inp option{background:var(--card)}
+.modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+
+.filter-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.filter-select{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-family:"Sora",sans-serif;font-size:12px;outline:none}
+.search-inp{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-family:"Sora",sans-serif;font-size:12px;outline:none;min-width:200px}
+.search-inp:focus,.filter-select:focus{border-color:var(--accent)}
+.search-inp::placeholder{color:var(--muted)}
 
 .empty{text-align:center;padding:40px;color:var(--muted);font-size:13px}
 .loading{text-align:center;padding:30px;color:var(--muted);font-size:13px}
+.logout-btn{background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.2);border-radius:8px;padding:7px 14px;color:var(--red);font-family:"Sora",sans-serif;font-size:12px;cursor:pointer;position:absolute;bottom:20px;left:0;right:0;margin:0 20px}
 
-/* unanswered page */
-.unans-item{background:var(--card);border:1px solid rgba(255,107,107,0.25);border-radius:var(--r2);padding:13px 15px;margin-bottom:8px}
-.unans-q{font-size:13px;font-weight:500;color:var(--text);margin-bottom:5px}
-.unans-meta{font-size:11px;color:var(--muted)}
+.tab-row{display:flex;gap:4px;margin-bottom:16px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r2);padding:4px;width:fit-content}
+.tab-btn{padding:8px 16px;border:none;background:none;color:var(--muted2);font-family:"Sora",sans-serif;font-size:12px;cursor:pointer;border-radius:10px;transition:all 0.2s;font-weight:500}
+.tab-btn.active{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.tab-page{display:none}.tab-page.active{display:block}
+
+.faq-add-form{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:16px}
+.faq-add-title{font-size:12px;color:var(--muted);margin-bottom:12px;letter-spacing:1px;text-transform:uppercase}
+textarea.form-inp{resize:vertical;min-height:80px}
 </style>
 </head>
 <body>
@@ -120,370 +116,448 @@ body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;min-he
   <div class="login-card">
     <div class="login-icon">🔐</div>
     <div class="login-title">Admin Panel</div>
-    <div class="login-sub">OʻzMPU Bot boshqaruv paneli</div>
-    <input class="login-input" type="password" id="passInput" placeholder="Parol kiriting..." onkeydown="if(event.key==='Enter')login()"/>
-    <button class="login-btn" onclick="login()">Kirish →</button>
-    <div class="login-err" id="loginErr"></div>
+    <div class="login-sub">OʻzMPU Bot boshqaruv tizimi</div>
+    <input class="inp" type="text" id="loginUser" placeholder="Login (admin)"/>
+    <input class="inp" type="password" id="loginPass" placeholder="Parol" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="btn-primary" onclick="doLogin()">Kirish →</button>
+    <div class="err" id="loginErr"></div>
   </div>
 </div>
 
 <!-- DASHBOARD -->
 <div class="dash" id="dash">
-  <div class="topbar">
-    <div class="topbar-left">
-      <div class="topbar-logo">🎓</div>
-      <div>
-        <div class="topbar-title">OʻzMPU Admin</div>
-        <div class="topbar-sub">Bot boshqaruv paneli</div>
-      </div>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-title">OʻzMPU</div>
+      <div class="sidebar-sub">Admin Panel</div>
     </div>
-    <button class="logout-btn" onclick="logout()">Chiqish</button>
+    <div class="nav-section">Asosiy</div>
+    <div class="nav-item active" onclick="showPage('overview',this)"><span class="nav-icon">📊</span>Umumiy</div>
+    <div class="nav-item" onclick="showPage('questions',this)"><span class="nav-icon">💬</span>Savollar</div>
+    <div class="nav-section">Boshqaruv</div>
+    <div class="nav-item" onclick="showPage('faculties',this)"><span class="nav-icon">🏫</span>Fakultetlar</div>
+    <div class="nav-item" onclick="showPage('users',this)"><span class="nav-icon">👥</span>Xodimlar</div>
+    <div class="nav-section">Kontent</div>
+    <div class="nav-item" onclick="showPage('faq',this)"><span class="nav-icon">📋</span>FAQ / Savollar</div>
+    <div class="nav-item" onclick="showPage('chatgroups',this)"><span class="nav-icon">📡</span>Chat guruhlar</div>
+    <button class="logout-btn" onclick="doLogout()">Chiqish</button>
   </div>
 
-  <div class="main">
-    <div class="tab-row">
-      <button class="tab-btn active" onclick="switchTab('overview',this)">📊 Umumiy</button>
-      <button class="tab-btn" onclick="switchTab('logs',this)">💬 Savollar</button>
-      <button class="tab-btn" onclick="switchTab('unanswered',this)">❓ Javobsiz</button>
-      <button class="tab-btn" onclick="switchTab('files',this)">📁 Fayllar</button>
-    </div>
+  <!-- Content -->
+  <div class="content">
 
-    <!-- OVERVIEW TAB -->
-    <div class="tab-page active" id="tab-overview">
-      <div class="stats-grid" id="statsGrid">
-        <div class="loading">Yuklanmoqda...</div>
+    <!-- OVERVIEW -->
+    <div id="page-overview" class="tab-page active">
+      <div class="page-header">
+        <div><div class="page-title">Umumiy ko'rinish</div><div class="page-sub">Barcha statistikalar</div></div>
+        <button class="btn btn-blue" onclick="loadOverview()">↻ Yangilash</button>
       </div>
+      <div class="stats-grid" id="statsGrid"><div class="loading">Yuklanmoqda...</div></div>
       <div class="charts-grid">
-        <div class="chart-card">
-          <div class="chart-title">So'nggi 7 kun faolligi</div>
-          <div class="chart-wrap"><canvas id="activityChart"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-title">Kategoriyalar</div>
-          <div class="chart-wrap"><canvas id="catChart"></canvas></div>
-        </div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">Til taqsimoti</div>
-        <div class="lang-bars" id="langBars"></div>
+        <div class="chart-card"><div class="chart-title">So'nggi 7 kun faolligi</div><div class="chart-wrap"><canvas id="actChart"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title">Til taqsimoti</div><div class="chart-wrap"><canvas id="langChart"></canvas></div></div>
       </div>
     </div>
 
-    <!-- LOGS TAB -->
-    <div class="tab-page" id="tab-logs">
-      <div class="logs-header">
-        <div class="logs-title">Barcha savollar</div>
-        <button class="refresh-btn" onclick="loadLogs()">↻ Yangilash</button>
+    <!-- QUESTIONS -->
+    <div id="page-questions" class="tab-page">
+      <div class="page-header">
+        <div><div class="page-title">Savollar</div><div class="page-sub">Talabalar savollari</div></div>
+        <button class="btn btn-blue" onclick="loadQuestions()">↻ Yangilash</button>
       </div>
       <div class="filter-row">
-        <button class="filter-btn active" onclick="filterLogs('all',this)">Barchasi</button>
-        <button class="filter-btn" onclick="filterLogs('uz',this)">🇺🇿 Uzbek</button>
-        <button class="filter-btn" onclick="filterLogs('ru',this)">🇷🇺 Rus</button>
-        <button class="filter-btn" onclick="filterLogs('en',this)">🇬🇧 Ingliz</button>
-        <button class="filter-btn" onclick="filterLogs('unanswered',this)">❓ Javobsiz</button>
+        <select class="filter-select" id="qFacultyFilter" onchange="loadQuestions()">
+          <option value="">Barcha fakultetlar</option>
+        </select>
+        <select class="filter-select" id="qStatusFilter" onchange="loadQuestions()">
+          <option value="">Barcha statuslar</option>
+          <option value="answered">Javob berilgan</option>
+          <option value="unanswered">Javobsiz</option>
+        </select>
+        <input class="search-inp" id="qSearch" placeholder="Qidirish..." oninput="filterQuestionsLocal()"/>
       </div>
-      <div id="logsList"><div class="loading">Yuklanmoqda...</div></div>
+      <div id="questionsList"><div class="loading">Yuklanmoqda...</div></div>
     </div>
 
-    <!-- UNANSWERED TAB -->
-    <div class="tab-page" id="tab-unanswered">
-      <div class="logs-header">
-        <div class="logs-title">Javobsiz savollar</div>
-        <button class="refresh-btn" onclick="loadLogs()">↻ Yangilash</button>
+    <!-- FACULTIES -->
+    <div id="page-faculties" class="tab-page">
+      <div class="page-header">
+        <div><div class="page-title">Fakultetlar</div><div class="page-sub">CRUD boshqaruv</div></div>
+        <button class="btn btn-green" onclick="openFacultyModal()">+ Yangi fakultet</button>
       </div>
-      <div id="unansweredList"><div class="loading">Yuklanmoqda...</div></div>
+      <div id="facultiesList"><div class="loading">Yuklanmoqda...</div></div>
     </div>
-  <!-- FILES TAB -->
-    <div class="tab-page" id="tab-files">
-      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
-        <input type="file" id="fileInput" class="upload-input" accept=".pdf,.docx,.txt,.xlsx,.md" onchange="uploadFile(this.files[0])"/>
-        <div class="upload-icon">📄</div>
-        <div class="upload-title">Fayl yuklash uchun bosing yoki sudrab olib keling</div>
-        <div class="upload-sub">PDF, DOCX, TXT, XLSX, MD — max 10MB</div>
-      </div>
 
-      <div class="upload-progress" id="uploadProgress">
-        <div style="font-size:13px;color:var(--muted2)" id="uploadProgressText">Yuklanmoqda...</div>
-        <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <!-- USERS -->
+    <div id="page-users" class="tab-page">
+      <div class="page-header">
+        <div><div class="page-title">Xodimlar</div><div class="page-sub">Telefon va parol bilan kirish</div></div>
+        <button class="btn btn-green" onclick="openUserModal()">+ Yangi xodim</button>
       </div>
+      <div id="usersList"><div class="loading">Yuklanmoqda...</div></div>
+    </div>
 
-      <div class="success-msg" id="successMsg"></div>
-      <div class="error-msg" id="errorMsg"></div>
-
-      <div class="logs-header">
-        <div class="logs-title">Yuklangan fayllar</div>
-        <button class="refresh-btn" onclick="loadFiles()">↻ Yangilash</button>
+    <!-- FAQ -->
+    <div id="page-faq" class="tab-page">
+      <div class="page-header">
+        <div><div class="page-title">FAQ Boshqaruv</div><div class="page-sub">Savol-javob qo'shish</div></div>
       </div>
-      <div id="filesList"><div class="loading">Yuklanmoqda...</div></div>
+      <div class="faq-add-form">
+        <div class="faq-add-title">Yangi savol-javob qo'shish</div>
+        <div class="form-row">
+          <label class="form-label">Fakultet</label>
+          <select class="form-inp" id="faqFaculty"><option value="">Umumiy (barcha uchun)</option></select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Savol</label>
+          <input class="form-inp" id="faqQ" placeholder="Savol matni..."/>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Javob</label>
+          <textarea class="form-inp" id="faqA" placeholder="Javob matni..."></textarea>
+        </div>
+        <button class="btn btn-green" onclick="addFAQ()">+ Qo'shish</button>
+      </div>
+      <div id="faqList"><div class="loading">Yuklanmoqda...</div></div>
+    </div>
+
+    <!-- CHAT GROUPS -->
+    <div id="page-chatgroups" class="tab-page">
+      <div class="page-header">
+        <div><div class="page-title">Telegram Guruhlar</div><div class="page-sub">Savollar yuboriladi</div></div>
+      </div>
+      <div style="background:rgba(124,143,255,0.06);border:1px solid rgba(124,143,255,0.2);border-radius:var(--r);padding:16px;margin-bottom:20px;font-size:13px;line-height:1.7;color:var(--muted2)">
+        💡 <strong style="color:var(--text)">Qanday ishlaydi:</strong><br>
+        1. Botni Telegram guruhingizga admin sifatida qo'shing<br>
+        2. Guruh ID sini pastda tegishli fakultet uchun saqlang<br>
+        3. Talaba savol yuborganda — guruhga avtomatik xabar ketadi
+      </div>
+      <div id="chatGroupsList"><div class="loading">Yuklanmoqda...</div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-bg" id="facultyModal">
+  <div class="modal">
+    <div class="modal-title" id="fModalTitle">Yangi fakultet</div>
+    <input type="hidden" id="fModalId"/>
+    <div class="form-row"><label class="form-label">Fakultet nomi *</label><input class="form-inp" id="fName" placeholder="Pedagogika fakulteti"/></div>
+    <div class="form-row"><label class="form-label">Tavsif</label><input class="form-inp" id="fDesc" placeholder="Qisqacha tavsif..."/></div>
+    <div class="form-row"><label class="form-label">Telegram guruh ID</label><input class="form-inp" id="fGroupId" placeholder="-100xxxxxxxxxx"/></div>
+    <div class="form-row"><label class="form-label">Guruh nomi</label><input class="form-inp" id="fGroupName" placeholder="Pedagogika fakulteti guruh"/></div>
+    <div class="modal-actions">
+      <button class="btn btn-red" onclick="closeModal('facultyModal')">Bekor</button>
+      <button class="btn btn-primary" onclick="saveFaculty()">Saqlash</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="userModal">
+  <div class="modal">
+    <div class="modal-title" id="uModalTitle">Yangi xodim</div>
+    <input type="hidden" id="uModalId"/>
+    <div class="form-row"><label class="form-label">To'liq ism *</label><input class="form-inp" id="uName" placeholder="Ism Familiya"/></div>
+    <div class="form-row"><label class="form-label">Telefon raqami *</label><input class="form-inp" id="uPhone" placeholder="+998901234567"/></div>
+    <div class="form-row"><label class="form-label">Parol *</label><input class="form-inp" type="password" id="uPass" placeholder="Kamida 6 belgi"/></div>
+    <div class="form-row"><label class="form-label">Fakultet</label>
+      <select class="form-inp" id="uFaculty"><option value="">Tanlang...</option></select>
+    </div>
+    <div class="form-row"><label class="form-label">Lavozim</label>
+      <select class="form-inp" id="uRole">
+        <option value="staff">Xodim</option>
+        <option value="dean">Dekan</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-red" onclick="closeModal('userModal')">Bekor</button>
+      <button class="btn btn-primary" onclick="saveUser()">Saqlash</button>
     </div>
   </div>
 </div>
 
 <script>
-let allLogs = [];
-let actChart, catChartObj;
+var actChartObj=null, langChartObj=null;
+var allQuestions=[];
 
-async function login() {
-  const pass = document.getElementById('passInput').value;
-  const r = await fetch('/api/auth', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pass})});
-  const d = await r.json();
-  if (d.ok) {
-    document.getElementById('loginWrap').style.display = 'none';
-    document.getElementById('dash').style.display = 'block';
-    loadAll();
-  } else {
-    document.getElementById('loginErr').textContent = "Parol noto'g'ri!";
-  }
+async function api(path,method,body){
+  var opts={method:method||"GET",headers:{"Content-Type":"application/json"}};
+  if(body) opts.body=JSON.stringify(body);
+  var r=await fetch("/api/admin"+path,opts);
+  return r.json();
 }
 
-function logout() {
-  document.getElementById('loginWrap').style.display = 'flex';
-  document.getElementById('dash').style.display = 'none';
-  document.getElementById('passInput').value = '';
-}
-
-function switchTab(name, btn) {
-  document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  btn.classList.add('active');
-}
-
-async function loadAll() {
-  await loadStats();
-  await loadLogs();
-}
-
-async function loadStats() {
-  const r = await fetch('/api/stats');
-  const s = await r.json();
-
-  document.getElementById('statsGrid').innerHTML = `
-    <div class="stat-card blue"><div class="stat-icon">💬</div><div class="stat-num">${s.total}</div><div class="stat-lbl">Jami savollar</div></div>
-    <div class="stat-card green"><div class="stat-icon">✅</div><div class="stat-num">${s.answered}</div><div class="stat-lbl">Javob berildi</div></div>
-    <div class="stat-card red"><div class="stat-icon">❓</div><div class="stat-num">${s.unanswered}</div><div class="stat-lbl">Javobsiz</div></div>
-    <div class="stat-card orange"><div class="stat-icon">👤</div><div class="stat-num">${s.users}</div><div class="stat-lbl">Foydalanuvchilar</div></div>
-  `;
-
-  // Activity chart
-  const days = Object.keys(s.daily || {});
-  const counts = Object.values(s.daily || {});
-  if (actChart) actChart.destroy();
-  actChart = new Chart(document.getElementById('activityChart'), {
-    type: 'bar',
-    data: {
-      labels: days.map(d => d.slice(5)),
-      datasets: [{
-        data: counts,
-        backgroundColor: 'rgba(124,143,255,0.35)',
-        borderColor: '#7c8fff',
-        borderWidth: 1.5,
-        borderRadius: 6,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {legend: {display: false}},
-      scales: {
-        x: {grid: {color: 'rgba(255,255,255,0.04)'}, ticks: {color: '#6b7299', font: {size: 11}}},
-        y: {grid: {color: 'rgba(255,255,255,0.04)'}, ticks: {color: '#6b7299', font: {size: 11}}}
-      }
-    }
-  });
-
-  // Category doughnut
-  const cats = s.categories || {};
-  const catColors = {'UNIVERSITY':'#7c8fff','GENERAL':'#52d9a4','VAGUE':'#ff8c69','UNANSWERED':'#ff6b6b','ERROR':'#888'};
-  if (catChartObj) catChartObj.destroy();
-  catChartObj = new Chart(document.getElementById('catChart'), {
-    type: 'doughnut',
-    data: {
-      labels: Object.keys(cats),
-      datasets: [{
-        data: Object.values(cats),
-        backgroundColor: Object.keys(cats).map(k => catColors[k] || '#7c8fff'),
-        borderWidth: 0,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {legend: {position: 'bottom', labels: {color: '#8890b8', font: {size: 11}, padding: 10}}}
-    }
-  });
-
-  // Lang bars
-  const langs = s.langs || {};
-  const total = Object.values(langs).reduce((a, b) => a + b, 0) || 1;
-  const langColors = {uz: '#52d9a4', ru: '#ff6b6b', en: '#7c8fff'};
-  const langNames = {uz: '🇺🇿', ru: '🇷🇺', en: '🇬🇧'};
-  document.getElementById('langBars').innerHTML = Object.entries(langs).map(([lang, count]) => `
-    <div class="lang-row">
-      <div class="lang-name">${langNames[lang] || lang}</div>
-      <div class="lang-bar-wrap">
-        <div class="lang-bar" style="width:${Math.round(count/total*100)}%;background:${langColors[lang]||'#7c8fff'}"></div>
-      </div>
-      <div class="lang-count">${count}</div>
-    </div>
-  `).join('') || '<div style="color:var(--muted);font-size:12px">Ma\'lumot yo\'q</div>';
-}
-
-async function loadLogs() {
-  const r = await fetch('/api/logs');
-  const d = await r.json();
-  allLogs = d.logs || [];
-  renderLogs(allLogs);
-  renderUnanswered(allLogs.filter(l => !l.answered));
-}
-
-function filterLogs(type, btn) {
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  if (type === 'all') renderLogs(allLogs);
-  else if (type === 'unanswered') renderLogs(allLogs.filter(l => !l.answered));
-  else renderLogs(allLogs.filter(l => l.lang === type));
-}
-
-function renderLogs(logs) {
-  const c = document.getElementById('logsList');
-  if (!logs.length) { c.innerHTML = '<div class="empty">Hech qanday savol yo\'q</div>'; return; }
-  const langTag = {uz: 'tag-uz', ru: 'tag-ru', en: 'tag-en'};
-  c.innerHTML = logs.map(l => `
-    <div class="log-item ${!l.answered ? 'unanswered' : ''} ${l.category === 'GENERAL' ? 'general' : ''}">
-      <div class="log-top">
-        <div class="log-user">@${l.username}</div>
-        <div class="log-meta">
-          <span class="tag ${langTag[l.lang] || 'tag-uz'}">${l.lang?.toUpperCase() || 'UZ'}</span>
-          <span class="tag-time">${l.time || ''}</span>
-        </div>
-      </div>
-      <div class="log-q">${l.question}</div>
-      <div class="log-a">${l.answer}</div>
-    </div>
-  `).join('');
-}
-
-function renderUnanswered(logs) {
-  const c = document.getElementById('unansweredList');
-  if (!logs.length) { c.innerHTML = '<div class="empty">✅ Barcha savollarga javob berilgan!</div>'; return; }
-  c.innerHTML = logs.map(l => `
-    <div class="unans-item">
-      <div class="unans-q">${l.question}</div>
-      <div class="unans-meta">@${l.username} · ${l.date} ${l.time} · ${l.lang?.toUpperCase()}</div>
-    </div>
-  `).join('');
-}
-
-// ── Files ──────────────────────────────────────────────────────────────────
-const EXT_ICONS = {'.pdf':'📕','.docx':'📘','.txt':'📄','.xlsx':'📊','.md':'📝'};
-
-async function loadFiles() {
-  const c = document.getElementById('filesList');
-  c.innerHTML = '<div class="loading">Yuklanmoqda...</div>';
-  const r = await fetch('/api/files');
-  const d = await r.json();
-  if (!d.files.length) {
-    c.innerHTML = '<div class="empty">Hech qanday fayl yoq</div>'; return;
-  }
-  c.innerHTML = d.files.map(f => `
-    <div class="file-item" id="file-${btoa(f.name)}">
-      <div class="file-icon">${EXT_ICONS[f.ext] || '📄'}</div>
-      <div class="file-info">
-        <div class="file-name">${f.name}</div>
-        <div class="file-size">${f.size} KB</div>
-      </div>
-      <button class="file-del" onclick="deleteFile('${f.name}')">🗑 O'chirish</button>
-    </div>
-  `).join('');
-}
-
-async function deleteFile(name) {
-  if (!confirm(`"${name}" faylini o'chirasizmi?`)) return;
-  const r = await fetch('/api/delete', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({filename: name})
-  });
-  const d = await r.json();
-  if (d.ok) {
-    showSuccess(`✅ "${name}" o'chirildi!`);
-    loadFiles();
-  } else {
-    showError(`❌ Xatolik: ${d.error}`);
-  }
-}
-
-async function uploadFile(file) {
-  if (!file) return;
-  const maxSize = 10 * 1024 * 1024;
-  if (file.size > maxSize) { showError('❌ Fayl 10MB dan katta!'); return; }
-
-  hideMessages();
-  const progress = document.getElementById('uploadProgress');
-  const progressBar = document.getElementById('progressBar');
-  const progressText = document.getElementById('uploadProgressText');
-  progress.style.display = 'block';
-  progressText.textContent = `Yuklanmoqda: ${file.name}`;
-  progressBar.style.width = '30%';
-
-  const formData = new FormData();
-  formData.append('file', file);
-
-  try {
-    progressBar.style.width = '60%';
-    const r = await fetch('/api/upload', {method: 'POST', body: formData});
-    progressBar.style.width = '100%';
-    const d = await r.json();
-    progress.style.display = 'none';
-    progressBar.style.width = '0%';
-
-    if (d.ok) {
-      showSuccess(`✅ "${d.filename}" muvaffaqiyatli yuklandi! ${d.pairs} ta savol-javob qayta yuklandi.`);
-      loadFiles();
-      document.getElementById('fileInput').value = '';
+function doLogin(){
+  var u=document.getElementById("loginUser").value;
+  var p=document.getElementById("loginPass").value;
+  fetch("/api/admin/auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:u,password:p})})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d.ok){
+      document.getElementById("loginWrap").style.display="none";
+      document.getElementById("dash").style.display="block";
+      loadOverview(); loadFacultiesData();
     } else {
-      showError(`❌ Xatolik: ${d.error}`);
+      document.getElementById("loginErr").textContent="Login yoki parol noto\'g\'ri!";
     }
-  } catch(e) {
-    progress.style.display = 'none';
-    showError(`❌ Yuklashda xatolik: ${e.message}`);
-  }
+  });
 }
 
-function dragOver(e) {
-  e.preventDefault();
-  document.getElementById('uploadZone').classList.add('drag');
-}
-function dragLeave(e) {
-  document.getElementById('uploadZone').classList.remove('drag');
-}
-function dropFile(e) {
-  e.preventDefault();
-  document.getElementById('uploadZone').classList.remove('drag');
-  const file = e.dataTransfer.files[0];
-  if (file) uploadFile(file);
+function doLogout(){
+  document.getElementById("loginWrap").style.display="flex";
+  document.getElementById("dash").style.display="none";
 }
 
-function showSuccess(msg) {
-  const el = document.getElementById('successMsg');
-  el.textContent = msg; el.style.display = 'block';
-  setTimeout(() => el.style.display = 'none', 5000);
-}
-function showError(msg) {
-  const el = document.getElementById('errorMsg');
-  el.textContent = msg; el.style.display = 'block';
-  setTimeout(() => el.style.display = 'none', 5000);
-}
-function hideMessages() {
-  document.getElementById('successMsg').style.display = 'none';
-  document.getElementById('errorMsg').style.display = 'none';
+function showPage(name,el){
+  document.querySelectorAll(".tab-page").forEach(function(p){p.classList.remove("active");});
+  document.querySelectorAll(".nav-item").forEach(function(n){n.classList.remove("active");});
+  document.getElementById("page-"+name).classList.add("active");
+  if(el) el.classList.add("active");
+  if(name==="overview") loadOverview();
+  if(name==="questions") loadQuestions();
+  if(name==="faculties") loadFaculties();
+  if(name==="users") loadUsers();
+  if(name==="faq") loadFAQ();
+  if(name==="chatgroups") loadChatGroups();
 }
 
-// Load files when tab opens
-const origSwitch = switchTab;
-window.switchTab = function(name, btn) {
-  origSwitch(name, btn);
-  if (name === 'files') loadFiles();
+// ── OVERVIEW ──────────────────────────────────────────────────────────────────
+function loadOverview(){
+  fetch("/api/admin/stats").then(function(r){return r.json();}).then(function(s){
+    document.getElementById("statsGrid").innerHTML=
+      "<div class='stat-card'><div class='stat-icon'>💬</div><div class='stat-num c-blue'>"+s.total+"</div><div class='stat-lbl'>Jami savollar</div></div>"+
+      "<div class='stat-card'><div class='stat-icon'>✅</div><div class='stat-num c-green'>"+s.answered+"</div><div class='stat-lbl'>Javob berilgan</div></div>"+
+      "<div class='stat-card'><div class='stat-icon'>❓</div><div class='stat-num c-red'>"+s.unanswered+"</div><div class='stat-lbl'>Javobsiz</div></div>"+
+      "<div class='stat-card'><div class='stat-icon'>👤</div><div class='stat-num c-orange'>"+s.users+"</div><div class='stat-lbl'>Talabalar</div></div>"+
+      "<div class='stat-card'><div class='stat-icon'>🏫</div><div class='stat-num c-purple'>"+s.faculties+"</div><div class='stat-lbl'>Fakultetlar</div></div>"+
+      "<div class='stat-card'><div class='stat-icon'>👥</div><div class='stat-num c-blue'>"+s.staff+"</div><div class='stat-lbl'>Xodimlar</div></div>";
+
+    var days=Object.keys(s.daily||{});
+    var counts=Object.values(s.daily||{});
+    if(actChartObj) actChartObj.destroy();
+    actChartObj=new Chart(document.getElementById("actChart"),{
+      type:"bar",data:{labels:days.map(function(d){return d.slice(5);}),
+      datasets:[{data:counts,backgroundColor:"rgba(124,143,255,0.35)",borderColor:"#7c8fff",borderWidth:1.5,borderRadius:6}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{grid:{color:"rgba(255,255,255,0.04)"},ticks:{color:"#6b7299",font:{size:11}}},
+                y:{grid:{color:"rgba(255,255,255,0.04)"},ticks:{color:"#6b7299",font:{size:11}}}}}
+    });
+
+    var langs=s.langs||{};
+    var lColors={uz:"#52d9a4",ru:"#ff6b6b",en:"#7c8fff"};
+    if(langChartObj) langChartObj.destroy();
+    langChartObj=new Chart(document.getElementById("langChart"),{
+      type:"doughnut",
+      data:{labels:Object.keys(langs),datasets:[{data:Object.values(langs),
+        backgroundColor:Object.keys(langs).map(function(k){return lColors[k]||"#7c8fff";}),borderWidth:0}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{color:"#8890b8",font:{size:11},padding:10}}}}
+    });
+  });
 }
+
+// ── QUESTIONS ─────────────────────────────────────────────────────────────────
+function loadQuestions(){
+  var fId=document.getElementById("qFacultyFilter").value;
+  var status=document.getElementById("qStatusFilter").value;
+  var url="/api/admin/questions?limit=100"+(fId?"&faculty_id="+fId:"")+(status?"&status="+status:"");
+  fetch(url).then(function(r){return r.json();}).then(function(d){
+    allQuestions=d.questions||[];
+    renderQuestions(allQuestions);
+  });
+}
+
+function filterQuestionsLocal(){
+  var q=document.getElementById("qSearch").value.toLowerCase();
+  if(!q){renderQuestions(allQuestions);return;}
+  renderQuestions(allQuestions.filter(function(i){return i.question.toLowerCase().includes(q)||i.student_username.toLowerCase().includes(q);}));
+}
+
+function renderQuestions(items){
+  var c=document.getElementById("questionsList");
+  if(!items.length){c.innerHTML="<div class='empty'>Hech qanday savol yo\'q</div>";return;}
+  c.innerHTML="<div class='table-card'><table><thead><tr><th>Talaba</th><th>Fakultet</th><th>Savol</th><th>Status</th><th>Vaqt</th></tr></thead><tbody>"+
+  items.map(function(q){
+    return "<tr><td><strong>@"+q.student_username+"</strong></td>"+
+    "<td>"+(q.faculty_name||"—")+"</td>"+
+    "<td style='max-width:300px'>"+q.question+"</td>"+
+    "<td><span class='badge "+(q.status==="answered"?"badge-green":"badge-red")+"'>"+(q.status==="answered"?"Javob berilgan":"Javobsiz")+"</span></td>"+
+    "<td style='color:var(--muted);font-size:11px'>"+(q.created_at||"").slice(0,16)+"</td></tr>";
+  }).join("")+"</tbody></table></div>";
+}
+
+// ── FACULTIES ─────────────────────────────────────────────────────────────────
+var cachedFaculties=[];
+
+function loadFacultiesData(){
+  fetch("/api/admin/faculties").then(function(r){return r.json();}).then(function(d){
+    cachedFaculties=d.faculties||[];
+    // Populate faculty dropdowns
+    ["qFacultyFilter","faqFaculty","uFaculty"].forEach(function(id){
+      var el=document.getElementById(id);
+      if(!el) return;
+      var firstOpt=el.options[0];
+      el.innerHTML="";
+      el.appendChild(firstOpt);
+      cachedFaculties.forEach(function(f){
+        var o=document.createElement("option");
+        o.value=f.id; o.textContent=f.name; el.appendChild(o);
+      });
+    });
+  });
+}
+
+function loadFaculties(){
+  loadFacultiesData();
+  fetch("/api/admin/faculties").then(function(r){return r.json();}).then(function(d){
+    var items=d.faculties||[];
+    var c=document.getElementById("facultiesList");
+    if(!items.length){c.innerHTML="<div class='empty'>Fakultetlar yo\'q</div>";return;}
+    c.innerHTML="<div class='table-card'><table><thead><tr><th>Nomi</th><th>Tavsif</th><th>Guruh</th><th>Status</th><th>Amallar</th></tr></thead><tbody>"+
+    items.map(function(f){
+      return "<tr><td><strong>"+f.name+"</strong></td>"+
+      "<td style='color:var(--muted2)'>"+(f.description||"—")+"</td>"+
+      "<td style='font-size:11px;color:var(--accent)'>"+(f.telegram_group_name||f.telegram_group_id||"—")+"</td>"+
+      "<td><span class='badge "+(f.is_active?"badge-green":"badge-red")+"'>"+(f.is_active?"Faol":"Nofaol")+"</span></td>"+
+      "<td><button class='btn btn-sm btn-blue' onclick='editFaculty("+JSON.stringify(f)+")'>Tahrir</button> "+
+      "<button class='btn btn-sm btn-red' onclick='deleteFaculty("+f.id+")'>O\'chir</button></td></tr>";
+    }).join("")+"</tbody></table></div>";
+  });
+}
+
+function openFacultyModal(f){
+  document.getElementById("fModalTitle").textContent=f?"Fakultetni tahrirlash":"Yangi fakultet";
+  document.getElementById("fModalId").value=f?f.id:"";
+  document.getElementById("fName").value=f?f.name:"";
+  document.getElementById("fDesc").value=f?f.description:"";
+  document.getElementById("fGroupId").value=f?f.telegram_group_id:"";
+  document.getElementById("fGroupName").value=f?f.telegram_group_name:"";
+  document.getElementById("facultyModal").classList.add("open");
+}
+function editFaculty(f){openFacultyModal(f);}
+
+function saveFaculty(){
+  var id=document.getElementById("fModalId").value;
+  var data={name:document.getElementById("fName").value,description:document.getElementById("fDesc").value,
+    group_id:document.getElementById("fGroupId").value,group_name:document.getElementById("fGroupName").value};
+  var url=id?"/api/admin/faculties/"+id:"/api/admin/faculties";
+  var method=id?"PUT":"POST";
+  fetch(url,{method:method,headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
+  .then(function(r){return r.json();}).then(function(d){
+    if(d.ok){closeModal("facultyModal");loadFaculties();}
+    else alert(d.error||"Xatolik");
+  });
+}
+
+function deleteFaculty(id){
+  if(!confirm("Fakultetni o\'chirasizmi?")) return;
+  fetch("/api/admin/faculties/"+id,{method:"DELETE"}).then(function(){loadFaculties();});
+}
+
+// ── USERS ─────────────────────────────────────────────────────────────────────
+function loadUsers(){
+  fetch("/api/admin/users").then(function(r){return r.json();}).then(function(d){
+    var items=d.users||[];
+    var c=document.getElementById("usersList");
+    if(!items.length){c.innerHTML="<div class='empty'>Xodimlar yo\'q</div>";return;}
+    c.innerHTML="<div class='table-card'><table><thead><tr><th>Ism</th><th>Telefon</th><th>Fakultet</th><th>Lavozim</th><th>Status</th><th>Amallar</th></tr></thead><tbody>"+
+    items.map(function(u){
+      return "<tr><td><strong>"+u.full_name+"</strong></td>"+
+      "<td style='font-family:monospace;font-size:12px'>"+u.phone+"</td>"+
+      "<td>"+(u.faculty_name||"—")+"</td>"+
+      "<td><span class='badge badge-blue'>"+u.role+"</span></td>"+
+      "<td><span class='badge "+(u.is_active?"badge-green":"badge-red")+"'>"+(u.is_active?"Faol":"Nofaol")+"</span></td>"+
+      "<td><button class='btn btn-sm btn-red' onclick='deleteUser("+u.id+")'>O\'chir</button></td></tr>";
+    }).join("")+"</tbody></table></div>";
+  });
+}
+
+function openUserModal(){
+  document.getElementById("uModalTitle").textContent="Yangi xodim";
+  document.getElementById("uModalId").value="";
+  document.getElementById("uName").value="";
+  document.getElementById("uPhone").value="";
+  document.getElementById("uPass").value="";
+  document.getElementById("userModal").classList.add("open");
+}
+
+function saveUser(){
+  var data={full_name:document.getElementById("uName").value,phone:document.getElementById("uPhone").value,
+    password:document.getElementById("uPass").value,faculty_id:document.getElementById("uFaculty").value,
+    role:document.getElementById("uRole").value};
+  fetch("/api/admin/users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
+  .then(function(r){return r.json();}).then(function(d){
+    if(d.ok){closeModal("userModal");loadUsers();}
+    else alert(d.error||"Xatolik");
+  });
+}
+
+function deleteUser(id){
+  if(!confirm("Xodimni o\'chirasizmi?")) return;
+  fetch("/api/admin/users/"+id,{method:"DELETE"}).then(function(){loadUsers();});
+}
+
+// ── FAQ ───────────────────────────────────────────────────────────────────────
+function loadFAQ(){
+  fetch("/api/admin/faq").then(function(r){return r.json();}).then(function(d){
+    var items=d.items||[];
+    var c=document.getElementById("faqList");
+    if(!items.length){c.innerHTML="<div class='empty'>FAQ bo\'sh</div>";return;}
+    c.innerHTML="<div class='table-card'><table><thead><tr><th>Fakultet</th><th>Savol</th><th>Javob</th><th></th></tr></thead><tbody>"+
+    items.map(function(f){
+      return "<tr><td><span class='badge badge-blue'>"+(f.faculty_name||"Umumiy")+"</span></td>"+
+      "<td>"+f.question+"</td>"+
+      "<td style='color:var(--muted2);max-width:250px'>"+f.answer.slice(0,80)+(f.answer.length>80?"...":"")+"</td>"+
+      "<td><button class='btn btn-sm btn-red' onclick='deleteFAQ("+f.id+")'>O\'chir</button></td></tr>";
+    }).join("")+"</tbody></table></div>";
+  });
+}
+
+function addFAQ(){
+  var data={faculty_id:document.getElementById("faqFaculty").value||null,
+    question:document.getElementById("faqQ").value,answer:document.getElementById("faqA").value};
+  if(!data.question||!data.answer){alert("Savol va javob kiritish shart!");return;}
+  fetch("/api/admin/faq",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
+  .then(function(r){return r.json();}).then(function(d){
+    if(d.ok){document.getElementById("faqQ").value="";document.getElementById("faqA").value="";loadFAQ();}
+    else alert(d.error||"Xatolik");
+  });
+}
+
+function deleteFAQ(id){
+  if(!confirm("FAQ ni o\'chirasizmi?")) return;
+  fetch("/api/admin/faq/"+id,{method:"DELETE"}).then(function(){loadFAQ();});
+}
+
+// ── CHAT GROUPS ───────────────────────────────────────────────────────────────
+function loadChatGroups(){
+  fetch("/api/admin/faculties").then(function(r){return r.json();}).then(function(d){
+    var faculties=d.faculties||[];
+    var c=document.getElementById("chatGroupsList");
+    c.innerHTML="<div class='table-card'><table><thead><tr><th>Fakultet</th><th>Guruh ID</th><th>Guruh nomi</th><th>Amal</th></tr></thead><tbody>"+
+    faculties.map(function(f){
+      return "<tr><td><strong>"+f.name+"</strong></td>"+
+      "<td><input class='form-inp' style='width:180px;padding:6px 10px;font-size:12px;font-family:monospace' id='gid_"+f.id+"' value='"+(f.telegram_group_id||"")+"' placeholder='-100xxxxxxx'/></td>"+
+      "<td><input class='form-inp' style='width:160px;padding:6px 10px;font-size:12px' id='gname_"+f.id+"' value='"+(f.telegram_group_name||"")+"' placeholder='Guruh nomi'/></td>"+
+      "<td><button class='btn btn-sm btn-green' onclick='saveGroupId("+f.id+")'>Saqlash</button></td></tr>";
+    }).join("")+"</tbody></table></div>";
+  });
+}
+
+function saveGroupId(fId){
+  var gid=document.getElementById("gid_"+fId).value;
+  var gname=document.getElementById("gname_"+fId).value;
+  fetch("/api/admin/faculties/"+fId,{method:"PUT",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({group_id:gid,group_name:gname,update_group_only:true})})
+  .then(function(r){return r.json();}).then(function(d){
+    if(d.ok) alert("✅ Saqlandi!");
+    else alert("Xatolik: "+d.error);
+  });
+}
+
+function closeModal(id){document.getElementById(id).classList.remove("open");}
 </script>
 </body>
-</html>
+</html>'''

@@ -1,0 +1,351 @@
+"""
+database.py — SQLite database for users, faculties, and questions
+"""
+import sqlite3
+import os
+import hashlib
+from datetime import datetime
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "data", "university.db")
+
+
+def get_conn():
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
+
+
+def init_db():
+    """Create all tables and default super admin."""
+    conn = get_conn()
+    c = conn.cursor()
+
+    # Faculties table
+    c.execute('''CREATE TABLE IF NOT EXISTS faculties (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        description TEXT,
+        telegram_group_id TEXT,
+        telegram_group_name TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        is_active INTEGER DEFAULT 1
+    )''')
+
+    # Users table (staff/faculty members who answer questions)
+    c.execute('''CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        phone TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        full_name TEXT NOT NULL,
+        role TEXT DEFAULT 'staff',
+        faculty_id INTEGER,
+        telegram_id TEXT,
+        is_active INTEGER DEFAULT 1,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (faculty_id) REFERENCES faculties(id)
+    )''')
+
+    # Super admin table
+    c.execute('''CREATE TABLE IF NOT EXISTS admins (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        full_name TEXT DEFAULT 'Super Admin',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )''')
+
+    # Student questions table
+    c.execute('''CREATE TABLE IF NOT EXISTS questions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        student_telegram_id TEXT NOT NULL,
+        student_username TEXT,
+        student_name TEXT,
+        faculty_id INTEGER,
+        question TEXT NOT NULL,
+        answer TEXT,
+        answered_by INTEGER,
+        status TEXT DEFAULT 'pending',
+        lang TEXT DEFAULT 'uz',
+        category TEXT DEFAULT 'UNIVERSITY',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        answered_at TEXT,
+        FOREIGN KEY (faculty_id) REFERENCES faculties(id),
+        FOREIGN KEY (answered_by) REFERENCES users(id)
+    )''')
+
+    # FAQ documents per faculty
+    c.execute('''CREATE TABLE IF NOT EXISTS faq_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        faculty_id INTEGER,
+        question TEXT NOT NULL,
+        answer TEXT NOT NULL,
+        created_by INTEGER,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        is_active INTEGER DEFAULT 1,
+        FOREIGN KEY (faculty_id) REFERENCES faculties(id)
+    )''')
+
+    # Chat groups (Telegram group IDs per faculty)
+    c.execute('''CREATE TABLE IF NOT EXISTS chat_groups (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        faculty_id INTEGER NOT NULL,
+        group_id TEXT NOT NULL,
+        group_name TEXT,
+        added_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        is_active INTEGER DEFAULT 1,
+        FOREIGN KEY (faculty_id) REFERENCES faculties(id)
+    )''')
+
+    conn.commit()
+
+    # Create default super admin if not exists
+    c.execute("SELECT id FROM admins WHERE username = 'admin'")
+    if not c.fetchone():
+        c.execute(
+            "INSERT INTO admins (username, password_hash, full_name) VALUES (?, ?, ?)",
+            ('admin', hash_password('admin123'), 'Super Admin')
+        )
+        conn.commit()
+        print("✅ Default super admin created: admin / admin123")
+
+    # Create default faculties
+    default_faculties = [
+        ("Pedagogika fakulteti", "Pedagogika va psixologiya yo'nalishlari"),
+        ("Tabiiy fanlar fakulteti", "Matematika, fizika, kimyo yo'nalishlari"),
+        ("Ijtimoiy fanlar fakulteti", "Tarix, falsafa, huquq yo'nalishlari"),
+        ("Til va adabiyot fakulteti", "O'zbek, rus, ingliz tili yo'nalishlari"),
+        ("Axborot texnologiyalari", "Informatika va dasturlash yo'nalishlari"),
+    ]
+    for name, desc in default_faculties:
+        try:
+            c.execute("INSERT INTO faculties (name, description) VALUES (?, ?)", (name, desc))
+        except:
+            pass
+    conn.commit()
+    conn.close()
+    print("✅ Database initialized!")
+
+
+# ── FACULTY CRUD ──────────────────────────────────────────────────────────────
+def get_all_faculties():
+    conn = get_conn()
+    rows = conn.execute("SELECT * FROM faculties ORDER BY name").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def get_faculty(faculty_id):
+    conn = get_conn()
+    row = conn.execute("SELECT * FROM faculties WHERE id=?", (faculty_id,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def create_faculty(name, description="", group_id="", group_name=""):
+    conn = get_conn()
+    try:
+        conn.execute(
+            "INSERT INTO faculties (name, description, telegram_group_id, telegram_group_name) VALUES (?,?,?,?)",
+            (name, description, group_id, group_name)
+        )
+        conn.commit()
+        return True, "Faculty yaratildi"
+    except Exception as e:
+        return False, str(e)
+    finally:
+        conn.close()
+
+def update_faculty(faculty_id, name, description, group_id, group_name):
+    conn = get_conn()
+    conn.execute(
+        "UPDATE faculties SET name=?, description=?, telegram_group_id=?, telegram_group_name=? WHERE id=?",
+        (name, description, group_id, group_name, faculty_id)
+    )
+    conn.commit()
+    conn.close()
+
+def delete_faculty(faculty_id):
+    conn = get_conn()
+    conn.execute("UPDATE faculties SET is_active=0 WHERE id=?", (faculty_id,))
+    conn.commit()
+    conn.close()
+
+
+# ── USER CRUD ─────────────────────────────────────────────────────────────────
+def get_all_users():
+    conn = get_conn()
+    rows = conn.execute("""
+        SELECT u.*, f.name as faculty_name
+        FROM users u LEFT JOIN faculties f ON u.faculty_id=f.id
+        ORDER BY u.created_at DESC
+    """).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def get_user_by_phone(phone):
+    conn = get_conn()
+    row = conn.execute("SELECT * FROM users WHERE phone=? AND is_active=1", (phone,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def get_user(user_id):
+    conn = get_conn()
+    row = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def create_user(phone, password, full_name, faculty_id, role='staff'):
+    conn = get_conn()
+    try:
+        conn.execute(
+            "INSERT INTO users (phone, password_hash, full_name, faculty_id, role) VALUES (?,?,?,?,?)",
+            (phone, hash_password(password), full_name, faculty_id, role)
+        )
+        conn.commit()
+        return True, "Foydalanuvchi yaratildi"
+    except Exception as e:
+        return False, str(e)
+    finally:
+        conn.close()
+
+def update_user(user_id, full_name, faculty_id, role, is_active):
+    conn = get_conn()
+    conn.execute(
+        "UPDATE users SET full_name=?, faculty_id=?, role=?, is_active=? WHERE id=?",
+        (full_name, faculty_id, role, is_active, user_id)
+    )
+    conn.commit()
+    conn.close()
+
+def delete_user(user_id):
+    conn = get_conn()
+    conn.execute("UPDATE users SET is_active=0 WHERE id=?", (user_id,))
+    conn.commit()
+    conn.close()
+
+def verify_user(phone, password):
+    conn = get_conn()
+    row = conn.execute(
+        "SELECT * FROM users WHERE phone=? AND password_hash=? AND is_active=1",
+        (phone, hash_password(password))
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+# ── ADMIN AUTH ────────────────────────────────────────────────────────────────
+def verify_admin(username, password):
+    conn = get_conn()
+    row = conn.execute(
+        "SELECT * FROM admins WHERE username=? AND password_hash=?",
+        (username, hash_password(password))
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+# ── QUESTIONS ─────────────────────────────────────────────────────────────────
+def save_question(student_tg_id, student_username, student_name, faculty_id, question, answer, lang, category):
+    conn = get_conn()
+    answered = "topilmadi" not in answer.lower() and "not found" not in answer.lower()
+    conn.execute("""
+        INSERT INTO questions
+        (student_telegram_id, student_username, student_name, faculty_id, question, answer, status, lang, category)
+        VALUES (?,?,?,?,?,?,?,?,?)
+    """, (
+        str(student_tg_id), student_username, student_name, faculty_id,
+        question, answer, 'answered' if answered else 'unanswered', lang, category
+    ))
+    conn.commit()
+    conn.close()
+
+def get_questions(faculty_id=None, status=None, limit=50):
+    conn = get_conn()
+    query = """
+        SELECT q.*, f.name as faculty_name
+        FROM questions q LEFT JOIN faculties f ON q.faculty_id=f.id
+        WHERE 1=1
+    """
+    params = []
+    if faculty_id:
+        query += " AND q.faculty_id=?"
+        params.append(faculty_id)
+    if status:
+        query += " AND q.status=?"
+        params.append(status)
+    query += " ORDER BY q.created_at DESC LIMIT ?"
+    params.append(limit)
+    rows = conn.execute(query, params).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def get_stats_db():
+    conn = get_conn()
+    total = conn.execute("SELECT COUNT(*) FROM questions").fetchone()[0]
+    answered = conn.execute("SELECT COUNT(*) FROM questions WHERE status='answered'").fetchone()[0]
+    unanswered = conn.execute("SELECT COUNT(*) FROM questions WHERE status='unanswered'").fetchone()[0]
+    users = conn.execute("SELECT COUNT(DISTINCT student_telegram_id) FROM questions").fetchone()[0]
+    faculties = conn.execute("SELECT COUNT(*) FROM faculties WHERE is_active=1").fetchone()[0]
+    staff = conn.execute("SELECT COUNT(*) FROM users WHERE is_active=1").fetchone()[0]
+
+    # Daily stats last 7 days
+    rows = conn.execute("""
+        SELECT DATE(created_at) as day, COUNT(*) as cnt
+        FROM questions
+        WHERE created_at >= DATE('now', '-7 days')
+        GROUP BY day ORDER BY day
+    """).fetchall()
+    daily = {r['day']: r['cnt'] for r in rows}
+
+    # Lang stats
+    rows2 = conn.execute("SELECT lang, COUNT(*) as cnt FROM questions GROUP BY lang").fetchall()
+    langs = {r['lang']: r['cnt'] for r in rows2}
+
+    # Category stats
+    rows3 = conn.execute("SELECT category, COUNT(*) as cnt FROM questions GROUP BY category").fetchall()
+    cats = {r['category']: r['cnt'] for r in rows3}
+
+    conn.close()
+    return {
+        "total": total, "answered": answered, "unanswered": unanswered,
+        "users": users, "faculties": faculties, "staff": staff,
+        "daily": daily, "langs": langs, "categories": cats
+    }
+
+
+# ── FAQ ITEMS ─────────────────────────────────────────────────────────────────
+def get_faq_items(faculty_id=None):
+    conn = get_conn()
+    if faculty_id:
+        rows = conn.execute(
+            "SELECT * FROM faq_items WHERE faculty_id=? AND is_active=1 ORDER BY id DESC", (faculty_id,)
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT f.*, fc.name as faculty_name FROM faq_items f LEFT JOIN faculties fc ON f.faculty_id=fc.id WHERE f.is_active=1 ORDER BY f.id DESC"
+        ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def add_faq_item(faculty_id, question, answer):
+    conn = get_conn()
+    conn.execute(
+        "INSERT INTO faq_items (faculty_id, question, answer) VALUES (?,?,?)",
+        (faculty_id, question, answer)
+    )
+    conn.commit()
+    conn.close()
+
+def delete_faq_item(item_id):
+    conn = get_conn()
+    conn.execute("UPDATE faq_items SET is_active=0 WHERE id=?", (item_id,))
+    conn.commit()
+    conn.close()
+
+
+if __name__ == "__main__":
+    init_db()
