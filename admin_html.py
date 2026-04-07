@@ -242,6 +242,11 @@ textarea.form-inp{resize:vertical;min-height:90px}
 <script>
 var actChartObj=null,langChartObj=null,allQuestions=[];
 
+function esc(str) {
+  if (!str) return "";
+  return str.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 // ── Auth Helper ──────────────────────────────────────────────────────────────
 function getAuthHeaders() {
   const token = localStorage.getItem("admin_token");
@@ -338,14 +343,20 @@ function filterQLocal(){
 function renderQuestions(items){
   var c=document.getElementById("questionsList");
   if(!items.length){c.innerHTML="<div class='empty'>Hech qanday savol yo'q</div>";return;}
-  var lm={uz:"badge-green",ru:"badge-red",en:"badge-blue"};
   c.innerHTML="<div class='table-card'><table><thead><tr><th>Talaba</th><th>Fakultet</th><th>Savol</th><th>Til</th><th>Status</th><th>Boshqaruv</th></tr></thead><tbody>"+
-  items.map(function(q){return "<tr><td><strong>@"+(q.student_username||"—")+"</strong></td><td><span class='badge badge-purple'>"+(q.faculty_name||"Umumiy")+"</span></td><td style='max-width:260px;color:var(--muted2)'>"+q.question+"</td><td><span class='badge "+(lm[q.lang]||"badge-blue")+"'>"+(q.lang||"uz").toUpperCase()+"</span></td><td><span class='badge "+(q.status==="answered"?"badge-green":"badge-red")+"'>"+(q.status==="answered"?"✅ Javob berilgan":"❓ Javobsiz")+"</span></td><td>"+(q.status!=="answered"?"<button class='btn btn-sm btn-blue' onclick='openReplyModal("+q.id+", \""+q.question.replace(/"/g, "&quot;")+"\")'>Javob berish</button>":"—")+"</td></tr>";}).join("")+"</tbody></table></div>";
+  items.map(function(q){
+    var student = q.student_username ? "@" + q.student_username : (q.student_name || "—");
+    var qTextEsc = esc(q.question);
+    var btn = q.status !== "answered" ? `<button class="btn btn-sm btn-blue" onclick="openReplyModal(${q.id}, '${qTextEsc}')">Javob berish</button>` : "—";
+    return `<tr><td><strong>${esc(student)}</strong></td><td><span class="badge badge-purple">${esc(q.faculty_name || "Umumiy")}</span></td><td style="max-width:260px;color:var(--muted2)">${esc(q.question)}</td><td><span class="badge ${lm[q.lang] || "badge-blue"}">${(q.lang || "uz").toUpperCase()}</span></td><td><span class="badge ${q.status === "answered" ? "badge-green" : "badge-red"}">${q.status === "answered" ? "✅ Javob berilgan" : "❓ Javobsiz"}</span></td><td>${btn}</td></tr>`;
+  }).join("")+"</tbody></table></div>";
 }
 
 function openReplyModal(qid, qText) {
     document.getElementById("replyQId").value = qid;
-    document.getElementById("replyQText").textContent = qText;
+    // qText comes in escaped for the attribute, but we want it clean for the textContent
+    var div = document.createElement("div"); div.innerHTML = qText;
+    document.getElementById("replyQText").textContent = div.textContent;
     document.getElementById("replyAnswer").value = "";
     document.getElementById("replyModal").classList.add("open");
 }
@@ -394,8 +405,17 @@ function loadFaculties(){
     var items=d.faculties||[],c=document.getElementById("facultiesList");
     if(!items.length){c.innerHTML="<div class='empty'>Fakultetlar yo'q</div>";return;}
     c.innerHTML="<div class='table-card'><table><thead><tr><th>Nomi</th><th>Tavsif</th><th>Telegram guruh</th><th>Status</th><th>Amallar</th></tr></thead><tbody>"+
-    items.map(function(f){return "<tr><td><strong>"+f.name+"</strong></td><td style='color:var(--muted2)'>"+(f.description||"—")+"</td><td style='font-size:12px;color:var(--accent)'>"+(f.telegram_group_name||f.telegram_group_id||"—")+"</td><td><span class='badge "+(f.is_active?"badge-green":"badge-red")+"'>"+(f.is_active?"Faol":"Nofaol")+"</span></td><td style='display:flex;gap:6px'><button class='btn btn-sm btn-blue' onclick='editFaculty("+JSON.stringify(f)+")'>Tahrir</button><button class='btn btn-sm btn-red' onclick='deleteFaculty("+f.id+")'>O'chir</button></td></tr>";}).join("")+"</tbody></table></div>";
+    items.map(function(f){
+      var fEsc = esc(JSON.stringify(f));
+      return `<tr><td><strong>${esc(f.name)}</strong></td><td style="color:var(--muted2)">${esc(f.description || "—")}</td><td style="font-size:12px;color:var(--accent)">${esc(f.telegram_group_name || f.telegram_group_id || "—")}</td><td><span class="badge ${f.is_active ? "badge-green" : "badge-red"}">${f.is_active ? "Faol" : "Nofaol"}</span></td><td style="display:flex;gap:6px"><button class="btn btn-sm btn-blue" onclick="editFaculty('${fEsc}')">Tahrir</button><button class="btn btn-sm btn-red" onclick="deleteFaculty(${f.id})">O'chir</button></td></tr>`;
+    }).join("")+"</tbody></table></div>";
   });
+}
+
+function editFaculty(fJsonEsc) {
+  var div = document.createElement("div"); div.innerHTML = fJsonEsc;
+  var f = JSON.parse(div.textContent);
+  openFacultyModal(f);
 }
 
 function openFacultyModal(f){
