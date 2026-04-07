@@ -179,7 +179,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db.save_question(str(user.id), sid, username, user.full_name or username, fid, selected, answer, lang, category)
         logger.log_message(str(user.id), username, selected, answer, lang, category)
         
-        show_admin_btn = "topilmadi" in answer.lower() or "not found" in answer.lower()
+        # Check if we should show Admin button (not found or refers to staff)
+        referral_kws = ["topilmadi", "not found", "murojaat qiling", "mas'ul xodimi", "adminstrator", "ofisiga"]
+        show_admin_btn = any(kw in answer.lower() for kw in referral_kws)
         
         kb = []
         if options:
@@ -229,7 +231,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.log_message(str(user.id), username, question, answer, lang, category)
 
         # 3. Respond to Student FIRST
-        show_admin_btn = "topilmadi" in answer.lower() or "not found" in answer.lower()
+        referral_kws = ["topilmadi", "not found", "murojaat qiling", "mas'ul xodimi", "adminstrator", "ofisiga"]
+        show_admin_btn = any(kw in answer.lower() for kw in referral_kws)
         
         kb = []
         if options:
