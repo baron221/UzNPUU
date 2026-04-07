@@ -100,6 +100,19 @@ def init_db():
         FOREIGN KEY (faculty_id) REFERENCES faculties(id)
     )''')
 
+    # MIGRATIONS (For existing databases)
+    # 1. Add student_id to questions
+    try:
+        c.execute("ALTER TABLE questions ADD COLUMN student_id TEXT")
+    except sqlite3.OperationalError:
+        pass 
+
+    # 2. Add category to questions
+    try:
+        c.execute("ALTER TABLE questions ADD COLUMN category TEXT DEFAULT 'UNIVERSITY'")
+    except sqlite3.OperationalError:
+        pass
+
     # Chat groups (Telegram group IDs per faculty)
     c.execute('''CREATE TABLE IF NOT EXISTS chat_groups (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
