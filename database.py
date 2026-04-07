@@ -104,12 +104,14 @@ def init_db():
     # 1. Add student_id to questions
     try:
         c.execute("ALTER TABLE questions ADD COLUMN student_id TEXT")
+        conn.commit() # Save the change!
     except sqlite3.OperationalError:
         pass 
 
     # 2. Add category to questions
     try:
         c.execute("ALTER TABLE questions ADD COLUMN category TEXT DEFAULT 'UNIVERSITY'")
+        conn.commit() # Save the change!
     except sqlite3.OperationalError:
         pass
 

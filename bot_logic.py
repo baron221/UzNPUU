@@ -1,6 +1,8 @@
 import os
 import logging
 import re
+import traceback
+import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler,
@@ -163,11 +165,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if data == "ask_admin":
             original_q = context.user_data.get('last_question', 'Noma\'lum savol')
-            db.save_question(str(user.id), username, user.full_name or username, fid, original_q, "Admin javobini kuting...", "uz", "MANUAL", sid)
+            db.save_question(str(user.id), sid, username, user.full_name or username, fid, original_q, "Admin javobini kuting...", "uz", "MANUAL")
             await query.message.reply_text("📩 Savolingiz adminstratorga yuborildi. Tez orada javob olasiz!")
             
             # Non-blocking forward
-            import asyncio
             asyncio.create_task(forward_to_admin(context, user, original_q, "Umumiy (Manual)", sid, fid))
             return
 
@@ -175,7 +176,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text(f"🔍 {selected}")
         
         answer, options, lang, category = ai_responder.get_answer(selected, state.knowledge_base, state.clients)
-        db.save_question(str(user.id), username, user.full_name or username, fid, selected, answer, lang, category, sid)
+        db.save_question(str(user.id), sid, username, user.full_name or username, fid, selected, answer, lang, category)
         logger.log_message(str(user.id), username, selected, answer, lang, category)
         
         show_admin_btn = "topilmadi" in answer.lower() or "not found" in answer.lower()
@@ -197,14 +198,26 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Auto-register/load student
         student = db.get_student(user.id)
         if not student:
-            await update.message.reply_text("Iltimos, avval /start buyrug'i orqali ro'yxatdan o'ting! 😊")
-            return
+            # Maybe they didn't finish the flow? Check if they have an ID in context
+            sid = context.user_data.get('student_id') or context.user_data.get('temp_student_id')
+            if not sid:
+                await update.message.reply_text("Iltimos, avval /start buyrug'i orqali ro'yxatdan o'ting! 😊")
+                return
+            # They have an ID but it wasn't in DB? Register them now with "Umumiy"
+            db.register_student(user.id, sid, None)
+            student = {"student_id": sid, "faculty_id": None}
 
-        sid = student['student_id']
-        fid = context.user_data.get('faculty_id') or student['faculty_id']
+        sid = student.get('student_id')
+        fid = context.user_data.get('faculty_id') or student.get('faculty_id')
         username = user.username or user.first_name or "Talaba"
 
         import state
+        
+        # Verify AI state
+        if not state.clients or not state.knowledge_base:
+            logging.error("❌ AI State is not initialized in handle_message")
+            await update.message.reply_text("⚠️ Kechirasiz, AI tizimi hozirda faol emas. Iltimos, keyinroq urinib ko'ring.")
+            return
 
         await update.message.chat.send_action("typing")
         
@@ -212,10 +225,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         answer, options, lang, category = ai_responder.get_answer(question, state.knowledge_base, state.clients)
 
         # 2. Save Question
-        db.save_question(str(user.id), username, user.full_name or username, fid, question, answer, lang, category, sid)
+        db.save_question(str(user.id), sid, username, user.full_name or username, fid, question, answer, lang, category)
         logger.log_message(str(user.id), username, question, answer, lang, category)
 
-        # 3. Respond to Student FIRST (Non-blocking)
+        # 3. Respond to Student FIRST
         show_admin_btn = "topilmadi" in answer.lower() or "not found" in answer.lower()
         
         kb = []
@@ -228,11 +241,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(answer, reply_markup=InlineKeyboardMarkup(kb) if kb else None)
 
         # 4. Forward to Admin (As background task)
-        import asyncio
         asyncio.create_task(forward_to_admin(context, user, question, answer, sid, fid))
 
     except Exception as e:
-        logging.error(f"❌ Handle Message Error: {e}")
+        err_msg = str(e)
+        st = traceback.format_exc()
+        logging.error(f"❌ Handle Message Error: {err_msg}\n{st}")
+        
+        # User-friendly error
         await update.message.reply_text("Uzr, savolingizni tushunishda xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring! 🧐")
 
 async def forward_to_admin(context, user, question, answer, sid, fid=None):

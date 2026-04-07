@@ -497,7 +497,7 @@ function uploadKB() {
 
 function closeModal(id){document.getElementById(id).classList.remove("open");}
 
-if(!String.prototype.strip) { String.prototype.strip = function() { return this.replace(/^\s+|\s+$/g, ""); }; }
+if(!String.prototype.strip) { String.prototype.strip = function() { return this.replace(/^\\s+|\\s+$/g, ""); }; }
 </script>
 </body>
 </html>'''
