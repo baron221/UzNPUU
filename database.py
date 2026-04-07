@@ -298,7 +298,7 @@ def register_student(tg_id, student_id, faculty_id=None):
         conn.close()
 
 # ── QUESTIONS ─────────────────────────────────────────────────────────────────
-def save_question(student_tg_id, student_username, student_name, faculty_id, question, answer, lang, category, student_id=None):
+def save_question(student_tg_id, student_id, student_username, student_name, faculty_id, question, answer, lang, category):
     conn = get_conn()
     is_wait = "javobini kuting" in answer.lower() or "murojaat qiling" in answer.lower()
     is_not_found = "topilmadi" in answer.lower() or "not found" in answer.lower()
