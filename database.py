@@ -300,14 +300,19 @@ def register_student(tg_id, student_id, faculty_id=None):
 # ── QUESTIONS ─────────────────────────────────────────────────────────────────
 def save_question(student_tg_id, student_username, student_name, faculty_id, question, answer, lang, category, student_id=None):
     conn = get_conn()
-    answered = "topilmadi" not in answer.lower() and "not found" not in answer.lower()
+    is_wait = "javobini kuting" in answer.lower() or "murojaat qiling" in answer.lower()
+    is_not_found = "topilmadi" in answer.lower() or "not found" in answer.lower()
+    
+    # It's only 'answered' if it's NOT a wait message AND NOT a 'not found' message
+    status = 'unanswered' if (is_wait or is_not_found or category == "MANUAL") else 'answered'
+
     conn.execute("""
         INSERT INTO questions
         (student_telegram_id, student_id, student_username, student_name, faculty_id, question, answer, status, lang, category)
         VALUES (?,?,?,?,?,?,?,?,?,?)
     """, (
         str(student_tg_id), student_id, student_username, student_name, faculty_id,
-        question, answer, 'answered' if answered else 'unanswered', lang, category
+        question, answer, status, lang, category
     ))
     conn.commit()
     conn.close()

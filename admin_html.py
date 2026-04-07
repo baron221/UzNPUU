@@ -348,8 +348,25 @@ function renderQuestions(items){
   items.map(function(q){
     var student = q.student_username ? "@" + q.student_username : (q.student_name || "—");
     var qTextEsc = esc(q.question);
-    var btn = q.status !== "answered" ? `<button class="btn btn-sm btn-blue" onclick="openReplyModal(${q.id}, '${qTextEsc}')">Javob berish</button>` : "—";
-    return `<tr><td><span class="badge badge-orange">${esc(q.student_id || "—")}</span></td><td><strong>${esc(student)}</strong></td><td><span class="badge badge-purple">${esc(q.faculty_name || "Umumiy")}</span></td><td style="max-width:260px;color:var(--muted2)">${esc(q.question)}</td><td><span class="badge ${lm[q.lang] || "badge-blue"}">${(q.lang || "uz").toUpperCase()}</span></td><td><span class="badge ${q.status === "answered" ? "badge-green" : "badge-red"}">${q.status === "answered" ? "✅ Javob berilgan" : "❓ Javobsiz"}</span></td><td>${btn}</td></tr>`;
+    
+    // Status Logic
+    var statusBadge = "";
+    var showBtn = false;
+    
+    if (q.status === 'answered') {
+        statusBadge = '<span class="badge badge-green">✅ Javob berildi</span>';
+        showBtn = true; // Still allow replying to corrected answers
+    } else if (q.category === 'MANUAL') {
+        statusBadge = '<span class="badge badge-orange">🟠 Kutayotgan (Manual)</span>';
+        showBtn = true;
+    } else {
+        statusBadge = '<span class="badge badge-red">❓ Topilmadi / Pending</span>';
+        showBtn = true;
+    }
+    
+    var btn = showBtn ? `<button class="btn btn-sm btn-blue" onclick="openReplyModal(${q.id}, '${qTextEsc}')">Javob berish</button>` : "—";
+    
+    return `<tr><td><span class="badge badge-orange">${esc(q.student_id || "—")}</span></td><td><strong>${esc(student)}</strong></td><td><span class="badge badge-purple">${esc(q.faculty_name || "Umumiy")}</span></td><td style="max-width:260px;color:var(--muted2)">${esc(q.question)}</td><td><span class="badge ${lm[q.lang] || "badge-blue"}">${(q.lang || "uz").toUpperCase()}</span></td><td>${statusBadge}</td><td>${btn}</td></tr>`;
   }).join("")+"</tbody></table></div>";
 }
 
