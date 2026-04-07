@@ -343,6 +343,7 @@ function filterQLocal(){
 function renderQuestions(items){
   var c=document.getElementById("questionsList");
   if(!items.length){c.innerHTML="<div class='empty'>Hech qanday savol yo'q</div>";return;}
+  var lm={uz:"badge-green",ru:"badge-red",en:"badge-blue"};
   c.innerHTML="<div class='table-card'><table><thead><tr><th>Talaba</th><th>Fakultet</th><th>Savol</th><th>Til</th><th>Status</th><th>Boshqaruv</th></tr></thead><tbody>"+
   items.map(function(q){
     var student = q.student_username ? "@" + q.student_username : (q.student_name || "—");
