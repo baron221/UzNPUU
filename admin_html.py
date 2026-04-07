@@ -344,29 +344,32 @@ function renderQuestions(items){
   var c=document.getElementById("questionsList");
   if(!items.length){c.innerHTML="<div class='empty'>Hech qanday savol yo'q</div>";return;}
   var lm={uz:"badge-green",ru:"badge-red",en:"badge-blue"};
-  c.innerHTML="<div class='table-card'><table><thead><tr><th>ID</th><th>Talaba</th><th>Fakultet</th><th>Savol</th><th>Til</th><th>Status</th><th>Boshqaruv</th></tr></thead><tbody>"+
+  c.innerHTML="<div class='table-card'><table><thead><tr><th>ID</th><th>Tur</th><th>Talaba</th><th>Fakultet</th><th>Savol</th><th>Status</th><th>Boshqaruv</th></tr></thead><tbody>"+
   items.map(function(q){
     var student = q.student_username ? "@" + q.student_username : (q.student_name || "—");
     var qTextEsc = esc(q.question);
     
     // Status Logic
     var statusBadge = "";
-    var showBtn = false;
+    var showBtn = true;
     
     if (q.status === 'answered') {
         statusBadge = '<span class="badge badge-green">✅ Javob berildi</span>';
-        showBtn = true; // Still allow replying to corrected answers
     } else if (q.category === 'MANUAL') {
         statusBadge = '<span class="badge badge-orange">🟠 Kutayotgan (Manual)</span>';
-        showBtn = true;
     } else {
         statusBadge = '<span class="badge badge-red">❓ Topilmadi / Pending</span>';
-        showBtn = true;
     }
+
+    var catMap = {
+        'MANUAL': '<span class="badge badge-red">MANUAL</span>',
+        'UNIVERSITY': '<span class="badge badge-blue">UNI</span>',
+        'VAGUE': '<span class="badge badge-purple">VAGUE</span>'
+    };
     
     var btn = showBtn ? `<button class="btn btn-sm btn-blue" onclick="openReplyModal(${q.id}, '${qTextEsc}')">Javob berish</button>` : "—";
     
-    return `<tr><td><span class="badge badge-orange">${esc(q.student_id || "—")}</span></td><td><strong>${esc(student)}</strong></td><td><span class="badge badge-purple">${esc(q.faculty_name || "Umumiy")}</span></td><td style="max-width:260px;color:var(--muted2)">${esc(q.question)}</td><td><span class="badge ${lm[q.lang] || "badge-blue"}">${(q.lang || "uz").toUpperCase()}</span></td><td>${statusBadge}</td><td>${btn}</td></tr>`;
+    return `<tr><td><span class="badge badge-orange">${esc(q.student_id || "—")}</span></td><td>${catMap[q.category] || q.category}</td><td><strong>${esc(student)}</strong></td><td><span class="badge badge-purple">${esc(q.faculty_name || "Umumiy")}</span></td><td style="max-width:260px;color:var(--muted2)">${esc(q.question)}</td><td>${statusBadge}</td><td>${btn}</td></tr>`;
   }).join("")+"</tbody></table></div>";
 }
 
