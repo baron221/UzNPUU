@@ -22,7 +22,7 @@ print("✅ Bot is ready!\n")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Assalomu alaykum! Nizomiy nomidagi OʻzMPU rasmiy botidasiz. Qanday yordam bera olaman? 🎓"
+        "Assalomu alaykum! Nizomiy nomidagi UzNPUU rasmiy botidasiz. Qanday yordam bera olaman? 🎓"
     )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):

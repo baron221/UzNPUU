@@ -59,10 +59,20 @@ def init_db():
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )''')
 
+    # Student registration table
+    c.execute('''CREATE TABLE IF NOT EXISTS students (
+        telegram_id TEXT PRIMARY KEY,
+        student_id TEXT NOT NULL,
+        faculty_id INTEGER,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (faculty_id) REFERENCES faculties(id)
+    )''')
+
     # Student questions table
     c.execute('''CREATE TABLE IF NOT EXISTS questions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         student_telegram_id TEXT NOT NULL,
+        student_id TEXT,
         student_username TEXT,
         student_name TEXT,
         faculty_id INTEGER,
@@ -251,16 +261,37 @@ def verify_admin(username, password):
     return None
 
 
+# ── STUDENTS ──────────────────────────────────────────────────────────────────
+def get_student(tg_id):
+    conn = get_conn()
+    row = conn.execute("SELECT * FROM students WHERE telegram_id=?", (str(tg_id),)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def register_student(tg_id, student_id, faculty_id=None):
+    conn = get_conn()
+    try:
+        conn.execute(
+            "INSERT OR REPLACE INTO students (telegram_id, student_id, faculty_id) VALUES (?,?,?)",
+            (str(tg_id), str(student_id), faculty_id)
+        )
+        conn.commit()
+        return True
+    except:
+        return False
+    finally:
+        conn.close()
+
 # ── QUESTIONS ─────────────────────────────────────────────────────────────────
-def save_question(student_tg_id, student_username, student_name, faculty_id, question, answer, lang, category):
+def save_question(student_tg_id, student_username, student_name, faculty_id, question, answer, lang, category, student_id=None):
     conn = get_conn()
     answered = "topilmadi" not in answer.lower() and "not found" not in answer.lower()
     conn.execute("""
         INSERT INTO questions
-        (student_telegram_id, student_username, student_name, faculty_id, question, answer, status, lang, category)
-        VALUES (?,?,?,?,?,?,?,?,?)
+        (student_telegram_id, student_id, student_username, student_name, faculty_id, question, answer, status, lang, category)
+        VALUES (?,?,?,?,?,?,?,?,?,?)
     """, (
-        str(student_tg_id), student_username, student_name, faculty_id,
+        str(student_tg_id), student_id, student_username, student_name, faculty_id,
         question, answer, 'answered' if answered else 'unanswered', lang, category
     ))
     conn.commit()

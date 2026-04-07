@@ -47,9 +47,9 @@ RESPONSES = {
         "en": "What do you mean exactly? Please choose:"
     },
     "greeting": {
-        "uz": "Vaalaykum assalom! 😊 OʻzMPU botiga xush kelibsiz. Savolingizni yozing!",
-        "ru": "Здравствуйте! 😊 Добро пожаловать в бот OʻzMPU. Задайте ваш вопрос!",
-        "en": "Hello! 😊 Welcome to the OʻzMPU bot. Type your question!"
+        "uz": "Vaalaykum assalom! 😊 UzNPUU botiga xush kelibsiz. Savolingizni yozing!",
+        "ru": "Здравствуйте! 😊 Добро пожаловать в бот UzNPUU. Задайте ваш вопрос!",
+        "en": "Hello! 😊 Welcome to the UzNPUU bot. Type your question!"
     },
     "thanks": {
         "uz": "Arzimaydi! 😊 Yana savollaringiz bo'lsa, yozing.",
@@ -62,9 +62,9 @@ RESPONSES = {
         "en": "Goodbye! 👋 Feel free to come back anytime."
     },
     "whoami": {
-        "uz": "Men OʻzMPU rasmiy yordamchi botiman! 🎓\n\n• 📅 Imtihon va dars jadvallari\n• 📚 HEMIS tizimi\n• 📋 Akademik ta'til va ko'chirish\n• 💰 To'lov va stipendiya\n• 🎓 Grant va GPA",
-        "ru": "Я официальный бот-помощник OʻzMPU! 🎓\n\n• 📅 Расписание экзаменов и занятий\n• 📚 Система HEMIS\n• 📋 Академический отпуск и перевод\n• 💰 Оплата и стипендия\n• 🎓 Гранты и GPA",
-        "en": "I'm the official OʻzMPU assistant bot! 🎓\n\n• 📅 Exam and class schedules\n• 📚 HEMIS system\n• 📋 Academic leave and transfers\n• 💰 Payments and scholarships\n• 🎓 Grants and GPA"
+        "uz": "Men UzNPUU rasmiy yordamchi botiman! 🎓\n\n• 📅 Imtihon va dars jadvallari\n• 📚 HEMIS tizimi\n• 📋 Akademik ta'til va ko'chirish\n• 💰 To'lov va stipendiya\n• 🎓 Grant va GPA",
+        "ru": "Я официальный бот-помощник UzNPUU! 🎓\n\n• 📅 Расписание экзаменов и занятий\n• 📚 Система HEMIS\n• 📋 Академический отпуск и перевод\n• 💰 Оплата и стипендия\n• 🎓 Гранты и GPA",
+        "en": "I'm the official UzNPUU assistant bot! 🎓\n\n• 📅 Exam and class schedules\n• 📚 HEMIS system\n• 📋 Academic leave and transfers\n• 💰 Payments and scholarships\n• 🎓 Grants and GPA"
     },
     "howru": {
         "uz": "Yaxshi, rahmat! 😊 Sizga qanday yordam bera olaman?",

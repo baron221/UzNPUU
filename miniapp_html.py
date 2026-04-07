@@ -4,7 +4,7 @@ def get_miniapp_html(railway_url=""):
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
-<title>OʻzMPU</title>
+<title>UzNPUU</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet"/>
 <style>
@@ -106,7 +106,7 @@ body{{background:var(--bg);color:var(--text);font-family:"Sora",sans-serif;min-h
 <div id="page-home" class="page active">
   <div class="hero">
     <div class="hero-label">Rasmiy bot</div>
-    <div class="hero-title">OʻzMPU<br><em>Yordamchi</em></div>
+    <div class="hero-title">UzNPUU<br><em>Yordamchi</em></div>
     <div class="hero-sub">Nizomiy nomidagi O\'zbekiston Milliy pedagogika universiteti</div>
   </div>
   <div class="stats-row">
@@ -129,7 +129,7 @@ body{{background:var(--bg);color:var(--text);font-family:"Sora",sans-serif;min-h
 <div id="page-chat" class="page">
   <div class="chat-header">
     <div class="ai-avatar">🎓</div>
-    <div><div class="ai-name">OʻzMPU Yordamchi</div><div class="ai-status"><span class="status-dot"></span>Faol — hujjatlardan javob beradi</div></div>
+    <div><div class="ai-name">UzNPUU Yordamchi</div><div class="ai-status"><span class="status-dot"></span>Faol — hujjatlardan javob beradi</div></div>
   </div>
   <div class="chat-msgs" id="chatMsgs">
     <div class="msg bot">Assalomu alaykum! 👋 Savolingizni yozing — rasmiy hujjatlarimizdan aniq javob beraman.</div>
@@ -158,7 +158,7 @@ body{{background:var(--bg);color:var(--text);font-family:"Sora",sans-serif;min-h
   <div class="profile-hero">
     <div class="p-avatar" id="pAvatar">👤</div>
     <div class="p-name" id="pName">Talaba</div>
-    <div class="p-role">OʻzMPU talabasi</div>
+    <div class="p-role">UzNPUU talabasi</div>
     <div class="gpa-wrap">
       <svg width="110" height="110" viewBox="0 0 110 110">
         <circle cx="55" cy="55" r="46" fill="none" stroke="#131629" stroke-width="11"/>

@@ -4,7 +4,7 @@ def get_admin_html():
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>OʻzMPU Admin</title>
+<title>UzNPUU Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
@@ -100,7 +100,7 @@ textarea.form-inp{resize:vertical;min-height:90px}
   <div class="login-card">
     <div class="login-icon">🔐</div>
     <div class="login-title">Admin Panel</div>
-    <div class="login-sub">OʻzMPU Bot boshqaruv tizimi</div>
+    <div class="login-sub">UzNPUU Bot boshqaruv tizimi</div>
     <input class="inp" type="text" id="loginUser" placeholder="Login"/>
     <input class="inp" type="password" id="loginPass" placeholder="Parol" onkeydown="if(event.key===\'Enter\')doLogin()"/>
     <button class="btn-login" onclick="doLogin()">Kirish →</button>
@@ -111,7 +111,7 @@ textarea.form-inp{resize:vertical;min-height:90px}
   <div class="sidebar">
     <div class="sidebar-top">
       <div class="sidebar-logo-box">🎓</div>
-      <div class="sidebar-title">OʻzMPU</div>
+    <div class="sidebar-title">UzNPUU</div>
       <div class="sidebar-sub">Admin boshqaruv paneli</div>
     </div>
     <div class="nav-section">Asosiy</div>
@@ -344,12 +344,12 @@ function renderQuestions(items){
   var c=document.getElementById("questionsList");
   if(!items.length){c.innerHTML="<div class='empty'>Hech qanday savol yo'q</div>";return;}
   var lm={uz:"badge-green",ru:"badge-red",en:"badge-blue"};
-  c.innerHTML="<div class='table-card'><table><thead><tr><th>Talaba</th><th>Fakultet</th><th>Savol</th><th>Til</th><th>Status</th><th>Boshqaruv</th></tr></thead><tbody>"+
+  c.innerHTML="<div class='table-card'><table><thead><tr><th>ID</th><th>Talaba</th><th>Fakultet</th><th>Savol</th><th>Til</th><th>Status</th><th>Boshqaruv</th></tr></thead><tbody>"+
   items.map(function(q){
     var student = q.student_username ? "@" + q.student_username : (q.student_name || "—");
     var qTextEsc = esc(q.question);
     var btn = q.status !== "answered" ? `<button class="btn btn-sm btn-blue" onclick="openReplyModal(${q.id}, '${qTextEsc}')">Javob berish</button>` : "—";
-    return `<tr><td><strong>${esc(student)}</strong></td><td><span class="badge badge-purple">${esc(q.faculty_name || "Umumiy")}</span></td><td style="max-width:260px;color:var(--muted2)">${esc(q.question)}</td><td><span class="badge ${lm[q.lang] || "badge-blue"}">${(q.lang || "uz").toUpperCase()}</span></td><td><span class="badge ${q.status === "answered" ? "badge-green" : "badge-red"}">${q.status === "answered" ? "✅ Javob berilgan" : "❓ Javobsiz"}</span></td><td>${btn}</td></tr>`;
+    return `<tr><td><span class="badge badge-orange">${esc(q.student_id || "—")}</span></td><td><strong>${esc(student)}</strong></td><td><span class="badge badge-purple">${esc(q.faculty_name || "Umumiy")}</span></td><td style="max-width:260px;color:var(--muted2)">${esc(q.question)}</td><td><span class="badge ${lm[q.lang] || "badge-blue"}">${(q.lang || "uz").toUpperCase()}</span></td><td><span class="badge ${q.status === "answered" ? "badge-green" : "badge-red"}">${q.status === "answered" ? "✅ Javob berilgan" : "❓ Javobsiz"}</span></td><td>${btn}</td></tr>`;
   }).join("")+"</tbody></table></div>";
 }
 

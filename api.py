@@ -13,7 +13,7 @@ from miniapp_html import get_miniapp_html
 from admin_html import get_admin_html
 from file_loader import load_knowledge_base
 
-app = FastAPI(title="University Bot API")
+app = FastAPI(title="UzNPUU Bot API")
 
 # CORS Configuration
 app.add_middleware(

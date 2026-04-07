@@ -182,7 +182,7 @@ def get_answer(question: str, knowledge_base: str, clients: dict) -> tuple:
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": f"""You are a strict document-based university assistant for OʻzMPU.
+                {"role": "system", "content": f"""You are a strict document-based university assistant for UzNPUU.
 RULES:
 1. Answer ONLY using the documents below. No extra info.
 2. If not found: respond with the not-found message.
