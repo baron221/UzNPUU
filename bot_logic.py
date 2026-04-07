@@ -94,8 +94,8 @@ async def receive_faculty(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if fid:
         faculty = db.get_faculty(fid)
-        context.user_data['faculty_name'] = faculty['name']
-        msg = f"🎉 Tabriklaymiz! Siz {faculty['name']} talabasi sifatida ro'yxatdan o'tdingiz."
+        context.user_data['faculty_name'] = faculty['name'] if faculty else "Umumiy"
+        msg = f"🎉 Tabriklaymiz! Siz {context.user_data['faculty_name']} talabasi sifatida ro'yxatdan o'tdingiz."
     else:
         context.user_data['faculty_name'] = "Umumiy"
         msg = "🎉 Tabriklaymiz! Siz umumiy foydalanuvchi sifatida ro'yxatdan o'tdingiz."
@@ -166,8 +166,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             db.save_question(str(user.id), username, user.full_name or username, fid, original_q, "Admin javobini kuting...", "uz", "MANUAL", sid)
             await query.message.reply_text("📩 Savolingiz adminstratorga yuborildi. Tez orada javob olasiz!")
             
-            # Forward to general admin
-            await forward_to_admin(query.message, user, original_q, "Umumiy (Manual)", sid)
+            # Non-blocking forward
+            import asyncio
+            asyncio.create_task(forward_to_admin(context, user, original_q, "Umumiy (Manual)", sid, fid))
             return
 
         selected = data.replace("opt_", "")
@@ -179,47 +180,44 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         show_admin_btn = "topilmadi" in answer.lower() or "not found" in answer.lower()
         
-        if options or show_admin_btn:
-            kb = []
-            if options:
-                kb = [[InlineKeyboardButton(o[:40], callback_data=f"opt_{o[:40]}")] for o in options]
-            if show_admin_btn:
-                kb.append([InlineKeyboardButton("👤 Adminstratorga yuborish", callback_data="ask_admin")])
-                context.user_data['last_question'] = selected
-                
-            await query.message.reply_text(answer, reply_markup=InlineKeyboardMarkup(kb))
-        else:
-            await query.message.reply_text(answer)
+        kb = []
+        if options:
+            kb = [[InlineKeyboardButton(o[:40], callback_data=f"opt_{o[:40]}")] for o in options]
+        if show_admin_btn:
+            kb.append([InlineKeyboardButton("👤 Adminstratorga yuborish", callback_data="ask_admin")])
+            context.user_data['last_question'] = selected
+            
+        await query.message.reply_text(answer, reply_markup=InlineKeyboardMarkup(kb) if kb else None)
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    question = update.message.text
-    user = update.message.from_user
-    
-    # Auto-register/load student
-    student = db.get_student(user.id)
-    if not student:
-        await update.message.reply_text("Iltimos, avval /start buyrug'i orqali ro'yxatdan o'ting! 😊")
-        return
+    try:
+        question = update.message.text
+        user = update.message.from_user
+        
+        # Auto-register/load student
+        student = db.get_student(user.id)
+        if not student:
+            await update.message.reply_text("Iltimos, avval /start buyrug'i orqali ro'yxatdan o'ting! 😊")
+            return
 
-    sid = student['student_id']
-    fid = context.user_data.get('faculty_id') or student['faculty_id']
-    username = user.username or user.first_name or "Talaba"
+        sid = student['student_id']
+        fid = context.user_data.get('faculty_id') or student['faculty_id']
+        username = user.username or user.first_name or "Talaba"
 
-    import state
+        import state
 
-    await update.message.chat.send_action("typing")
-    answer, options, lang, category = ai_responder.get_answer(question, state.knowledge_base, state.clients)
+        await update.message.chat.send_action("typing")
+        
+        # 1. Get Answer
+        answer, options, lang, category = ai_responder.get_answer(question, state.knowledge_base, state.clients)
 
-    db.save_question(str(user.id), username, user.full_name or username, fid, question, answer, lang, category, sid)
-    logger.log_message(str(user.id), username, question, answer, lang, category)
+        # 2. Save Question
+        db.save_question(str(user.id), username, user.full_name or username, fid, question, answer, lang, category, sid)
+        logger.log_message(str(user.id), username, question, answer, lang, category)
 
-    # Check if we should show Admin button
-    show_admin_btn = "topilmadi" in answer.lower() or "not found" in answer.lower()
-    
-    # Forward to faculty Telegram group if AI answered OR if it's a new question
-    await forward_to_admin(update.message, user, question, answer, sid, fid)
-
-    if options or show_admin_btn:
+        # 3. Respond to Student FIRST (Non-blocking)
+        show_admin_btn = "topilmadi" in answer.lower() or "not found" in answer.lower()
+        
         kb = []
         if options:
             kb = [[InlineKeyboardButton(o[:40], callback_data=f"opt_{o[:40]}")] for o in options]
@@ -227,32 +225,39 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             kb.append([InlineKeyboardButton("👤 Adminstratorga yuborish", callback_data="ask_admin")])
             context.user_data['last_question'] = question
             
-        await update.message.reply_text(answer, reply_markup=InlineKeyboardMarkup(kb))
-    else:
-        await update.message.reply_text(answer)
+        await update.message.reply_text(answer, reply_markup=InlineKeyboardMarkup(kb) if kb else None)
 
-async def forward_to_admin(message_obj, user, question, answer, sid, fid=None):
+        # 4. Forward to Admin (As background task)
+        import asyncio
+        asyncio.create_task(forward_to_admin(context, user, question, answer, sid, fid))
+
+    except Exception as e:
+        logging.error(f"❌ Handle Message Error: {e}")
+        await update.message.reply_text("Uzr, savolingizni tushunishda xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring! 🧐")
+
+async def forward_to_admin(context, user, question, answer, sid, fid=None):
     # This function handles the actual forwarding logic
-    faculty_name = "Umumiy"
-    group_id = os.environ.get("ADMIN_GROUP_ID") # Fallback general group
-    
-    if fid:
-        faculty = db.get_faculty(fid)
-        if faculty:
-            faculty_name = faculty['name']
-            group_id = faculty.get('telegram_group_id') or group_id
+    try:
+        faculty_name = "Umumiy"
+        group_id = os.environ.get("ADMIN_GROUP_ID") # Fallback general group
+        
+        if fid:
+            faculty = db.get_faculty(fid)
+            if faculty:
+                faculty_name = faculty['name']
+                group_id = faculty.get('telegram_group_id') or group_id
 
-    if group_id:
-        try:
+        if group_id:
             msg = (f"📨 **Yangi savol!**\n"
                    f"🆔 ID: `{sid}`\n"
                    f"👤 {user.full_name or user.username}\n"
                    f"🏫 {faculty_name}\n"
                    f"❓ {question}\n"
                    f"🤖 AI Javobi: {answer[:200]}...")
-            await message_obj.get_bot().send_message(chat_id=group_id, text=msg, parse_mode='Markdown')
-        except Exception as e:
-            logging.error(f"⚠️ Forward error: {e}")
+            await context.bot.send_message(chat_id=group_id, text=msg, parse_mode='Markdown')
+            
+    except Exception as e:
+        logging.error(f"⚠️ Forward error: {e}")
 
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Noma'lum buyruq. Savolingizni yozishingiz mumkin! 😊")
