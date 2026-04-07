@@ -122,7 +122,8 @@ textarea.form-inp{resize:vertical;min-height:90px}
     <div class="nav-item" onclick="showPage(\'users\',this)"><span class="nav-icon">👥</span>Xodimlar</div>
     <div class="nav-section">Kontent</div>
     <div class="nav-item" onclick="showPage(\'faq\',this)"><span class="nav-icon">📋</span>FAQ Boshqaruv</div>
-    <div class="nav-item" onclick="showPage(\'chatgroups\',this)"><span class="nav-icon">📡</span>Telegram Guruhlar</div>
+    <div class="nav-section">Tizim</div>
+    <div class="nav-item" onclick="showPage(\'upload\',this)"><span class="nav-icon">📁</span>Hujjat Yuklash</div>
     <div class="nav-bottom">
       <button class="logout-btn" onclick="doLogout()">🚪 Chiqish</button>
     </div>
@@ -182,12 +183,17 @@ textarea.form-inp{resize:vertical;min-height:90px}
       </div>
       <div id="faqList"><div class="loading">Yuklanmoqda...</div></div>
     </div>
-    <div id="page-chatgroups" class="tab-page">
+    <div id="page-upload" class="tab-page">
       <div class="page-header">
-        <div><div class="page-title">Telegram Guruhlar</div><div class="page-sub">Savollar avtomatik yuboriladi</div></div>
+        <div><div class="page-title">Hujjat Yuklash</div><div class="page-sub">AI bilimlari bazasini boyitish</div></div>
       </div>
-      <div class="info-box">💡 <strong style="color:var(--text)">Qanday ishlaydi:</strong><br>1. Botni Telegram guruhingizga admin sifatida qo\'shing<br>2. Guruh ID sini pastda tegishli fakultet uchun saqlang<br>3. Talaba savol yuborganda — guruhga avtomatik xabar ketadi</div>
-      <div id="chatGroupsList"><div class="loading">Yuklanmoqda...</div></div>
+      <div class="info-box">📁 **Qo\'llab-quvvatlanadigan formatlar:** PDF, DOCX, XLSX, TXT, MD.<br>Yuklangan hujjatlar avtomatik AI tomonidan o\'rganiladi va talabalar savollariga javob berishda foydalaniladi.</div>
+      <div class="faq-add-form">
+        <div class="faq-add-title">Fayl tanlang</div>
+        <input type="file" id="kbFile" class="form-inp" style="margin-bottom:16px"/>
+        <button class="btn btn-primary" onclick="uploadKB()">📤 Yuklash</button>
+        <div id="uploadStatus" style="margin-top:12px;font-size:12px"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -221,27 +227,82 @@ textarea.form-inp{resize:vertical;min-height:90px}
     </div>
   </div>
 </div>
+<div class="modal-bg" id="replyModal">
+  <div class="modal">
+    <div class="modal-title">Talabaga javob berish</div>
+    <input type="hidden" id="replyQId"/>
+    <div class="info-box" id="replyQText" style="border:none;background:var(--s2);margin-bottom:16px;max-height:120px;overflow-y:auto"></div>
+    <div class="form-row"><label class="form-label">Sizning javobingiz *</label><textarea class="form-inp" id="replyAnswer" placeholder="Tushunarli va aniq javob yozing..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-red" onclick="closeModal(\'replyModal\')">Bekor</button>
+      <button class="btn btn-primary" id="btnSendReply" onclick="sendAnswer()">📤 Yuborish</button>
+    </div>
+  </div>
+</div>
 <script>
 var actChartObj=null,langChartObj=null,allQuestions=[];
+
+// ── Auth Helper ──────────────────────────────────────────────────────────────
+function getAuthHeaders() {
+  const token = localStorage.getItem("admin_token");
+  return {
+    "Content-Type": "application/json",
+    "Authorization": token ? "Bearer " + token : ""
+  };
+}
+
+function apiFetch(url, options = {}) {
+  options.headers = Object.assign(getAuthHeaders(), options.headers || {});
+  return fetch(url, options).then(r => {
+    if (r.status === 401) {
+      doLogout();
+      throw new Error("Unauthorized");
+    }
+    return r.json();
+  });
+}
+
 function doLogin(){
   var u=document.getElementById("loginUser").value,p=document.getElementById("loginPass").value;
   fetch("/api/admin/auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:u,password:p})})
   .then(function(r){return r.json();}).then(function(d){
-    if(d.ok){document.getElementById("loginWrap").style.display="none";document.getElementById("dash").style.display="block";loadOverview();loadFacultiesData();}
-    else document.getElementById("loginErr").textContent="Login yoki parol noto\'g\'ri!";
+    if(d.ok && d.token){
+      localStorage.setItem("admin_token", d.token);
+      document.getElementById("loginWrap").style.display="none";
+      document.getElementById("dash").style.display="block";
+      loadOverview();
+      loadFacultiesData();
+    }
+    else document.getElementById("loginErr").textContent="Login yoki parol noto'g'ri!";
   });
 }
-function doLogout(){document.getElementById("loginWrap").style.display="flex";document.getElementById("dash").style.display="none";}
+
+function doLogout(){
+  localStorage.removeItem("admin_token");
+  document.getElementById("loginWrap").style.display="flex";
+  document.getElementById("dash").style.display="none";
+}
+
+window.onload = function() {
+  if (localStorage.getItem("admin_token")) {
+    document.getElementById("loginWrap").style.display="none";
+    document.getElementById("dash").style.display="block";
+    loadOverview();
+    loadFacultiesData();
+  }
+};
+
 function showPage(name,el){
   document.querySelectorAll(".tab-page").forEach(function(p){p.classList.remove("active");});
   document.querySelectorAll(".nav-item").forEach(function(n){n.classList.remove("active");});
   document.getElementById("page-"+name).classList.add("active");if(el)el.classList.add("active");
   if(name==="overview")loadOverview();if(name==="questions")loadQuestions();
   if(name==="faculties")loadFaculties();if(name==="users")loadUsers();
-  if(name==="faq")loadFAQ();if(name==="chatgroups")loadChatGroups();
+  if(name==="faq")loadFAQ();
 }
+
 function loadOverview(){
-  fetch("/api/admin/stats").then(function(r){return r.json();}).then(function(s){
+  apiFetch("/api/admin/stats").then(function(s){
     document.getElementById("statsGrid").innerHTML=
       "<div class='stat-card'><div class='stat-icon'>💬</div><div class='stat-num c-blue'>"+s.total+"</div><div class='stat-lbl'>Jami savollar</div></div>"+
       "<div class='stat-card'><div class='stat-icon'>✅</div><div class='stat-num c-green'>"+s.answered+"</div><div class='stat-lbl'>Javob berilgan</div></div>"+
@@ -259,28 +320,65 @@ function loadOverview(){
     langChartObj=new Chart(document.getElementById("langChart"),{type:"doughnut",
       data:{labels:Object.keys(langs),datasets:[{data:Object.values(langs),backgroundColor:Object.keys(langs).map(function(k){return lColors[k]||"#7c8fff";}),borderWidth:0}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{color:"#8890b8",font:{size:11},padding:10}}}}});
-  });
+  }).catch(e => console.error(e));
 }
+
 function loadQuestions(){
   var fId=document.getElementById("qFacultyFilter").value,status=document.getElementById("qStatusFilter").value;
-  fetch("/api/admin/questions?limit=100"+(fId?"&faculty_id="+fId:"")+(status?"&status="+status:""))
-  .then(function(r){return r.json();}).then(function(d){allQuestions=d.questions||[];renderQuestions(allQuestions);});
+  apiFetch("/api/admin/questions?limit=100"+(fId?"&faculty_id="+fId:"")+(status?"&status="+status:""))
+  .then(function(d){allQuestions=d.questions||[];renderQuestions(allQuestions);});
 }
+
 function filterQLocal(){
   var q=document.getElementById("qSearch").value.toLowerCase();
   if(!q){renderQuestions(allQuestions);return;}
   renderQuestions(allQuestions.filter(function(i){return i.question.toLowerCase().includes(q)||(i.student_username||"").toLowerCase().includes(q);}));
 }
+
 function renderQuestions(items){
   var c=document.getElementById("questionsList");
-  if(!items.length){c.innerHTML="<div class='empty'>Hech qanday savol yo\'q</div>";return;}
+  if(!items.length){c.innerHTML="<div class='empty'>Hech qanday savol yo'q</div>";return;}
   var lm={uz:"badge-green",ru:"badge-red",en:"badge-blue"};
-  c.innerHTML="<div class='table-card'><table><thead><tr><th>Talaba</th><th>Fakultet</th><th>Savol</th><th>Til</th><th>Status</th><th>Vaqt</th></tr></thead><tbody>"+
-  items.map(function(q){return "<tr><td><strong>@"+(q.student_username||"—")+"</strong></td><td><span class='badge badge-purple'>"+(q.faculty_name||"Umumiy")+"</span></td><td style='max-width:260px;color:var(--muted2)'>"+q.question+"</td><td><span class='badge "+(lm[q.lang]||"badge-blue")+"'>"+(q.lang||"uz").toUpperCase()+"</span></td><td><span class='badge "+(q.status==="answered"?"badge-green":"badge-red")+"'>"+(q.status==="answered"?"✅ Javob berilgan":"❓ Javobsiz")+"</span></td><td style='color:var(--muted);font-size:11px'>"+(q.created_at||"").slice(0,16)+"</td></tr>";}).join("")+"</tbody></table></div>";
+  c.innerHTML="<div class='table-card'><table><thead><tr><th>Talaba</th><th>Fakultet</th><th>Savol</th><th>Til</th><th>Status</th><th>Boshqaruv</th></tr></thead><tbody>"+
+  items.map(function(q){return "<tr><td><strong>@"+(q.student_username||"—")+"</strong></td><td><span class='badge badge-purple'>"+(q.faculty_name||"Umumiy")+"</span></td><td style='max-width:260px;color:var(--muted2)'>"+q.question+"</td><td><span class='badge "+(lm[q.lang]||"badge-blue")+"'>"+(q.lang||"uz").toUpperCase()+"</span></td><td><span class='badge "+(q.status==="answered"?"badge-green":"badge-red")+"'>"+(q.status==="answered"?"✅ Javob berilgan":"❓ Javobsiz")+"</span></td><td>"+(q.status!=="answered"?"<button class='btn btn-sm btn-blue' onclick='openReplyModal("+q.id+", \""+q.question.replace(/"/g, "&quot;")+"\")'>Javob berish</button>":"—")+"</td></tr>";}).join("")+"</tbody></table></div>";
 }
+
+function openReplyModal(qid, qText) {
+    document.getElementById("replyQId").value = qid;
+    document.getElementById("replyQText").textContent = qText;
+    document.getElementById("replyAnswer").value = "";
+    document.getElementById("replyModal").classList.add("open");
+}
+
+function sendAnswer() {
+    var qid = document.getElementById("replyQId").value;
+    var ans = document.getElementById("replyAnswer").value.strip();
+    if(!ans) { alert("Javob yozing!"); return; }
+    
+    var btn = document.getElementById("btnSendReply");
+    btn.disabled = true; btn.textContent = "Yuborilmoqda...";
+    
+    apiFetch("/api/admin/questions/" + qid + "/answer", {
+        method: "POST",
+        body: JSON.stringify({answer: ans})
+    }).then(d => {
+        btn.disabled = false; btn.textContent = "📤 Yuborish";
+        if(d.ok) {
+            closeModal("replyModal");
+            loadQuestions();
+            loadOverview();
+        } else {
+            alert("Xatolik: " + d.error);
+        }
+    }).catch(e => {
+        btn.disabled = false; btn.textContent = "📤 Yuborish";
+        alert("Xato: " + e.message);
+    });
+}
+
 var cachedFaculties=[];
 function loadFacultiesData(){
-  fetch("/api/admin/faculties").then(function(r){return r.json();}).then(function(d){
+  apiFetch("/api/admin/faculties").then(function(d){
     cachedFaculties=d.faculties||[];
     ["qFacultyFilter","faqFaculty","uFaculty"].forEach(function(id){
       var el=document.getElementById(id);if(!el)return;
@@ -289,15 +387,17 @@ function loadFacultiesData(){
     });
   });
 }
+
 function loadFaculties(){
   loadFacultiesData();
-  fetch("/api/admin/faculties").then(function(r){return r.json();}).then(function(d){
+  apiFetch("/api/admin/faculties").then(function(d){
     var items=d.faculties||[],c=document.getElementById("facultiesList");
-    if(!items.length){c.innerHTML="<div class='empty'>Fakultetlar yo\'q</div>";return;}
+    if(!items.length){c.innerHTML="<div class='empty'>Fakultetlar yo'q</div>";return;}
     c.innerHTML="<div class='table-card'><table><thead><tr><th>Nomi</th><th>Tavsif</th><th>Telegram guruh</th><th>Status</th><th>Amallar</th></tr></thead><tbody>"+
-    items.map(function(f){return "<tr><td><strong>"+f.name+"</strong></td><td style='color:var(--muted2)'>"+(f.description||"—")+"</td><td style='font-size:12px;color:var(--accent)'>"+(f.telegram_group_name||f.telegram_group_id||"—")+"</td><td><span class='badge "+(f.is_active?"badge-green":"badge-red")+"'>"+(f.is_active?"Faol":"Nofaol")+"</span></td><td style='display:flex;gap:6px'><button class='btn btn-sm btn-blue' onclick='editFaculty("+JSON.stringify(f)+")'>Tahrir</button><button class='btn btn-sm btn-red' onclick='deleteFaculty("+f.id+")'>O\'chir</button></td></tr>";}).join("")+"</tbody></table></div>";
+    items.map(function(f){return "<tr><td><strong>"+f.name+"</strong></td><td style='color:var(--muted2)'>"+(f.description||"—")+"</td><td style='font-size:12px;color:var(--accent)'>"+(f.telegram_group_name||f.telegram_group_id||"—")+"</td><td><span class='badge "+(f.is_active?"badge-green":"badge-red")+"'>"+(f.is_active?"Faol":"Nofaol")+"</span></td><td style='display:flex;gap:6px'><button class='btn btn-sm btn-blue' onclick='editFaculty("+JSON.stringify(f)+")'>Tahrir</button><button class='btn btn-sm btn-red' onclick='deleteFaculty("+f.id+")'>O'chir</button></td></tr>";}).join("")+"</tbody></table></div>";
   });
 }
+
 function openFacultyModal(f){
   document.getElementById("fModalTitle").textContent=f?"Tahrirlash":"Yangi fakultet";
   document.getElementById("fModalId").value=f?f.id:"";
@@ -307,59 +407,76 @@ function openFacultyModal(f){
   document.getElementById("fGroupName").value=f?(f.telegram_group_name||""):"";
   document.getElementById("facultyModal").classList.add("open");
 }
+
 function editFaculty(f){openFacultyModal(f);}
+
 function saveFaculty(){
   var id=document.getElementById("fModalId").value;
   var data={name:document.getElementById("fName").value,description:document.getElementById("fDesc").value,group_id:document.getElementById("fGroupId").value,group_name:document.getElementById("fGroupName").value};
   if(!data.name){alert("Nomi kiritish shart!");return;}
-  fetch(id?"/api/admin/faculties/"+id:"/api/admin/faculties",{method:id?"PUT":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
-  .then(function(r){return r.json();}).then(function(d){if(d.ok){closeModal("facultyModal");loadFaculties();}else alert(d.error||"Xatolik");});
+  apiFetch(id?"/api/admin/faculties/"+id:"/api/admin/faculties",{method:id?"PUT":"POST",body:JSON.stringify(data)})
+  .then(function(d){if(d.ok){closeModal("facultyModal");loadFaculties();}else alert(d.error||"Xatolik");});
 }
-function deleteFaculty(id){if(!confirm("O\'chirasizmi?"))return;fetch("/api/admin/faculties/"+id,{method:"DELETE"}).then(function(){loadFaculties();});}
+
+function deleteFaculty(id){if(!confirm("O'chirasizmi?"))return;apiFetch("/api/admin/faculties/"+id,{method:"DELETE"}).then(function(){loadFaculties();});}
+
 function loadUsers(){
-  fetch("/api/admin/users").then(function(r){return r.json();}).then(function(d){
+  apiFetch("/api/admin/users").then(function(d){
     var items=d.users||[],c=document.getElementById("usersList");
-    if(!items.length){c.innerHTML="<div class='empty'>Xodimlar yo\'q</div>";return;}
+    if(!items.length){c.innerHTML="<div class='empty'>Xodimlar yo'q</div>";return;}
     c.innerHTML="<div class='table-card'><table><thead><tr><th>Ism</th><th>Telefon</th><th>Fakultet</th><th>Lavozim</th><th>Status</th><th></th></tr></thead><tbody>"+
-    items.map(function(u){return "<tr><td><strong>"+u.full_name+"</strong></td><td style='font-family:monospace;font-size:12px'>"+u.phone+"</td><td><span class='badge badge-purple'>"+(u.faculty_name||"—")+"</span></td><td><span class='badge badge-blue'>"+u.role+"</span></td><td><span class='badge "+(u.is_active?"badge-green":"badge-red")+"'>"+(u.is_active?"Faol":"Nofaol")+"</span></td><td><button class='btn btn-sm btn-red' onclick='deleteUser("+u.id+")'>O\'chir</button></td></tr>";}).join("")+"</tbody></table></div>";
+    items.map(function(u){return "<tr><td><strong>"+u.full_name+"</strong></td><td style='font-family:monospace;font-size:12px'>"+u.phone+"</td><td><span class='badge badge-purple'>"+(u.faculty_name||"—")+"</span></td><td><span class='badge badge-blue'>"+u.role+"</span></td><td><span class='badge "+(u.is_active?"badge-green":"badge-red")+"'>"+(u.is_active?"Faol":"Nofaol")+"</span></td><td><button class='btn btn-sm btn-red' onclick='deleteUser("+u.id+")'>O'chir</button></td></tr>";}).join("")+"</tbody></table></div>";
   });
 }
+
 function openUserModal(){document.getElementById("uName").value="";document.getElementById("uPhone").value="";document.getElementById("uPass").value="";document.getElementById("userModal").classList.add("open");}
+
 function saveUser(){
   var data={full_name:document.getElementById("uName").value,phone:document.getElementById("uPhone").value,password:document.getElementById("uPass").value,faculty_id:document.getElementById("uFaculty").value||null,role:document.getElementById("uRole").value};
-  if(!data.full_name||!data.phone||!data.password){alert("Barcha maydonlarni to\'ldiring!");return;}
-  fetch("/api/admin/users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
-  .then(function(r){return r.json();}).then(function(d){if(d.ok){closeModal("userModal");loadUsers();}else alert(d.error||"Xatolik");});
+  if(!data.full_name||!data.phone||!data.password){alert("Barcha maydonlarni to'ldiring!");return;}
+  apiFetch("/api/admin/users",{method:"POST",body:JSON.stringify(data)})
+  .then(function(d){if(d.ok){closeModal("userModal");loadUsers();}else alert(d.error||"Xatolik");});
 }
-function deleteUser(id){if(!confirm("O\'chirasizmi?"))return;fetch("/api/admin/users/"+id,{method:"DELETE"}).then(function(){loadUsers();});}
+
+function deleteUser(id){if(!confirm("O'chirasizmi?"))return;apiFetch("/api/admin/users/"+id,{method:"DELETE"}).then(function(){loadUsers();});}
+
 function loadFAQ(){
-  fetch("/api/admin/faq").then(function(r){return r.json();}).then(function(d){
+  apiFetch("/api/admin/faq").then(function(d){
     var items=d.items||[],c=document.getElementById("faqList");
-    if(!items.length){c.innerHTML="<div class='empty'>FAQ bo\'sh</div>";return;}
+    if(!items.length){c.innerHTML="<div class='empty'>FAQ bo'sh</div>";return;}
     c.innerHTML="<div class='table-card'><table><thead><tr><th>Fakultet</th><th>Savol</th><th>Javob</th><th></th></tr></thead><tbody>"+
-    items.map(function(f){return "<tr><td><span class='badge badge-purple'>"+(f.faculty_name||"Umumiy")+"</span></td><td style='font-weight:500'>"+f.question+"</td><td style='color:var(--muted2);max-width:240px'>"+f.answer.slice(0,80)+(f.answer.length>80?"...":"")+"</td><td><button class='btn btn-sm btn-red' onclick='deleteFAQ("+f.id+")'>O\'chir</button></td></tr>";}).join("")+"</tbody></table></div>";
+    items.map(function(f){return "<tr><td><span class='badge badge-purple'>"+(f.faculty_name||"Umumiy")+"</span></td><td style='font-weight:500'>"+f.question+"</td><td style='color:var(--muted2);max-width:240px'>"+f.answer.slice(0,80)+(f.answer.length>80?"...":"")+"</td><td><button class='btn btn-sm btn-red' onclick='deleteFAQ("+f.id+")'>O'chir</button></td></tr>";}).join("")+"</tbody></table></div>";
   });
 }
+
 function addFAQ(){
   var data={faculty_id:document.getElementById("faqFaculty").value||null,question:document.getElementById("faqQ").value,answer:document.getElementById("faqA").value};
   if(!data.question||!data.answer){alert("Savol va javob kiritish shart!");return;}
-  fetch("/api/admin/faq",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
-  .then(function(r){return r.json();}).then(function(d){if(d.ok){document.getElementById("faqQ").value="";document.getElementById("faqA").value="";loadFAQ();}else alert(d.error||"Xatolik");});
+  apiFetch("/api/admin/faq",{method:"POST",body:JSON.stringify(data)})
+  .then(function(d){if(d.ok){document.getElementById("faqQ").value="";document.getElementById("faqA").value="";loadFAQ();}else alert(d.error||"Xatolik");});
 }
-function deleteFAQ(id){if(!confirm("O\'chirasizmi?"))return;fetch("/api/admin/faq/"+id,{method:"DELETE"}).then(function(){loadFAQ();});}
-function loadChatGroups(){
-  fetch("/api/admin/faculties").then(function(r){return r.json();}).then(function(d){
-    var faculties=d.faculties||[],c=document.getElementById("chatGroupsList");
-    c.innerHTML="<div class='table-card'><table><thead><tr><th>Fakultet</th><th>Guruh ID</th><th>Guruh nomi</th><th></th></tr></thead><tbody>"+
-    faculties.map(function(f){return "<tr><td><strong>"+f.name+"</strong></td><td><input class='form-inp' style='width:180px;padding:7px 10px;font-size:12px;font-family:monospace' id='gid_"+f.id+"' value='"+(f.telegram_group_id||"")+"' placeholder='-100xxxxxxx'/></td><td><input class='form-inp' style='width:160px;padding:7px 10px;font-size:12px' id='gname_"+f.id+"' value='"+(f.telegram_group_name||"")+"' placeholder='Guruh nomi'/></td><td><button class='btn btn-sm btn-green' onclick='saveGroupId("+f.id+")'>Saqlash</button></td></tr>";}).join("")+"</tbody></table></div>";
-  });
+
+function deleteFAQ(id){if(!confirm("O'chirasizmi?"))return;apiFetch("/api/admin/faq/"+id,{method:"DELETE"}).then(function(){loadFAQ();});}
+
+function uploadKB() {
+    var f = document.getElementById("kbFile").files[0];
+    if(!f) { alert("Fayl tanlang!"); return; }
+    var fd = new FormData(); fd.append("file", f);
+    var status = document.getElementById("uploadStatus");
+    status.textContent = "⏳ Yuklanmoqda...";
+    fetch("/api/upload", {
+        method: "POST",
+        headers: {"Authorization": "Bearer " + localStorage.getItem("admin_token")},
+        body: fd
+    }).then(r => r.json()).then(d => {
+        if(d.ok) status.textContent = "✅ Yuklandi: " + d.filename + " (" + d.pairs + " Q&A)";
+        else status.textContent = "❌ Xatolik: " + d.error;
+    });
 }
-function saveGroupId(fId){
-  var gid=document.getElementById("gid_"+fId).value,gname=document.getElementById("gname_"+fId).value;
-  fetch("/api/admin/faculties/"+fId,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({group_id:gid,group_name:gname,update_group_only:true})})
-  .then(function(r){return r.json();}).then(function(d){if(d.ok)alert("✅ Saqlandi!");else alert("Xatolik: "+d.error);});
-}
+
 function closeModal(id){document.getElementById(id).classList.remove("open");}
+
+if(!String.prototype.strip) { String.prototype.strip = function() { return this.replace(/^\s+|\s+$/g, ""); }; }
 </script>
 </body>
 </html>'''

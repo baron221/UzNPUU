@@ -3,8 +3,8 @@ database.py — SQLite database for users, faculties, and questions
 """
 import sqlite3
 import os
-import hashlib
 from datetime import datetime
+from auth import get_password_hash, verify_password
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "data", "university.db")
@@ -17,8 +17,7 @@ def get_conn():
     return conn
 
 
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
+# Removed hash_password in favor of get_password_hash from auth.py
 
 
 def init_db():
@@ -109,7 +108,7 @@ def init_db():
     if not c.fetchone():
         c.execute(
             "INSERT INTO admins (username, password_hash, full_name) VALUES (?, ?, ?)",
-            ('admin', hash_password('admin123'), 'Super Admin')
+            ('admin', get_password_hash('admin123'), 'Super Admin')
         )
         conn.commit()
         print("✅ Default super admin created: admin / admin123")
@@ -203,7 +202,7 @@ def create_user(phone, password, full_name, faculty_id, role='staff'):
     try:
         conn.execute(
             "INSERT INTO users (phone, password_hash, full_name, faculty_id, role) VALUES (?,?,?,?,?)",
-            (phone, hash_password(password), full_name, faculty_id, role)
+            (phone, get_password_hash(password), full_name, faculty_id, role)
         )
         conn.commit()
         return True, "Foydalanuvchi yaratildi"
@@ -230,22 +229,26 @@ def delete_user(user_id):
 def verify_user(phone, password):
     conn = get_conn()
     row = conn.execute(
-        "SELECT * FROM users WHERE phone=? AND password_hash=? AND is_active=1",
-        (phone, hash_password(password))
+        "SELECT * FROM users WHERE phone=? AND is_active=1",
+        (phone,)
     ).fetchone()
     conn.close()
-    return dict(row) if row else None
+    if row and verify_password(password, row['password_hash']):
+        return dict(row)
+    return None
 
 
 # ── ADMIN AUTH ────────────────────────────────────────────────────────────────
 def verify_admin(username, password):
     conn = get_conn()
     row = conn.execute(
-        "SELECT * FROM admins WHERE username=? AND password_hash=?",
-        (username, hash_password(password))
+        "SELECT * FROM admins WHERE username=?",
+        (username,)
     ).fetchone()
     conn.close()
-    return dict(row) if row else None
+    if row and verify_password(password, row['password_hash']):
+        return dict(row)
+    return None
 
 
 # ── QUESTIONS ─────────────────────────────────────────────────────────────────
@@ -282,6 +285,22 @@ def get_questions(faculty_id=None, status=None, limit=50):
     rows = conn.execute(query, params).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+def get_question(qid):
+    conn = get_conn()
+    row = conn.execute("SELECT * FROM questions WHERE id=?", (qid,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def update_question_answer(qid, answer, answered_by=None):
+    conn = get_conn()
+    conn.execute("""
+        UPDATE questions 
+        SET answer=?, status='answered', answered_by=?, answered_at=CURRENT_TIMESTAMP 
+        WHERE id=?
+    """, (answer, answered_by, qid))
+    conn.commit()
+    conn.close()
 
 def get_stats_db():
     conn = get_conn()
