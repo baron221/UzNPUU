@@ -7,11 +7,15 @@ from datetime import datetime
 from auth import get_password_hash, verify_password
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "data", "university.db")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Data directory should be persistent (e.g. Railway Volume)
+DATA_DIR = os.path.join(BASE_DIR, "data")
+DB_PATH = os.path.join(DATA_DIR, "university.db")
 
 
 def get_conn():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    if not os.path.exists(DATA_DIR):
+        os.makedirs(DATA_DIR, exist_ok=True)
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
