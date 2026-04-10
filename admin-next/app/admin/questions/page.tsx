@@ -13,14 +13,23 @@ export default function QuestionsPage() {
   const [sending, setSending]   = useState(false);
   const [loading, setLoading]   = useState(true);
 
-  async function load() {
-    setLoading(true);
-    const [qd, fd] = await Promise.all([getQuestions(), getFaculties()]);
-    setAll(qd.questions);
-    setFaculties(fd.faculties);
-    setLoading(false);
+  async function load(showSkeleton = true) {
+    if (showSkeleton) setLoading(true);
+    try {
+      const [qd, fd] = await Promise.all([getQuestions(), getFaculties()]);
+      setAll(qd.questions);
+      setFaculties(fd.faculties);
+    } finally {
+      if (showSkeleton) setLoading(false);
+    }
   }
-  useEffect(() => { load(); }, []);
+
+  useEffect(() => { 
+    load();
+    // Har 10 soniyada orqa fonda yangilab turish (auto update)
+    const interval = setInterval(() => load(false), 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const filtered = all.filter(q => {
     if (fFilter && String(q.faculty_name) !== fFilter) return false;
@@ -53,7 +62,7 @@ export default function QuestionsPage() {
           <div className="page-title">Savollar</div>
           <div className="page-sub">Talabalar yuborgan barcha savollar</div>
         </div>
-        <button className="btn btn-primary" onClick={load}>↻ Yangilash</button>
+        <button className="btn btn-primary" onClick={() => load(true)}>↻ Yangilash</button>
       </div>
 
       <div className="filter-row">
