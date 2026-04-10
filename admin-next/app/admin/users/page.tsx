@@ -18,7 +18,7 @@ export default function UsersPage() {
 
   async function save() {
     if (!form.full_name || !form.phone || !form.password) { alert("Barcha maydonlarni to'ldiring!"); return; }
-    await createUser({ ...form, faculty_id: form.faculty_id ? Number(form.faculty_id) as unknown as string : undefined });
+    await createUser({ ...form, faculty_id: form.faculty_id ? Number(form.faculty_id) : undefined });
     setModal(false);
     setForm({ full_name:'', phone:'', password:'', faculty_id:'', role:'staff' });
     load();
