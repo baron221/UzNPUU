@@ -115,6 +115,7 @@ export interface User {
   full_name: string;
   phone: string;
   role: string;
+  faculty_id?: number;
   faculty_name: string;
   is_active: boolean;
 }
