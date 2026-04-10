@@ -1,4 +1,14 @@
 .env
+.env.local
 __pycache__/
 logs/
 *.pyc
+data/
+
+# Node / Next.js
+node_modules/
+admin-next/node_modules/
+admin-next/.next/
+admin-next/.env.local
+.npm
+npm-debug.log*

@@ -7,8 +7,11 @@ def get_miniapp_html(railway_url=""):
 <title>UzNPUU</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet"/>
+<link rel="icon" href="/static/favicon.png" type="image/png"/>
 <style>
 *{{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}}
+@keyframes shimmer{{0%{{background-position:-400px 0}}100%{{background-position:400px 0}}}}
+.skeleton{{background:linear-gradient(90deg,#0d1020 25%,#131629 50%,#0d1020 75%);background-size:800px 100%;animation:shimmer 1.4s infinite;border-radius:8px;}}
 :root{{--bg:#07080f;--s1:#0d1020;--s2:#131629;--card:#181d2e;--border:rgba(120,150,255,0.12);--border2:rgba(120,150,255,0.22);--accent:#7c8fff;--accent2:#ff8c69;--accent3:#52d9a4;--text:#eef0f8;--muted:#6b7299;--muted2:#8890b8;--r:16px;--r2:12px}}
 body{{background:var(--bg);color:var(--text);font-family:"Sora",sans-serif;min-height:100vh;overflow-x:hidden;font-size:14px}}
 ::-webkit-scrollbar{{width:3px}}::-webkit-scrollbar-thumb{{background:var(--border2);border-radius:99px}}

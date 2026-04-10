@@ -3,6 +3,7 @@ import json
 from typing import Optional, List
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 import database as db
@@ -14,6 +15,12 @@ from admin_html import get_admin_html
 from file_loader import load_knowledge_base
 
 app = FastAPI(title="UzNPUU Bot API")
+
+# Serve static assets (favicon, etc.)
+import pathlib
+STATIC_DIR = pathlib.Path(__file__).parent / "static"
+STATIC_DIR.mkdir(exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 # CORS Configuration
 app.add_middleware(

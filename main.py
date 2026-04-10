@@ -38,6 +38,12 @@ from telegram.ext import ApplicationBuilder
 from bot_logic import setup_bot_handlers
 
 def run_bot():
+    import asyncio
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        asyncio.set_event_loop(asyncio.new_event_loop())
+        
     token = os.environ.get("BOT_TOKEN")
     if not token:
         raise ValueError("BOT_TOKEN not found!")
