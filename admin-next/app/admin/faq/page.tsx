@@ -17,7 +17,7 @@ export default function FAQPage() {
 
   async function add() {
     if (!form.question || !form.answer) { alert("Savol va javob kiritish shart!"); return; }
-    await createFAQ({ ...form, faculty_id: form.faculty_id ? Number(form.faculty_id) as unknown as string : undefined });
+    await createFAQ({ ...form, faculty_id: form.faculty_id ? Number(form.faculty_id) : undefined });
     setForm({ faculty_id: '', question: '', answer: '' });
     load();
   }

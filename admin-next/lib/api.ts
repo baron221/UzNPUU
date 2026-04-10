@@ -122,6 +122,7 @@ export interface User {
 
 export interface FAQItem {
   id: number;
+  faculty_id?: number;
   faculty_name: string;
   question: string;
   answer: string;
