@@ -184,7 +184,7 @@ body {
 .logout-btn:hover { background: rgba(239,68,68,.24); color: #fff; }
 
 /* ─────────────────────────────── CONTENT ───────────────────────────────── */
-.content { margin-left: 252px; padding: 40px 50px; min-height: 100vh; max-width: 1440px; margin-right: auto; }
+.content { flex: 1; margin-left: 252px; padding: 40px 50px; min-height: 100vh; }
 .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 36px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9; }
 .page-title { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 800; color: #0f172a; letter-spacing: -0.4px; }
 .page-sub { font-size: 14px; color: #64748b; margin-top: 6px; font-weight: 400; }
