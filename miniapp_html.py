@@ -13,11 +13,16 @@ def get_miniapp_html(railway_url=""):
 @keyframes shimmer{{0%{{background-position:-400px 0}}100%{{background-position:400px 0}}}}
 .skeleton{{background:linear-gradient(90deg,#0d1020 25%,#131629 50%,#0d1020 75%);background-size:800px 100%;animation:shimmer 1.4s infinite;border-radius:8px;}}
 :root{{--bg:#07080f;--s1:#0d1020;--s2:#131629;--card:#181d2e;--border:rgba(120,150,255,0.12);--border2:rgba(120,150,255,0.22);--accent:#7c8fff;--accent2:#ff8c69;--accent3:#52d9a4;--text:#eef0f8;--muted:#6b7299;--muted2:#8890b8;--r:16px;--r2:12px}}
-body.theme-light{{--bg:#f8fafc;--s1:#ffffff;--s2:#f1f5f9;--card:#ffffff;--border:rgba(0,0,0,0.06);--border2:rgba(0,0,0,0.14);--accent:#4f46e5;--accent2:#ea580c;--accent3:#059669;--text:#0f172a;--muted:#64748b;--muted2:#475569}}
-body.theme-light .quick-card, body.theme-light .info-card, body.theme-light .detail-row, body.theme-light .faq-item{{box-shadow:0 4px 15px rgba(0,0,0,0.03)}}
-body.theme-light .hero, body.theme-light .profile-hero{{box-shadow:0 10px 30px rgba(0,0,0,0.06)}}
+body.theme-light{{--bg:#f1f5f9;--s1:#ffffff;--s2:#e2e8f0;--card:#ffffff;--border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.15);--accent:#4f46e5;--accent2:#ea580c;--accent3:#059669;--text:#0f172a;--muted:#64748b;--muted2:#475569}}
+body.theme-light .quick-card, body.theme-light .info-card, body.theme-light .detail-row, body.theme-light .faq-item{{box-shadow:0 6px 20px rgba(0,0,0,0.04);border-color:transparent}}
+body.theme-light .hero{{background:linear-gradient(135deg, #e0e7ff, #ede9fe);border-color:#c7d2fe;box-shadow:0 10px 30px rgba(79,70,229,0.15)}}
+body.theme-light .hero-label{{color:#4338ca}}
+body.theme-light .hero-title{{color:#1e1b4b}}
+body.theme-light .hero-sub{{color:#4f46e5}}
+body.theme-light .hero::before{{background:radial-gradient(circle, rgba(99,102,241,0.2), transparent 70%)}}
+body.theme-light .profile-hero{{background:linear-gradient(135deg, #ffffff, #f8fafc);border-color:rgba(0,0,0,0.08);box-shadow:0 10px 30px rgba(0,0,0,0.06)}}
 body.theme-light .chat-header{{box-shadow:0 2px 10px rgba(0,0,0,0.03)}}
-body.theme-light .nav{{box-shadow:0 -4px 20px rgba(0,0,0,0.04)}}
+body.theme-light .nav{{background:rgba(255,255,255,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid rgba(0,0,0,0.06);box-shadow:0 -4px 20px rgba(0,0,0,0.03)}}
 body, .nav, .nav-btn, .hero, .profile-hero, .quick-card, .info-card, .chat-in, .search-in, .faq-item, .chat-header, .msg{{transition:background 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease}}
 body{{background:var(--bg);color:var(--text);font-family:"Sora",sans-serif;min-height:100vh;overflow-x:hidden;font-size:14px}}
 ::-webkit-scrollbar{{width:3px}}::-webkit-scrollbar-thumb{{background:var(--border2);border-radius:99px}}
@@ -38,11 +43,12 @@ body{{background:var(--bg);color:var(--text);font-family:"Sora",sans-serif;min-h
 .stat-mini{{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:12px 10px;text-align:center}}
 .stat-num{{font-family:"Playfair Display",serif;font-size:20px;font-weight:700}}
 .stat-lbl{{font-size:10px;color:var(--muted);margin-top:3px}}
-.quick-grid{{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}}
-.quick-card{{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;cursor:pointer;transition:border-color 0.2s,transform 0.15s}}
+.quick-grid{{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}}
+.quick-card{{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px 18px;cursor:pointer;transition:border-color 0.2s,transform 0.15s}}
 .quick-card:active{{transform:scale(0.97)}}
 .quick-card:hover{{border-color:var(--border2)}}
-.quick-icon{{font-size:22px;margin-bottom:8px}}
+.quick-icon{{width:48px;height:48px;border-radius:14px;background:rgba(124,143,255,0.08);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:14px}}
+body.theme-light .quick-icon{{background:#e0e7ff;color:#4f46e5}}
 .quick-label{{font-size:12px;font-weight:500;margin-bottom:3px}}
 .quick-sub{{font-size:11px;color:var(--muted)}}
 .section-title{{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin:20px 0 10px}}
@@ -51,7 +57,7 @@ body{{background:var(--bg);color:var(--text);font-family:"Sora",sans-serif;min-h
 .news-text{{font-size:13px;line-height:1.5;flex:1}}
 .news-date{{font-size:10px;color:var(--muted);margin-top:4px}}
 .chat-header{{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px}}
-.ai-avatar{{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#5561d4);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}}
+.ai-avatar{{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#5561d4);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}}
 .ai-name{{font-weight:500;font-size:13px}}
 .ai-status{{font-size:11px;color:var(--accent3);display:flex;align-items:center;gap:4px}}
 .status-dot{{width:6px;height:6px;border-radius:50%;background:var(--accent3);display:inline-block}}
@@ -59,7 +65,7 @@ body{{background:var(--bg);color:var(--text);font-family:"Sora",sans-serif;min-h
 .msg{{padding:10px 13px;border-radius:14px;font-size:13px;line-height:1.55;max-width:88%;animation:msgIn 0.25s ease}}
 @keyframes msgIn{{from{{opacity:0;transform:translateY(6px)}}to{{opacity:1;transform:translateY(0)}}}}
 .msg.bot{{background:var(--s2);border:1px solid var(--border);align-self:flex-start;border-bottom-left-radius:4px}}
-.msg.user{{background:linear-gradient(135deg,#3a45a8,#5561d4);align-self:flex-end;border-bottom-right-radius:4px}}
+.msg.user{{background:linear-gradient(135deg,var(--accent),#5561d4);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}}
 .msg.typing{{background:var(--s2);border:1px solid var(--border);align-self:flex-start}}
 .dots{{display:flex;gap:4px;align-items:center;padding:2px 0}}
 .dots span{{width:6px;height:6px;background:var(--muted);border-radius:50%;animation:dot 1.2s infinite}}
