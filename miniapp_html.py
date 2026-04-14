@@ -13,6 +13,12 @@ def get_miniapp_html(railway_url=""):
 @keyframes shimmer{{0%{{background-position:-400px 0}}100%{{background-position:400px 0}}}}
 .skeleton{{background:linear-gradient(90deg,#0d1020 25%,#131629 50%,#0d1020 75%);background-size:800px 100%;animation:shimmer 1.4s infinite;border-radius:8px;}}
 :root{{--bg:#07080f;--s1:#0d1020;--s2:#131629;--card:#181d2e;--border:rgba(120,150,255,0.12);--border2:rgba(120,150,255,0.22);--accent:#7c8fff;--accent2:#ff8c69;--accent3:#52d9a4;--text:#eef0f8;--muted:#6b7299;--muted2:#8890b8;--r:16px;--r2:12px}}
+body.theme-light{{--bg:#f8fafc;--s1:#ffffff;--s2:#f1f5f9;--card:#ffffff;--border:rgba(0,0,0,0.06);--border2:rgba(0,0,0,0.14);--accent:#4f46e5;--accent2:#ea580c;--accent3:#059669;--text:#0f172a;--muted:#64748b;--muted2:#475569}}
+body.theme-light .quick-card, body.theme-light .info-card, body.theme-light .detail-row, body.theme-light .faq-item{{box-shadow:0 4px 15px rgba(0,0,0,0.03)}}
+body.theme-light .hero, body.theme-light .profile-hero{{box-shadow:0 10px 30px rgba(0,0,0,0.06)}}
+body.theme-light .chat-header{{box-shadow:0 2px 10px rgba(0,0,0,0.03)}}
+body.theme-light .nav{{box-shadow:0 -4px 20px rgba(0,0,0,0.04)}}
+body, .nav, .nav-btn, .hero, .profile-hero, .quick-card, .info-card, .chat-in, .search-in, .faq-item, .chat-header, .msg{{transition:background 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease}}
 body{{background:var(--bg);color:var(--text);font-family:"Sora",sans-serif;min-height:100vh;overflow-x:hidden;font-size:14px}}
 ::-webkit-scrollbar{{width:3px}}::-webkit-scrollbar-thumb{{background:var(--border2);border-radius:99px}}
 .nav{{position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--s1);border-top:1px solid var(--border);display:flex;padding:0 4px 4px}}
@@ -172,8 +178,7 @@ body{{background:var(--bg);color:var(--text);font-family:"Sora",sans-serif;min-h
 <nav class="nav">
   <button class="nav-btn active" onclick="goTo(\'home\',this)"><span class="nav-icon">🏠</span>Bosh sahifa</button>
   <button class="nav-btn" onclick="goTo(\'chat\',this)"><span class="nav-icon">💬</span>Chat</button>
-  <button class="nav-btn" onclick="goTo(\'faq\',this)"><span class="nav-icon">📋</span>FAQ</button>
-  <button class="nav-btn" onclick="goTo(\'profile\',this)"><span class="nav-icon">👤</span>Profil</button>
+  <button class="nav-btn" onclick="toggleTheme()"><span class="nav-icon" id="themeIcon">☀️</span>Mavzu</button>
 </nav>
 
 <script>
@@ -189,7 +194,29 @@ if(user){{
   if(user.first_name){{ var av=document.getElementById("pAvatar"); av.textContent=user.first_name[0].toUpperCase(); av.style.fontSize="32px"; }}
 }}
 
+var isLight = false;
+function toggleTheme() {{
+  document.body.classList.toggle(\'theme-light\');
+  isLight = document.body.classList.contains(\'theme-light\');
+  document.getElementById(\'themeIcon\').textContent = isLight ? \'🌙\' : \'☀️\';
+  try {{ localStorage.setItem(\'theme\', isLight ? \'light\' : \'dark\'); }} catch(e){{}}
+}}
 
+try {{
+  var savedTheme = localStorage.getItem(\'theme\');
+  if (savedTheme === \'light\' || (!savedTheme && tg && tg.colorScheme === \'light\')) {{
+    toggleTheme();
+  }}
+}} catch(e){{}}
+
+if (tg) {{
+  tg.onEvent(\'themeChanged\', function() {{
+    if (!localStorage.getItem(\'theme\')) {{
+       if (tg.colorScheme === \'light\' && !isLight) toggleTheme();
+       else if (tg.colorScheme === \'dark\' && isLight) toggleTheme();
+    }}
+  }});
+}}
 
 function goTo(name, btn){{
   document.querySelectorAll(".page").forEach(function(p){{p.classList.remove("active");}});
