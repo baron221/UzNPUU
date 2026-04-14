@@ -5,6 +5,7 @@ import { getFAQ, createFAQ, deleteFAQ, getFaculties, type FAQItem, type Faculty 
 export default function FAQPage() {
   const [items, setItems]       = useState<FAQItem[]>([]);
   const [faculties, setFaculties] = useState<Faculty[]>([]);
+  const [modal, setModal]       = useState(false);
   const [form, setForm]         = useState({ faculty_id: '', question: '', answer: '' });
   const [loading, setLoading]   = useState(true);
 
@@ -19,6 +20,7 @@ export default function FAQPage() {
     if (!form.question || !form.answer) { alert("Savol va javob kiritish shart!"); return; }
     await createFAQ({ ...form, faculty_id: form.faculty_id ? Number(form.faculty_id) : undefined });
     setForm({ faculty_id: '', question: '', answer: '' });
+    setModal(false);
     load();
   }
 
@@ -26,26 +28,7 @@ export default function FAQPage() {
     <>
       <div className="page-header">
         <div><div className="page-title">FAQ Boshqaruv</div><div className="page-sub">Savol-javob qo&#39;shish</div></div>
-      </div>
-
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div className="section-title">Yangi savol-javob qo&#39;shish</div>
-        <div className="form-row">
-          <label className="form-label">Fakultet</label>
-          <select className="form-inp" value={form.faculty_id} onChange={e => setForm(p => ({ ...p, faculty_id: e.target.value }))}>
-            <option value="">Umumiy</option>
-            {faculties.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-          </select>
-        </div>
-        <div className="form-row">
-          <label className="form-label">Savol</label>
-          <input className="form-inp" placeholder="Savol matni..." value={form.question} onChange={e => setForm(p => ({ ...p, question: e.target.value }))} />
-        </div>
-        <div className="form-row">
-          <label className="form-label">Javob</label>
-          <textarea className="form-inp" rows={3} placeholder="Javob matni..." value={form.answer} onChange={e => setForm(p => ({ ...p, answer: e.target.value }))} />
-        </div>
-        <button className="btn btn-primary" onClick={add}>+ Qo&#39;shish</button>
+        <button className="btn btn-primary" onClick={() => setModal(true)}>+ Yangi savol</button>
       </div>
 
       {loading ? (
@@ -68,6 +51,33 @@ export default function FAQPage() {
                 ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {modal && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setModal(false)}>
+          <div className="modal">
+            <div className="modal-title">Yangi savol-javob qo&#39;shish</div>
+            <div className="form-row">
+              <label className="form-label">Fakultet</label>
+              <select className="form-inp" value={form.faculty_id} onChange={e => setForm(p => ({ ...p, faculty_id: e.target.value }))}>
+                <option value="">Umumiy</option>
+                {faculties.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+              </select>
+            </div>
+            <div className="form-row">
+              <label className="form-label">Savol</label>
+              <input className="form-inp" placeholder="Savol matni..." value={form.question} onChange={e => setForm(p => ({ ...p, question: e.target.value }))} />
+            </div>
+            <div className="form-row">
+              <label className="form-label">Javob</label>
+              <textarea className="form-inp" rows={3} placeholder="Javob matni..." value={form.answer} onChange={e => setForm(p => ({ ...p, answer: e.target.value }))} />
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-red" onClick={() => setModal(false)}>Bekor</button>
+              <button className="btn btn-primary" onClick={add}>Saqlash</button>
+            </div>
+          </div>
         </div>
       )}
     </>
