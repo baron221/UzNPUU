@@ -30,8 +30,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className="sidebar">
         <div className="sidebar-top">
           <div className="sidebar-logo">🎓</div>
-          <div className="sidebar-title">UzNPUU</div>
-          <div className="sidebar-sub">Admin boshqaruv paneli</div>
+          <div className="sidebar-title">UzNPUU Admin</div>
+          <div className="sidebar-sub">Boshqaruv tizimi</div>
         </div>
 
         <div className="nav-section">Asosiy</div>
@@ -59,11 +59,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         ))}
 
         <div className="sidebar-footer">
-          <button className="logout-btn" onClick={logout}>🚪 Chiqish</button>
+          <button className="logout-btn" onClick={logout}>Chiqish</button>
         </div>
       </aside>
 
-      <main className="content fade-up">{children}</main>
+      <main className="content fade-up" style={{ marginLeft: 260 }}>{children}</main>
     </div>
   );
 }

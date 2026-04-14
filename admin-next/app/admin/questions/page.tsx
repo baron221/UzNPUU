@@ -231,12 +231,12 @@ export default function QuestionsPage() {
               
               <div className="ac-messages">
                 {[...activeChat.questions].sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()).map(q => (
-                  <div key={`thread-${q.id}`} style={{ display:'flex', flexDirection:'column', gap: 20 }}>
+                  <div key={`thread-${q.id}`} style={{ display:'flex', flexDirection:'column', gap: 16 }}>
                     
                     <div className="ac-msg-wrap user">
                       <div className="ac-msg-bubble">
                         {q.question}
-                        <span className={`badge ${CAT[q.category] ?? 'badge-blue'}`} style={{ marginLeft: 8, fontSize: 10 }}>
+                        <span className={`badge ${CAT[q.category] ?? 'badge-blue'}`} style={{ marginLeft: 8, fontSize: 10, borderRadius: 6, fontWeight: 700 }}>
                           {CAT_LABEL[q.category] ?? q.category}
                         </span>
                       </div>

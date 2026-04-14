@@ -31,8 +31,8 @@ export default function LoginPage() {
     <div className="login-wrap">
       <div className="login-card">
         <div className="login-logo">🎓</div>
-        <div className="login-title">Admin Panel</div>
-        <div className="login-sub">UzNPUU Bot boshqaruv tizimi</div>
+        <h1 className="login-title">UzNPUU Admin</h1>
+        <p className="login-sub">Tizimga kirish uchun login va parolingizni kiriting</p>
 
         <input
           className="inp" type="text" placeholder="Login"

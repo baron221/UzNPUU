@@ -75,8 +75,8 @@ export default function OverviewPage() {
           ? BARS.map(b => (
               <div key={b.key} className="stat-card">
                 <div className="stat-card-bar" style={{ background: b.color }} />
-                <div className="stat-icon">{b.icon}</div>
-                <div className="stat-num" style={{ color: NUM_COLORS[b.key] }}>{(stats as Record<string, number>)[b.key] ?? 0}</div>
+                <div className="stat-icon" style={{ background: `${NUM_COLORS[b.key]}15`, color: NUM_COLORS[b.key] }}>{b.icon}</div>
+                <div className="stat-num" style={{ color: '#0f172a' }}>{(stats as Record<string, number>)[b.key] ?? 0}</div>
                 <div className="stat-lbl">{b.label}</div>
               </div>
             ))
