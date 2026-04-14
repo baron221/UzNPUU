@@ -210,8 +210,8 @@ body {
 .chart-wrap { position: relative; height: 200px; }
 
 /* ─────────────────────────────── TABLE ─────────────────────────────────── */
-.table-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 16px; box-shadow: var(--shadow); }
-table { width: 100%; border-collapse: collapse; }
+.table-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); overflow-x: auto; margin-bottom: 16px; box-shadow: var(--shadow); }
+table { width: 100%; border-collapse: collapse; min-width: 900px; }
 th {
   padding: 13px 18px; text-align: left;
   font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
