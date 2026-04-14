@@ -205,6 +205,40 @@ async def upload_file(file: UploadFile = File(...), current_user: dict = Depends
     
     return {"ok": True, "filename": filename, "pairs": len(ai_responder._cached_pairs)}
 
+@app.get("/api/admin/files")
+async def get_admin_files(current_user: dict = Depends(get_current_admin)):
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    folder = os.path.join(BASE_DIR, "knowledge")
+    if not os.path.exists(folder): return {"files": []}
+    
+    files = []
+    for f in os.listdir(folder):
+        path = os.path.join(folder, f)
+        if os.path.isfile(path):
+            stat = os.stat(path)
+            files.append({
+                "name": f,
+                "size": stat.st_size,
+                "created_at": stat.st_mtime
+            })
+    return {"files": sorted(files, key=lambda x: x['created_at'], reverse=True)}
+
+@app.delete("/api/admin/files/{filename}")
+async def delete_admin_file(filename: str, current_user: dict = Depends(get_current_admin)):
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    # Basic protection against directory traversal
+    safe_filename = os.path.basename(filename)
+    path = os.path.join(BASE_DIR, 'knowledge', safe_filename)
+    
+    if os.path.exists(path):
+        os.remove(path)
+        # Reload knowledge base
+        import state
+        state.knowledge_base = load_knowledge_base(os.path.join(BASE_DIR, "knowledge"))
+        ai_responder._cached_pairs = ai_responder.parse_qa_pairs(state.knowledge_base)
+        return {"ok": True}
+    return {"ok": False, "error": "File not found"}
+
 @app.get("/api/stats")
 async def get_general_stats():
     return logger.get_stats()

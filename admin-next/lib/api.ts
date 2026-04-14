@@ -66,7 +66,9 @@ export const createFAQ = (data: Partial<FAQItem>) =>
 export const deleteFAQ = (id: number) =>
   req<{ ok: boolean }>(`/api/admin/faq/${id}`, { method: 'DELETE' });
 
-// ── Upload ────────────────────────────────────────────────────────────────────
+export const getFiles = () => req<{ files: KBFile[] }>('/api/admin/files');
+export const deleteFile = (filename: string) => req<{ ok: boolean; error?: string }>(`/api/admin/files/${filename}`, { method: 'DELETE' });
+
 export const uploadFile = (file: File) => {
   const fd = new FormData();
   fd.append('file', file);
@@ -76,6 +78,7 @@ export const uploadFile = (file: File) => {
     body: fd,
   }).then(r => r.json()) as Promise<{ ok: boolean; filename?: string; pairs?: number; error?: string }>;
 };
+
 
 // ── Ask (Student) ─────────────────────────────────────────────────────────────
 export const askQuestion = (question: string) =>
@@ -127,3 +130,10 @@ export interface FAQItem {
   question: string;
   answer: string;
 }
+
+export interface KBFile {
+  name: string;
+  size: number;
+  created_at: number;
+}
+
