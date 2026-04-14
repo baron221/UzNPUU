@@ -94,6 +94,11 @@ export default function QuestionsPage() {
     setSending(false);
     
     if (d.ok) { 
+      // Optimistic update so it shows immediately!
+      targetQ.status = 'answered';
+      targetQ.answer = ans;
+      (targetQ as any).answered_at = new Date().toISOString();
+      setAll([...all]);
       setAns(''); 
       load(false); 
     } else {
@@ -132,6 +137,15 @@ export default function QuestionsPage() {
       return dateStr;
     }
   }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (!sending && ans.trim()) {
+        send();
+      }
+    }
+  };
 
   return (
     <>
@@ -234,7 +248,9 @@ export default function QuestionsPage() {
                         <div className="ac-msg-bubble">
                           {q.answer}
                         </div>
-                        <div className="ac-msg-time">Javob berildi</div>
+                        <div className="ac-msg-time">
+                          {(q as any).answered_at ? '👤 Admin' : '🤖 AI Javobi'} &bull; Javob berildi
+                        </div>
                       </div>
                     )}
                     
@@ -248,9 +264,10 @@ export default function QuestionsPage() {
                   <textarea 
                     className="ac-textarea" 
                     rows={3} 
-                    placeholder="Talabaga javob yozish..."
+                    placeholder="Talabaga javob yozish (Yuborish uchun Enter)..."
                     value={ans}
                     onChange={e => setAns(e.target.value)}
+                    onKeyDown={handleKeyDown}
                   />
                   <div className="ac-input-actions">
                     <span style={{ fontSize: 13, color: '#94a3b8' }}>

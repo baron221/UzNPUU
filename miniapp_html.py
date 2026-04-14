@@ -112,21 +112,10 @@ body{{background:var(--bg);color:var(--text);font-family:"Sora",sans-serif;min-h
     <div class="hero-title">UzNPUU<br><em>Yordamchi</em></div>
     <div class="hero-sub">Nizomiy nomidagi O\'zbekiston Milliy pedagogika universiteti</div>
   </div>
-  <div class="stats-row">
-    <div class="stat-mini"><div class="stat-num" style="color:var(--accent)" id="statPairs">172</div><div class="stat-lbl">Javoblar</div></div>
-    <div class="stat-mini"><div class="stat-num" style="color:var(--accent2)">24/7</div><div class="stat-lbl">Ishlaydi</div></div>
-    <div class="stat-mini"><div class="stat-num" style="color:var(--accent3)" id="statUsers">0</div><div class="stat-lbl">Foydalanuvchilar</div></div>
-  </div>
   <div class="quick-grid">
-    <div class="quick-card" onclick="goTo(\'chat\')"><div class="quick-icon">💬</div><div class="quick-label">Savol bering</div><div class="quick-sub">AI yordamida javob</div></div>
     <div class="quick-card" onclick="goTo(\'faq\')"><div class="quick-icon">📋</div><div class="quick-label">FAQ</div><div class="quick-sub">Tez-tez soraladigan</div></div>
     <div class="quick-card" onclick="goTo(\'profile\')"><div class="quick-icon">👤</div><div class="quick-label">Profilim</div><div class="quick-sub">GPA va malumotlar</div></div>
-    <div class="quick-card" onclick="window.open(\'https://student.tdpu.uz\')"><div class="quick-icon">🖥️</div><div class="quick-label">HEMIS</div><div class="quick-sub">Tizimga kirish</div></div>
   </div>
-  <div class="section-title">Yangiliklar</div>
-  <div class="news-card"><div class="news-dot" style="background:var(--accent)"></div><div><div class="news-text">2025-2026 grant qayta taqsimlash natijalari elon qilindi</div><div class="news-date">15-avgust 2025</div></div></div>
-  <div class="news-card"><div class="news-dot" style="background:var(--accent3)"></div><div><div class="news-text">Kredit-modul tizimi yangi qoidalari: 824-sonli qaror</div><div class="news-date">1-sentabr 2025</div></div></div>
-  <div class="news-card"><div class="news-dot" style="background:var(--accent2)"></div><div><div class="news-text">Akademik talil va kochirish muddatlari — transfer.edu.uz</div><div class="news-date">20-iyul 2025</div></div></div>
 </div>
 
 <div id="page-chat" class="page">
@@ -200,10 +189,7 @@ if(user){{
   if(user.first_name){{ var av=document.getElementById("pAvatar"); av.textContent=user.first_name[0].toUpperCase(); av.style.fontSize="32px"; }}
 }}
 
-fetch(API_URL+"/api/stats").then(function(r){{return r.json();}}).then(function(s){{
-  if(s.users) document.getElementById("statUsers").textContent = s.users;
-  if(s.total) document.getElementById("statPairs").textContent = s.total;
-}}).catch(function(){{}});
+
 
 function goTo(name, btn){{
   document.querySelectorAll(".page").forEach(function(p){{p.classList.remove("active");}});
