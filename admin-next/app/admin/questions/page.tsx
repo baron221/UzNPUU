@@ -84,10 +84,10 @@ export default function QuestionsPage() {
     
     const sortedQuestions = [...activeChat.questions].sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     const unanswered = sortedQuestions.filter(q => q.status !== 'answered');
-    if (unanswered.length === 0) return;
     
-    // The user confirmed: reply attaches to the oldest pending question
-    const targetQ = unanswered[0];
+    // Attach to oldest pending question, or if all are answered, attach to the latest question
+    const targetQ = unanswered.length > 0 ? unanswered[0] : sortedQuestions[sortedQuestions.length - 1];
+    if (!targetQ) return;
 
     setSending(true);
     const d = await answerQuestion(targetQ.id, ans);
@@ -259,30 +259,24 @@ export default function QuestionsPage() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {activeChat.unread > 0 ? (
-                <div className="ac-input-area">
-                  <textarea 
-                    className="ac-textarea" 
-                    rows={3} 
-                    placeholder="Talabaga javob yozish (Yuborish uchun Enter)..."
-                    value={ans}
-                    onChange={e => setAns(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                  />
-                  <div className="ac-input-actions">
-                    <span style={{ fontSize: 13, color: '#94a3b8' }}>
-                      Javobingiz Telegram orqali yuboriladi.
-                    </span>
-                    <button className="btn btn-primary" onClick={send} disabled={sending || !ans.trim()}>
-                      {sending ? 'Yuborilmoqda...' : '📤 Yuborish'}
-                    </button>
-                  </div>
+              <div className="ac-input-area">
+                <textarea 
+                  className="ac-textarea" 
+                  rows={3} 
+                  placeholder="Talabaga javob yozish (Yuborish uchun Enter)..."
+                  value={ans}
+                  onChange={e => setAns(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                />
+                <div className="ac-input-actions">
+                  <span style={{ fontSize: 13, color: '#94a3b8' }}>
+                    Javobingiz Telegram orqali yuboriladi.
+                  </span>
+                  <button className="btn btn-primary" onClick={send} disabled={sending || !ans.trim()}>
+                    {sending ? 'Yuborilmoqda...' : '📤 Yuborish'}
+                  </button>
                 </div>
-              ) : (
-                <div className="ac-input-area" style={{ background: '#f8fafc', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: 13, padding: '16px' }}>
-                  Ayni paytda barcha savollarga javob berilgan.
-                </div>
-              )}
+              </div>
             </>
           ) : (
             <div style={{ margin: 'auto', textAlign:'center', color: '#94a3b8' }}>
