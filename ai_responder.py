@@ -143,20 +143,30 @@ def get_answer(question: str, knowledge_base: str, clients: dict) -> tuple:
     category = classify_question(question, client)
     print(f"🏷️  [{category}][{lang}] {question[:50]}...")
 
-    # ── GENERAL ───────────────────────────────────────────────────────────────
+    # ── GENERAL / CONVERSATIONAL ──────────────────────────────────────────────
     if category == "GENERAL":
         q = question.lower().strip()
+        # Fast path for very common words
         if any(w in q for w in ["assalomu","salom","hello","hi","hey","привет","здравствуйте"]):
             return get_response("greeting", lang), [], lang, "GENERAL"
         if any(w in q for w in ["rahmat","tashakkur","спасибо","thanks","thank"]):
             return get_response("thanks", lang), [], lang, "GENERAL"
-        if any(w in q for w in ["xayr","bye","goodbye","пока","до свидания"]):
+        if any(w in q for w in ["xayr","bye","goodbye","пока","до svi daniya"]):
             return get_response("bye", lang), [], lang, "GENERAL"
-        if any(w in q for w in ["kimsan","kim san","nima qila","who are you","что умеешь","кто ты","vazifang"]):
-            return get_response("whoami", lang), [], lang, "GENERAL"
-        if any(w in q for w in ["qalaysan","yaxshimisan","how are you","как дела"]):
-            return get_response("howru", lang), [], lang, "GENERAL"
-        return "Savolingizni aniqroq yozing! 😊", [], lang, "GENERAL"
+        
+        # Smart conversational response for other general queries
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": f"""You are the UzNPUU University Assistant. 
+The user is asking a general or conversational question (not a specific academic one).
+Reply politely, concisely, and in the student's language ({lang}).
+If they want to speak to an admin, tell them you can help with most info from documents, but an admin will reply soon in this chat if needed."""},
+                {"role": "user", "content": question}
+            ],
+            max_tokens=256,
+        )
+        return completion.choices[0].message.content.strip(), [], lang, "GENERAL"
 
     # ── VAGUE ─────────────────────────────────────────────────────────────────
     elif category == "VAGUE":
@@ -171,7 +181,16 @@ def get_answer(question: str, knowledge_base: str, clients: dict) -> tuple:
         print(f"🎯 ~{len(relevant_context)//4} tokens used")
 
         if not relevant_context.strip():
-            return get_response("not_found", lang), [], lang, "UNANSWERED"
+            # If it's a university question but no docs found, try to be helpful instead of just saying "not found"
+            completion = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {"role": "system", "content": f"You are the UzNPUU assistant. No specific document was found for this query. Reply politely in {lang} saying you don't have the exact document answer but suggest what they might be looking for or to wait for an admin."},
+                    {"role": "user", "content": question}
+                ],
+                max_tokens=200,
+            )
+            return completion.choices[0].message.content.strip(), [], lang, "UNANSWERED"
 
         lang_instruction = {
             "uz": "Javobni O'ZBEK tilida bering.",
