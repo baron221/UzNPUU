@@ -249,7 +249,14 @@ export default function QuestionsPage() {
                           {q.answer}
                         </div>
                         <div className="ac-msg-time">
-                          {(q as any).answered_at ? '👤 Admin' : '🤖 AI Javobi'} &bull; Javob berildi
+                          <span style={{ display:'inline-flex', alignItems:'center', gap:4 }}>
+                            { (q as any).answered_at 
+                              ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                              : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4l3 3"></path></svg>
+                            }
+                            {(q as any).answered_at ? 'Admin' : 'AI Javobi'}
+                          </span>
+                          &nbsp;&bull; Javob berildi
                         </div>
                       </div>
                     )}

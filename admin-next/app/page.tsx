@@ -28,24 +28,29 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="login-wrap">
-      <div className="login-card">
+    <div className="login-wrap mesh-bg">
+      <div className="login-card" style={{ backdropFilter: 'blur(20px)', background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.3)' }}>
         <div className="login-logo">🎓</div>
-        <h1 className="login-title">UzNPUU Admin</h1>
-        <p className="login-sub">Tizimga kirish uchun login va parolingizni kiriting</p>
+        <h1 className="login-title" style={{ fontWeight: 900, fontSize: 32, letterSpacing: -1 }}>UzNPUU Admin</h1>
+        <p className="login-sub" style={{ fontSize: 14, fontWeight: 500 }}>Boshqaruv tizimiga xush kelibsiz</p>
 
-        <input
-          className="inp" type="text" placeholder="Login"
-          value={user} onChange={e => setUser(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && doLogin()}
-        />
-        <input
-          className="inp" type="password" placeholder="Parol"
-          value={pass} onChange={e => setPass(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && doLogin()}
-        />
-        <button className="btn-login" onClick={doLogin} disabled={loading}>
-          {loading ? 'Kirilmoqda...' : 'Kirish →'}
+        <div style={{ textAlign: 'left', marginTop: 20 }}>
+          <input
+            className="inp" type="text" placeholder="Login"
+            value={user} onChange={e => setUser(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && doLogin()}
+            style={{ padding: 16, borderRadius: 14, background: '#fff', border: '1px solid #e2e8f0' }}
+          />
+          <input
+            className="inp" type="password" placeholder="Parol"
+            value={pass} onChange={e => setPass(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && doLogin()}
+            style={{ padding: 16, borderRadius: 14, background: '#fff', border: '1px solid #e2e8f0' }}
+          />
+        </div>
+        
+        <button className="btn-login" onClick={doLogin} disabled={loading} style={{ padding: 18, borderRadius: 14, marginTop: 10 }}>
+          {loading ? 'Kirilmoqda...' : 'Tizimga kirish'}
         </button>
         <div className="login-err">{err}</div>
       </div>
