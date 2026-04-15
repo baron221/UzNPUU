@@ -2,7 +2,7 @@ import os
 import json
 from typing import Optional, List
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
@@ -44,13 +44,11 @@ def get_current_admin(token: str = Depends(oauth2_scheme)):
     return payload
 
 # ── Static Pages ──────────────────────────────────────────────────────────────
-RAILWAY_URL = os.environ.get("RAILWAY_URL", "")
-MINIAPP_HTML = get_miniapp_html(RAILWAY_URL)
 ADMIN_HTML = get_admin_html()
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/", response_class=RedirectResponse)
 async def index():
-    return MINIAPP_HTML
+    return "https://uz-npuu.vercel.app/student"
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin():
