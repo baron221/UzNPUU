@@ -10,6 +10,7 @@ import database as db
 import ai_responder
 import logger
 import auth
+import notifier
 from miniapp_html import get_miniapp_html
 from admin_html import get_admin_html
 from file_loader import load_knowledge_base
@@ -71,25 +72,55 @@ async def ask(request: Request):
         return {"answer": "Savol bo'sh!"}
     
     # Metadata for database persistence
-    student_tg_id = data.get('student_telegram_id', 'WEB')
-    student_id = data.get('student_id', '')
-    username = data.get('student_username', 'WebUser')
-    fullname = data.get('student_name', 'Veb talaba')
-    faculty_id = data.get('faculty_id')
+    student_tg_id = data.get('student_telegram_id') or data.get('student_tg_id', 'WEB')
+    
+    # Try to load student context from DB if tg_id is known
+    student = db.get_student(student_tg_id)
+    student_id = data.get('student_id') or (student['student_id'] if student else '')
+    faculty_id = data.get('faculty_id') or (student['faculty_id'] if student else None)
+    username = data.get('student_username') or (student.get('username') if student else 'WebUser')
+    fullname = data.get('student_name') or (student.get('full_name') if student else 'Veb talaba')
     
     import state
+    import asyncio
     answer, options, lang, category = ai_responder.get_answer(q, state.knowledge_base, state.clients)
     
-    # Save to database so it shows up in Admin dashboard
+    # Save to database
     db.save_question(
-        student_tg_id, student_id, username, fullname, 
+        str(student_tg_id), student_id, username, fullname, 
         faculty_id, q, answer, lang, category
     )
-    logger.log_message(student_tg_id, username, q, answer, lang, category)
+    logger.log_message(str(student_tg_id), username, q, answer, lang, category)
 
-    if options:
-        answer += "\n\n" + "\n".join(f"• {o}" for o in options)
-    return {"answer": answer}
+    # Real-time Forward to Admin
+    asyncio.create_task(notifier.forward_to_admin(fullname, q, answer, student_id, faculty_id))
+
+    return {
+        "answer": answer,
+        "options": options or [],
+        "lang": lang,
+        "category": category
+    }
+
+@app.post("/api/ask_admin")
+async def ask_admin(request: Request):
+    data = await request.json()
+    q = data.get('question', '').strip()
+    student_tg_id = data.get('student_telegram_id') or data.get('student_tg_id', 'WEB')
+    
+    student = db.get_student(student_tg_id)
+    student_id = data.get('student_id') or (student['student_id'] if student else '')
+    faculty_id = data.get('faculty_id') or (student['faculty_id'] if student else None)
+    fullname = data.get('student_name') or (student.get('full_name') if student else 'Veb talaba')
+    username = data.get('student_username') or (student.get('username') if student else 'WebUser')
+
+    # Save as manual request in DB
+    db.save_question(str(student_tg_id), student_id, username, fullname, faculty_id, q, "Admin javobini kuting...", "uz", "MANUAL")
+    
+    import asyncio
+    asyncio.create_task(notifier.notify_admin_manual(fullname, q, student_id, faculty_id))
+    
+    return {"ok": True, "message": "Savolingiz adminstratorga yuborildi."}
 
 @app.get("/api/faculties")
 async def get_public_faculties():

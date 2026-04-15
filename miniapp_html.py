@@ -233,20 +233,40 @@ function goTo(name, btn){{
   if(name==="faq") renderFAQ(faqs);
 }}
 
+var lastQuestion = "";
+
 async function sendMsg(){{
   var inp=document.getElementById("chatIn");
   var q=inp.value.trim();
   if(!q) return;
+  lastQuestion = q;
   addMsg(q,"user");
   inp.value=""; inp.style.height="auto";
   document.getElementById("sendBtn").disabled=true;
   document.getElementById("suggs").style.display="none";
   var tid=addTyping();
+  
+  var body = {{
+    question: q,
+    student_telegram_id: user ? user.id : "WEB",
+    student_name: user ? [user.first_name, user.last_name].filter(Boolean).join(" ") : "Veb foydalanuvchi",
+    student_username: user ? user.username : null
+  }};
+
   try{{
-    var r=await fetch(API_URL+"/ask",{{method:"POST",headers:{{"Content-Type":"application/json"}},body:JSON.stringify({{question:q}})}});
+    var r=await fetch(API_URL+"/ask",{{
+      method:"POST",
+      headers:{{"Content-Type":"application/json"}},
+      body:JSON.stringify(body)
+    }});
     var d=await r.json();
     removeTyping(tid);
-    addMsg(d.answer||"Xatolik yuz berdi.","bot");
+    
+    // Check for referral keywords to show Admin button
+    var kws = ["topilmadi", "not found", "murojaat qiling", "mas\'ul xodimi", "adminstrator", "ofisiga"];
+    var showAdmin = kws.some(kw => d.answer.toLowerCase().includes(kw));
+    
+    addMsg(d.answer||"Xatolik yuz berdi.","bot", d.options, showAdmin);
   }}catch(e){{
     removeTyping(tid);
     addMsg("Serverga ulanishda xatolik.","bot");
@@ -254,8 +274,65 @@ async function sendMsg(){{
   document.getElementById("sendBtn").disabled=false;
 }}
 
-function useSug(el){{ document.getElementById("chatIn").value=el.textContent; sendMsg(); }}
-function addMsg(text,type){{ var msgs=document.getElementById("chatMsgs"); var d=document.createElement("div"); d.className="msg "+type; d.textContent=text; msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight; }}
+async function askAdmin(q) {{
+  var tid=addTyping();
+  try {{
+    var r=await fetch(API_URL+"/api/ask_admin",{{
+      method:"POST",
+      headers:{{"Content-Type":"application/json"}},
+      body:JSON.stringify({{
+        question: q,
+        student_telegram_id: user ? user.id : "WEB",
+        student_name: user ? [user.first_name, user.last_name].filter(Boolean).join(" ") : "Veb foydalanuvchi"
+      }})
+    }});
+    removeTyping(tid);
+    addMsg("📩 Savolingiz adminstratorga yuborildi. Tez orada javob olasiz!","bot");
+  }} catch(e) {{
+    removeTyping(tid);
+    addMsg("Xatolik: Adminstratorga yuborib bo\'lmadi.","bot");
+  }}
+}}
+
+function useSug(el){{ document.getElementById("chatIn").value=typeof el === 'string' ? el : el.textContent; sendMsg(); }}
+
+function addMsg(text, type, options, showAdmin) {{
+  var msgs = document.getElementById("chatMsgs");
+  var d = document.createElement("div");
+  d.className = "msg " + type;
+  d.textContent = text;
+  msgs.appendChild(d);
+  
+  if (options && options.length > 0) {{
+    var s = document.createElement("div");
+    s.className = "suggested";
+    s.style.marginTop = "8px";
+    options.forEach(opt => {{
+      var b = document.createElement("div");
+      b.className = "sug-btn";
+      b.textContent = opt;
+      b.onclick = function() {{ useSug(opt); }};
+      s.appendChild(b);
+    }});
+    msgs.appendChild(s);
+  }}
+  
+  if (showAdmin) {{
+    var s = document.createElement("div");
+    s.className = "suggested";
+    s.style.marginTop = "8px";
+    var b = document.createElement("div");
+    b.className = "sug-btn";
+    b.style.borderColor = "var(--accent2)";
+    b.style.color = "var(--accent2)";
+    b.innerHTML = "👤 Adminstratorga yuborish";
+    b.onclick = function() {{ askAdmin(lastQuestion); this.style.display="none"; }};
+    s.appendChild(b);
+    msgs.appendChild(s);
+  }}
+  
+  msgs.scrollTop = msgs.scrollHeight;
+}}
 function addTyping(){{ var msgs=document.getElementById("chatMsgs"); var d=document.createElement("div"); var id="t"+Date.now(); d.id=id; d.className="msg typing"; d.innerHTML="<div class=\\"dots\\"><span></span><span></span><span></span></div>"; msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight; return id; }}
 function removeTyping(id){{ var el=document.getElementById(id); if(el) el.remove(); }}
 function handleKey(e){{ if(e.key==="Enter"&&!e.shiftKey){{ e.preventDefault(); sendMsg(); }} }}

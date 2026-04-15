@@ -11,6 +11,7 @@ from telegram.ext import (
 import database as db
 import ai_responder
 import logger
+import notifier
 
 # Conversation States
 REGISTER_ID, REGISTER_FACULTY = range(2)
@@ -169,7 +170,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.message.reply_text("📩 Savolingiz adminstratorga yuborildi. Tez orada javob olasiz!")
             
             # Non-blocking forward
-            asyncio.create_task(forward_to_admin(context, user, original_q, "Umumiy (Manual)", sid, fid))
+            asyncio.create_task(notifier.notify_admin_manual(user.full_name or username, original_q, sid, fid))
             return
 
         selected = data.replace("opt_", "")
@@ -244,7 +245,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(answer, reply_markup=InlineKeyboardMarkup(kb) if kb else None)
 
         # 4. Forward to Admin (As background task)
-        asyncio.create_task(forward_to_admin(context, user, question, answer, sid, fid))
+        asyncio.create_task(notifier.forward_to_admin(user.full_name or username, question, answer, sid, fid))
 
     except Exception as e:
         err_msg = str(e)
@@ -254,29 +255,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # User-friendly error
         await update.message.reply_text("Uzr, savolingizni tushunishda xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring! 🧐")
 
-async def forward_to_admin(context, user, question, answer, sid, fid=None):
-    # This function handles the actual forwarding logic
-    try:
-        faculty_name = "Umumiy"
-        group_id = os.environ.get("ADMIN_GROUP_ID") # Fallback general group
-        
-        if fid:
-            faculty = db.get_faculty(fid)
-            if faculty:
-                faculty_name = faculty['name']
-                group_id = faculty.get('telegram_group_id') or group_id
-
-        if group_id:
-            msg = (f"📨 **Yangi savol!**\n"
-                   f"🆔 ID: `{sid}`\n"
-                   f"👤 {user.full_name or user.username}\n"
-                   f"🏫 {faculty_name}\n"
-                   f"❓ {question}\n"
-                   f"🤖 AI Javobi: {answer[:200]}...")
-            await context.bot.send_message(chat_id=group_id, text=msg, parse_mode='Markdown')
-            
-    except Exception as e:
-        logging.error(f"⚠️ Forward error: {e}")
 
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Noma'lum buyruq. Savolingizni yozishingiz mumkin! 😊")
