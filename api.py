@@ -11,7 +11,6 @@ import ai_responder
 import logger
 import auth
 import notifier
-from miniapp_html import get_miniapp_html
 from admin_html import get_admin_html
 from file_loader import load_knowledge_base
 
@@ -216,7 +215,7 @@ async def answer_question(qid: int, request: Request, current_user: dict = Depen
     import state
     if state.bot_app:
         try:
-            msg = f"✨ **Sizning savolingizga javob keldi:**\n\n❓ {question['question'] if question['question'] != '(Admin xabari)' else 'Yangi xabar'}\n\n✅ {answer}"
+            msg = f"✨ **Sizning savolingizga javob keldi:**\n\n❓ {question['question'] if question['question'] != 'Adminstruatordan xabari' else 'Yangi xabar'}\n\n✅ {answer}"
             await state.bot_app.bot.send_message(chat_id=question['student_telegram_id'], text=msg, parse_mode='Markdown')
             
             # If already answered, create a NEW row instead of overwriting
@@ -228,7 +227,7 @@ async def answer_question(qid: int, request: Request, current_user: dict = Depen
                     question.get('student_username'),
                     question.get('student_name'),
                     question.get('faculty_id'),
-                    "(Admin xabari)", 
+                    "Adminstruatordan xabari", 
                     answer, 
                     question.get('lang', 'uz'), 
                     "MANUAL"
