@@ -55,6 +55,10 @@ export default function StudentPage() {
   const [faculty_id, set_faculty_id] = useState<number | null>(null);
 
   useEffect(() => {
+    getCards().then(d => { if (d?.cards) setCards(d.cards); }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     // @ts-ignore
     const tg = window.Telegram?.WebApp;
     if (tg) {
