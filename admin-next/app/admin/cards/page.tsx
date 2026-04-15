@@ -49,7 +49,7 @@ export default function CardsPage() {
           <div className="page-title">Xizmatlar Boshqaruvi</div>
           <div className="page-sub">Dashboard kardiogrammalarini boshqarish</div>
         </div>
-        <button className="btn btn-primary" onClick={() => openModal()}>+ Yangi karda</button>
+        <button className="btn btn-primary" onClick={() => openModal()}>+ Yangi card</button>
       </div>
 
       {loading ? (
@@ -61,7 +61,7 @@ export default function CardsPage() {
           <table>
             <thead><tr><th>Ikon</th><th>Sarlavha</th><th>Tavsif</th><th>Turi</th><th>Holati</th><th></th></tr></thead>
             <tbody>
-              {cards.length === 0 ? <tr><td colSpan={6} className="empty">Kardalar yo'q</td></tr>
+              {cards.length === 0 ? <tr><td colSpan={6} className="empty">Cardlar yo'q</td></tr>
                 : cards.map(c => (
                   <tr key={c.id}>
                     <td style={{ fontSize:20 }}>{c.icon}</td>
@@ -83,7 +83,7 @@ export default function CardsPage() {
       {modal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && closeModal()}>
           <div className="modal">
-            <div className="modal-title">{editId ? 'Kardani tahrirlash' : 'Yangi karda qo\'shish'}</div>
+            <div className="modal-title">{editId ? 'Cardni tahrirlash' : 'Yangi card qo\'shish'}</div>
             
             <div className="form-row">
               <label className="form-label">Ikon (Emoji)</label>
