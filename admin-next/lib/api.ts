@@ -70,7 +70,10 @@ export const getFiles = () => req<{ files: KBFile[] }>('/api/admin/files');
 export const deleteFile = (filename: string) => req<{ ok: boolean; error?: string }>(`/api/admin/files/${filename}`, { method: 'DELETE' });
 
 // ── Service Cards ─────────────────────────────────────────────────────────────
-export const getCards = () => req<{ cards: ServiceCard[] }>('/api/cards');
+export const getCards = (faculty_id?: number) => {
+  const qs = faculty_id ? `?faculty_id=${faculty_id}` : '';
+  return req<{ cards: ServiceCard[] }>(`/api/cards${qs}`);
+};
 export const getAdminCards = () => req<{ cards: ServiceCard[] }>('/api/admin/cards');
 export const createCard = (data: Partial<ServiceCard>) =>
   req<{ ok: boolean }>('/api/admin/cards', { method: 'POST', body: JSON.stringify(data) });
@@ -78,6 +81,8 @@ export const updateCard = (id: number, data: Partial<ServiceCard>) =>
   req<{ ok: boolean }>(`/api/admin/cards/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteCard = (id: number) =>
   req<{ ok: boolean }>(`/api/admin/cards/${id}`, { method: 'DELETE' });
+export const reorderCard = (id: number, direction: 'up' | 'down') =>
+  req<{ ok: boolean }>(`/api/admin/cards/${id}/reorder`, { method: 'POST', body: JSON.stringify({ direction }) });
 
 export const uploadFile = (file: File) => {
   const fd = new FormData();
@@ -167,6 +172,11 @@ export interface ServiceCard {
   link: string;
   type: 'message' | 'link' | 'tab';
   is_active: number;
+  faculty_id?: number | null;
+  faculty_name?: string;
+  sort_order?: number;
+  start_date?: string | null;
+  end_date?: string | null;
   created_at?: string;
 }
 

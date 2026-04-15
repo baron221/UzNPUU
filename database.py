@@ -115,9 +115,22 @@ def init_db():
     # 2. Add category to questions
     try:
         c.execute("ALTER TABLE questions ADD COLUMN category TEXT DEFAULT 'UNIVERSITY'")
-        conn.commit() # Save the change!
+        conn.commit()
     except sqlite3.OperationalError:
         pass
+
+    # 3. Add new fields to service_cards
+    for col_sql in [
+        "ALTER TABLE service_cards ADD COLUMN faculty_id INTEGER",
+        "ALTER TABLE service_cards ADD COLUMN sort_order INTEGER DEFAULT 0",
+        "ALTER TABLE service_cards ADD COLUMN start_date TEXT",
+        "ALTER TABLE service_cards ADD COLUMN end_date TEXT",
+    ]:
+        try:
+            c.execute(col_sql)
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass
 
     # Chat groups (Telegram group IDs per faculty)
     c.execute('''CREATE TABLE IF NOT EXISTS chat_groups (
@@ -434,33 +447,82 @@ def delete_faq_item(item_id):
 
 
 # ── SERVICE CARDS ─────────────────────────────────────────────────────────────
-def get_service_cards(only_active=True):
+def get_service_cards(only_active=True, faculty_id=None):
+    """Get cards filtered by active status, faculty, and date range."""
     conn = get_conn()
-    q = "SELECT * FROM service_cards"
+    from datetime import date
+    today = date.today().isoformat()
+    conditions = []
+    params = []
+
     if only_active:
-        q += " WHERE is_active=1"
-    q += " ORDER BY id DESC"
-    rows = conn.execute(q).fetchall()
+        conditions.append("is_active=1")
+        # Date range filter: show if no dates set, or today is within range
+        conditions.append("(start_date IS NULL OR start_date <= ?)")
+        params.append(today)
+        conditions.append("(end_date IS NULL OR end_date >= ?)")
+        params.append(today)
+
+    if faculty_id is not None:
+        conditions.append("(faculty_id IS NULL OR faculty_id=?)")
+        params.append(faculty_id)
+
+    q = "SELECT sc.*, f.name as faculty_name FROM service_cards sc LEFT JOIN faculties f ON sc.faculty_id=f.id"
+    if conditions:
+        q += " WHERE " + " AND ".join(conditions)
+    q += " ORDER BY COALESCE(sort_order, 0) ASC, sc.id DESC"
+
+    rows = conn.execute(q, params).fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
-def add_service_card(title, description, icon, link, type='message'):
+def add_service_card(title, description, icon, link, type='message',
+                     faculty_id=None, sort_order=0, start_date=None, end_date=None):
     conn = get_conn()
     conn.execute(
-        "INSERT INTO service_cards (title, description, icon, link, type) VALUES (?,?,?,?,?)",
-        (title, description, icon, link, type)
+        """INSERT INTO service_cards
+           (title, description, icon, link, type, faculty_id, sort_order, start_date, end_date)
+           VALUES (?,?,?,?,?,?,?,?,?)""",
+        (title, description, icon, link, type, faculty_id, sort_order or 0, start_date or None, end_date or None)
     )
     conn.commit()
     conn.close()
 
-def update_service_card(card_id, title, description, icon, link, type, is_active):
+def update_service_card(card_id, title, description, icon, link, type, is_active,
+                        faculty_id=None, sort_order=0, start_date=None, end_date=None):
     conn = get_conn()
     conn.execute("""
-        UPDATE service_cards 
-        SET title=?, description=?, icon=?, link=?, type=?, is_active=? 
+        UPDATE service_cards
+        SET title=?, description=?, icon=?, link=?, type=?, is_active=?,
+            faculty_id=?, sort_order=?, start_date=?, end_date=?
         WHERE id=?
-    """, (title, description, icon, link, type, is_active, card_id))
+    """, (title, description, icon, link, type, is_active,
+           faculty_id or None, sort_order or 0, start_date or None, end_date or None, card_id))
     conn.commit()
+    conn.close()
+
+def reorder_service_card(card_id, direction):
+    """Move card up or down by swapping sort_order with neighbor."""
+    conn = get_conn()
+    current = conn.execute("SELECT sort_order FROM service_cards WHERE id=?", (card_id,)).fetchone()
+    if not current:
+        conn.close()
+        return
+    cur_order = current['sort_order'] or 0
+    if direction == 'up':
+        neighbor = conn.execute(
+            "SELECT id, sort_order FROM service_cards WHERE sort_order < ? ORDER BY sort_order DESC LIMIT 1",
+            (cur_order,)
+        ).fetchone()
+    else:
+        neighbor = conn.execute(
+            "SELECT id, sort_order FROM service_cards WHERE sort_order > ? ORDER BY sort_order ASC LIMIT 1",
+            (cur_order,)
+        ).fetchone()
+    if neighbor:
+        conn.execute("UPDATE service_cards SET sort_order=? WHERE id=?", (neighbor['sort_order'], card_id))
+        conn.execute("UPDATE service_cards SET sort_order=? WHERE id=?", (cur_order, neighbor['id']))
+        conn.commit()
     conn.close()
 
 def delete_service_card(card_id):

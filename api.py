@@ -130,8 +130,8 @@ async def get_public_faculties():
     return {"faculties": db.get_all_faculties()}
 
 @app.get("/api/cards")
-async def get_public_cards():
-    return {"cards": db.get_service_cards(only_active=True)}
+async def get_public_cards(faculty_id: Optional[int] = None):
+    return {"cards": db.get_service_cards(only_active=True, faculty_id=faculty_id)}
 
 # ── Admin Auth ────────────────────────────────────────────────────────────────
 @app.post("/api/admin/auth")
@@ -340,7 +340,11 @@ async def create_card(request: Request, current_user: dict = Depends(get_current
     db.add_service_card(
         data.get('title',''), data.get('description',''),
         data.get('icon',''), data.get('link',''),
-        data.get('type','message')
+        data.get('type','message'),
+        data.get('faculty_id') or None,
+        data.get('sort_order', 0),
+        data.get('start_date') or None,
+        data.get('end_date') or None,
     )
     return {"ok": True}
 
@@ -350,8 +354,19 @@ async def update_card(cid: int, request: Request, current_user: dict = Depends(g
     db.update_service_card(
         cid, data.get('title',''), data.get('description',''),
         data.get('icon',''), data.get('link',''),
-        data.get('type','message'), data.get('is_active', 1)
+        data.get('type','message'), data.get('is_active', 1),
+        data.get('faculty_id') or None,
+        data.get('sort_order', 0),
+        data.get('start_date') or None,
+        data.get('end_date') or None,
     )
+    return {"ok": True}
+
+@app.post("/api/admin/cards/{cid}/reorder")
+async def reorder_card(cid: int, request: Request, current_user: dict = Depends(get_current_admin)):
+    data = await request.json()
+    direction = data.get('direction', 'up')
+    db.reorder_service_card(cid, direction)
     return {"ok": True}
 
 @app.delete("/api/admin/cards/{cid}")
