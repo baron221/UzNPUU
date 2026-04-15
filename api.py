@@ -161,9 +161,26 @@ async def answer_question(qid: int, request: Request, current_user: dict = Depen
     import state
     if state.bot_app:
         try:
-            msg = f"✨ **Sizning savolingizga javob keldi:**\n\n❓ {question['question']}\n\n✅ {answer}"
+            msg = f"✨ **Sizning savolingizga javob keldi:**\n\n❓ {question['question'] if question['question'] != '(Admin xabari)' else 'Yangi xabar'}\n\n✅ {answer}"
             await state.bot_app.bot.send_message(chat_id=question['student_telegram_id'], text=msg, parse_mode='Markdown')
-            db.update_question_answer(qid, answer)
+            
+            # If already answered, create a NEW row instead of overwriting
+            if question['status'] == 'answered':
+                import database as db_lib
+                db_lib.save_question(
+                    question['student_telegram_id'], 
+                    question.get('student_id'),
+                    question.get('student_username'),
+                    question.get('student_name'),
+                    question.get('faculty_id'),
+                    "(Admin xabari)", 
+                    answer, 
+                    question.get('lang', 'uz'), 
+                    "MANUAL"
+                )
+            else:
+                db.update_question_answer(qid, answer)
+                
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": f"Telegram xatosi: {str(e)}"}

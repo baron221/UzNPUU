@@ -94,13 +94,9 @@ export default function QuestionsPage() {
     setSending(false);
     
     if (d.ok) { 
-      // Optimistic update so it shows immediately!
-      targetQ.status = 'answered';
-      targetQ.answer = ans;
-      (targetQ as any).answered_at = new Date().toISOString();
-      setAll([...all]);
+      // Refresh to get the new ID and status from server immediately
       setAns(''); 
-      load(false); 
+      await load(false); 
     } else {
       alert('Xatolik: ' + d.error);
     }
@@ -182,7 +178,15 @@ export default function QuestionsPage() {
             ) : grouped.map(u => {
               const isActive = selectedId === u.id;
               const isUnread = u.unread > 0;
-              let excerpt = [...u.questions].sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()).pop()?.question || '';
+              const latestQ = [...u.questions].sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.id - b.id).pop();
+              let excerpt = '';
+              if (latestQ) {
+                if (latestQ.status === 'answered' && latestQ.answer) {
+                  excerpt = `Javob: ${latestQ.answer}`;
+                } else {
+                  excerpt = latestQ.question;
+                }
+              }
               
               return (
                 <div 
@@ -230,7 +234,7 @@ export default function QuestionsPage() {
               </div>
               
               <div className="ac-messages">
-                {[...activeChat.questions].sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()).map(q => (
+                {[...activeChat.questions].sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.id - b.id).map(q => (
                   <div key={`thread-${q.id}`} style={{ display:'flex', flexDirection:'column', gap: 16 }}>
                     
                     <div className="ac-msg-wrap user">
