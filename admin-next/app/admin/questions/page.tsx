@@ -184,8 +184,8 @@ export default function QuestionsPage() {
                 if (latestQ.status === 'answered' && latestQ.answer) {
                   excerpt = latestQ.answer.startsWith('Javob:') ? latestQ.answer : `Javob: ${latestQ.answer}`;
                 } else {
-                  const qText = latestQ.question;
-                  const isPlaceMeta = qText === "__ADMIN_FOLLOW_UP__" || qText === "Adminstruatordan xabari" || qText === "(Admin xabari)";
+                  const qText = latestQ.question?.trim() ?? '';
+                  const isPlaceMeta = ['__ADMIN_FOLLOW_UP__', 'Adminstruatordan xabari', '(Admin xabari)'].includes(qText);
                   excerpt = isPlaceMeta ? "Admin xabari..." : qText;
                 }
               }
@@ -240,7 +240,7 @@ export default function QuestionsPage() {
                   <div key={`thread-${q.id}`} style={{ display:'flex', flexDirection:'column', gap: 16 }}>
                     
                     {/* Only show the 'user' (student) bubble if it's NOT an internal admin follow-up placeholder */}
-                    {q.question !== "__ADMIN_FOLLOW_UP__" && q.question !== "Adminstruatordan xabari" && q.question !== "(Admin xabari)" && (
+                    {!['__ADMIN_FOLLOW_UP__', 'Adminstruatordan xabari', '(Admin xabari)'].includes(q.question?.trim()) && (
                       <div className="ac-msg-wrap user">
                         <div className="ac-msg-bubble">
                           {q.question}
