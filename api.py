@@ -86,7 +86,7 @@ async def ask(request: Request):
     
     import state
     import asyncio
-    answer, options, lang, category = ai_responder.get_answer(q, state.knowledge_base, state.clients)
+    answer, options, lang, category = ai_responder.get_answer(q, state.knowledge_base, state.clients, faculty_id=faculty_id)
     
     # Save to database
     db.save_question(

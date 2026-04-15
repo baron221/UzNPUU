@@ -150,10 +150,11 @@ def generate_options(question: str, pairs: list) -> list:
 
 _cached_pairs = None
 
-def get_answer(question: str, knowledge_base: str, clients: dict) -> tuple:
+def get_answer(question: str, knowledge_base: str, clients: dict, faculty_id: int = None) -> tuple:
     """Returns (answer_text, options_list, lang, category)"""
     global _cached_pairs
     client = clients["groq"]
+    import database as db
 
     # Detect language
     lang = detect_lang(question)
@@ -201,8 +202,19 @@ If they want to speak to an admin, tell them you can help with most info from do
 
     # ── UNIVERSITY ────────────────────────────────────────────────────────────
     if category == "UNIVERSITY":
-        relevant_context = find_relevant_pairs(question, _cached_pairs, client, top_n=5)
-        print(f"Context relevance tokens info used")
+        # Dynamic context: Load FAQs from DB for this faculty
+        db_faqs = db.get_faq_items(faculty_id)
+        # Also include general FAQs (those without faculty_id or active for all)
+        # Note: get_faq_items(None) fetches all active, but we can filter or just use them all as context
+        
+        dynamic_pairs = []
+        for item in db_faqs:
+            dynamic_pairs.append({"question": item['question'], "answer": item['answer']})
+        
+        combined_pairs = dynamic_pairs + _cached_pairs
+        
+        relevant_context = find_relevant_pairs(question, combined_pairs, client, top_n=5)
+        print(f"Context relevance tokens info used (DB Pairs: {len(dynamic_pairs)})")
 
         if not relevant_context.strip():
             # If it's a university question but no docs found, try to be helpful instead of just saying "not found"
