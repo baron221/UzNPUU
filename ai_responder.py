@@ -50,8 +50,8 @@ def find_relevant_chunks(question: str, chunks: list, client, top_n: int = 5) ->
     if not chunks:
         return ""
     index = "\n".join(f"[{i}] {chunk[:120].strip().replace(chr(10), ' ')}..." for i, chunk in enumerate(chunks))
-    check = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+    check = safe_completion(
+        client,
         messages=[
             {"role": "system", "content": f"Return ONLY the {top_n} most relevant chunk numbers as comma-separated. Example: 2,7,12\nCHUNKS:\n{index}"},
             {"role": "user", "content": f"Question: {question}"}
@@ -77,8 +77,8 @@ def find_relevant_pairs(question: str, pairs: list, client, top_n: int = 5) -> s
         return ""
     # Increased window to 80 candidates for better relevance
     filtered_index = "\n".join(f"[{orig_i}] {p['question'][:120].strip()}" for orig_i, p in working_pairs[:80])
-    check = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+    check = safe_completion(
+        client,
         messages=[
             {"role": "system", "content": f"Return ONLY the {top_n} most relevant index numbers as comma-separated. If many look relevant, pick the best variety.\nFAQ:\n{filtered_index}"},
             {"role": "user", "content": f"Student question: {question}"}
@@ -93,22 +93,42 @@ def find_relevant_pairs(question: str, pairs: list, client, top_n: int = 5) -> s
     except:
         return "\n\n---\n\n".join(f"Savol: {p['question']}\nJavob: {p['answer']}" for _, p in working_pairs[:top_n])
 
+def safe_completion(client, **kwargs):
+    """Attempt a completion with fallback model support."""
+    primary_model = "llama-3.3-70b-versatile"
+    fallback_model = "llama-3.1-8b-instant"
+    
+    try:
+        kwargs['model'] = primary_model
+        return client.chat.completions.create(**kwargs)
+    except Exception as e:
+        print(f"Primary model ({primary_model}) failed: {e}. Trying fallback...")
+        try:
+            kwargs['model'] = fallback_model
+            return client.chat.completions.create(**kwargs)
+        except Exception as e2:
+            print(f"Fallback model ({fallback_model}) also failed: {e2}")
+            raise e2
+
 def classify_question(question: str, client) -> str:
-    check = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {"role": "system", "content": """Classify into: GENERAL, VAGUE, or UNIVERSITY.
+    try:
+        check = safe_completion(
+            client,
+            messages=[
+                {"role": "system", "content": """Classify into: GENERAL, VAGUE, or UNIVERSITY.
 GENERAL: greetings, thanks, bye, casual chat, bot questions
 VAGUE: single keyword about university (to'lov, imtihon, jadval, stipendiya, HEMIS, оплата, расписание, payment, schedule)
 UNIVERSITY: complete question about university
 Reply ONE word only."""},
-            {"role": "user", "content": question}
-        ],
-        max_tokens=5,
-    )
-    result = check.choices[0].message.content.strip().upper()
-    if "GENERAL" in result: return "GENERAL"
-    if "VAGUE" in result: return "VAGUE"
+                {"role": "user", "content": question}
+            ],
+            max_tokens=5,
+        )
+        result = check.choices[0].message.content.strip().upper()
+        if "GENERAL" in result: return "GENERAL"
+        if "VAGUE" in result: return "VAGUE"
+    except:
+        pass
     return "UNIVERSITY"
 
 def generate_options(question: str, pairs: list) -> list:
@@ -156,18 +176,21 @@ def get_answer(question: str, knowledge_base: str, clients: dict) -> tuple:
             return get_response("bye", lang), [], lang, "GENERAL"
         
         # Smart conversational response for other general queries
-        completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": f"""You are the UzNPUU University Assistant. 
+        try:
+            completion = safe_completion(
+                client,
+                messages=[
+                    {"role": "system", "content": f"""You are the UzNPUU University Assistant. 
 The user is asking a general or conversational question (not a specific academic one).
 Reply politely, concisely, and in the student's language ({lang}).
 If they want to speak to an admin, tell them you can help with most info from documents, but an admin will reply soon in this chat if needed."""},
-                {"role": "user", "content": question}
-            ],
-            max_tokens=256,
-        )
-        return completion.choices[0].message.content.strip(), [], lang, "GENERAL"
+                    {"role": "user", "content": question}
+                ],
+                max_tokens=256,
+            )
+            return completion.choices[0].message.content.strip(), [], lang, "GENERAL"
+        except:
+            return get_response("error", lang), [], lang, "ERROR"
 
     # ── VAGUE ─────────────────────────────────────────────────────────────────
     elif category == "VAGUE":
@@ -199,10 +222,11 @@ If they want to speak to an admin, tell them you can help with most info from do
             "en": "Answer in ENGLISH."
         }.get(lang, "Answer in Uzbek.")
 
-        completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": f"""You are a strict document-based university assistant for UzNPUU.
+        try:
+            completion = safe_completion(
+                client,
+                messages=[
+                    {"role": "system", "content": f"""You are a strict document-based university assistant for UzNPUU.
 RULES:
 1. Answer ONLY using the documents below. No extra info.
 2. If not found: respond with the not-found message.
@@ -211,10 +235,12 @@ RULES:
 
 === DOCUMENTS ===
 {relevant_context}"""},
-                {"role": "user", "content": question}
-            ],
-            max_tokens=1024,
-        )
-        return completion.choices[0].message.content.strip(), [], lang, "UNIVERSITY"
+                    {"role": "user", "content": question}
+                ],
+                max_tokens=1024,
+            )
+            return completion.choices[0].message.content.strip(), [], lang, "UNIVERSITY"
+        except:
+            return get_response("error", lang), [], lang, "ERROR"
 
     return get_response("error", lang), [], lang, "ERROR"
