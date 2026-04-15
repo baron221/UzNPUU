@@ -7,7 +7,6 @@ type Tab = 'home' | 'chat' | 'faq' | 'profile';
 import { getCards, type ServiceCard, askAdmin } from '@/lib/api';
 
 const FAQS = [
-const FAQS = [
   { cat: '🎓 Universitet hayoti', items: [
     { q: 'Yordamchi bot nima qila oladi?', a: 'Sizning universitet, darslar, shartnoma va boshqa akademik masalalardagi savollaringizga AI yordamida tezkor javob beradi.' },
     { q: 'Adminstrator bilan qanday bog\'lansa bo\'ladi?', a: 'Agar AI savolingizga javob topa olmasa, "Adminstratorga yuborish" tugmasi chiqadi. Shunda mutaxassis bilan bog\'lanishingiz mumkin.' },
@@ -16,7 +15,6 @@ const FAQS = [
   { cat: '💰 To\'lov va shartnoma', items: [
     { q: 'Shartnoma to\'lovini online to\'lasa bo\'ladimi?', a: 'Ha, shartnoma to\'lovlarini ko\'plab to\'lov tizimlari (Click, Payme) orqali amalga oshirish mumkin.' },
   ]},
-];
   { cat: '🎓 Grant va stipendiya', items: [
     { q: 'Grantga ariza topshirish uchun minimal GPA qancha?', a: '3.5 va undan yuqori.' },
     { q: 'To\'liq grant nima?', a: 'Bir o\'quv yiliga berilib, kontraktning 100% davlat tomonidan qoplanadigan va stipendiya beriladigan grant.' },
@@ -32,6 +30,8 @@ export default function StudentPage() {
   const [msgs, setMsgs]       = useState<Msg[]>([{ text: '👋 Salom! Men UzNPUU botiman. Savolingizni yozing — yordam beraman!', type: 'bot' }]);
   const [input, setInput]     = useState('');
   const [typing, setTyping]   = useState(false);
+  const [faqQ, setFaqQ]       = useState('');
+  const [openFAQ, setOpenFAQ] = useState<string | null>(null);
   const [lastQuestion, setLastQuestion] = useState('');
   const [profile, setProfile] = useState<{ student_id?: string; telegram_id?: string; faculty_name?: string } | null>(null);
   const [fetchingProfile, setFetchingProfile] = useState(false);
