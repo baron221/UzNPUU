@@ -233,8 +233,6 @@ async def answer_question(qid: int, request: Request, current_user: dict = Depen
                     question.get('student_username'),
                     question.get('student_name'),
                     question.get('faculty_id'),
-                    fullname, 
-                    faculty_id, 
                     "__ADMIN_FOLLOW_UP__", 
                     answer, 
                     question.get('lang', 'uz'), 
