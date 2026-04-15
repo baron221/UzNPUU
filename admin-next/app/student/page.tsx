@@ -1,10 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { askQuestion } from '@/lib/api';
-
-type Msg = { text: string; type: 'user' | 'bot'; options?: string[]; showAdmin?: boolean };
-type Tab = 'home' | 'chat' | 'faq' | 'profile';
-import { getCards, type ServiceCard, askAdmin } from '@/lib/api';
+import { getCards, type ServiceCard, askAdmin, askQuestion, getStudentProfile } from '@/lib/api';
 
 const FAQS = [
   { cat: '🎓 Universitet hayoti', items: [
@@ -71,12 +67,10 @@ export default function StudentPage() {
         
         // Fetch profile from our DB
         setFetchingProfile(true);
-        import('@/lib/api').then(api => {
-          api.getStudentProfile(String(user.id)).then(p => {
-            if (p.ok) setProfile(p);
-            setFetchingProfile(false);
-          });
-        });
+        getStudentProfile(String(user.id)).then(p => {
+          if (p.ok) setProfile(p);
+          setFetchingProfile(false);
+        }).catch(() => setFetchingProfile(false));
       }
     }
   }, []);
