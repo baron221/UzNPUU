@@ -96,7 +96,19 @@ export const askQuestion = (question: string, metadata: any = {}) =>
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ question, ...metadata }),
-  }).then(r => r.json()) as Promise<{ answer: string }>;
+  }).then(r => r.json()) as Promise<{ 
+    answer: string; 
+    options?: string[]; 
+    lang?: string; 
+    category?: string 
+  }>;
+
+export const askAdmin = (question: string, metadata: any = {}) =>
+  fetch(`/api/ask_admin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question, ...metadata }),
+  }).then(r => r.json()) as Promise<{ ok: boolean; message?: string }>;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface Question {

@@ -2,9 +2,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { askQuestion } from '@/lib/api';
 
-type Msg = { text: string; type: 'user' | 'bot' };
+type Msg = { text: string; type: 'user' | 'bot'; options?: string[]; showAdmin?: boolean };
 type Tab = 'home' | 'chat' | 'faq' | 'profile';
-import { getCards, type ServiceCard } from '@/lib/api';
+import { getCards, type ServiceCard, askAdmin } from '@/lib/api';
 
 const FAQS = [
   { cat: '📚 HEMIS tizimi', items: [
@@ -34,6 +34,7 @@ export default function StudentPage() {
   const [typing, setTyping]   = useState(false);
   const [faqQ, setFaqQ]       = useState('');
   const [openFAQ, setOpenFAQ] = useState<string | null>(null);
+  const [lastQuestion, setLastQuestion] = useState('');
   const msgsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -74,7 +75,7 @@ export default function StudentPage() {
     const q = (text ?? input).trim();
     if (!q) return;
 
-    // Get metadata from storage
+    setLastQuestion(q);
     const metaStr = localStorage.getItem('tg_user');
     const meta = metaStr ? JSON.parse(metaStr) : {};
 
@@ -83,9 +84,30 @@ export default function StudentPage() {
     setTyping(true);
     try {
       const d = await askQuestion(q, meta);
-      setMsgs(p => [...p, { text: d.answer || 'Xatolik yuz berdi.', type: 'bot' }]);
+      const kws = ["topilmadi", "not found", "murojaat qiling", "mas'ul xodimi", "adminstrator", "ofisiga"];
+      const showAdmin = kws.some(kw => d.answer.toLowerCase().includes(kw));
+      
+      setMsgs(p => [...p, { 
+        text: d.answer || 'Xatolik yuz berdi.', 
+        type: 'bot', 
+        options: d.options,
+        showAdmin 
+      }]);
     } catch {
       setMsgs(p => [...p, { text: 'Serverga ulanishda xatolik.', type: 'bot' }]);
+    }
+    setTyping(false);
+  }
+
+  async function handleAskAdmin() {
+    const metaStr = localStorage.getItem('tg_user');
+    const meta = metaStr ? JSON.parse(metaStr) : {};
+    setTyping(true);
+    try {
+      await askAdmin(lastQuestion, meta);
+      setMsgs(p => [...p, { text: '📩 Savolingiz adminstratorga yuborildi. Tez orada javob olasiz!', type: 'bot' }]);
+    } catch {
+      setMsgs(p => [...p, { text: 'Xatolik: Adminstratorga yuborib bo\'lmadi.', type: 'bot' }]);
     }
     setTyping(false);
   }
@@ -154,7 +176,26 @@ export default function StudentPage() {
         {tab === 'chat' && (
           <>
             <div className="chat-area" ref={msgsRef}>
-              {msgs.map((m, i) => <div key={i} className={`msg ${m.type}`}>{m.text}</div>)}
+              {msgs.map((m, i) => (
+                <div key={i}>
+                  <div className={`msg ${m.type}`}>{m.text}</div>
+                  {m.type === 'bot' && (m.options?.length || m.showAdmin) && (
+                    <div className="suggs" style={{ marginTop: 8, marginBottom: 16 }}>
+                      {m.options?.map(opt => (
+                        <button key={opt} className="sugg" onClick={() => send(opt)}>{opt}</button>
+                      ))}
+                      {m.showAdmin && (
+                        <button 
+                          className="sugg" 
+                          style={{ borderColor: '#ef4444', color: '#ef4444' }} 
+                          onClick={() => { m.showAdmin = false; handleAskAdmin(); }}>
+                          👤 Adminstratorga yuborish
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
               {typing && (
                 <div className="msg bot">
                   <div className="dots"><span /><span /><span /></div>
