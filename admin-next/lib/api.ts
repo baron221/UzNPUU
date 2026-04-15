@@ -69,6 +69,16 @@ export const deleteFAQ = (id: number) =>
 export const getFiles = () => req<{ files: KBFile[] }>('/api/admin/files');
 export const deleteFile = (filename: string) => req<{ ok: boolean; error?: string }>(`/api/admin/files/${filename}`, { method: 'DELETE' });
 
+// ── Service Cards ─────────────────────────────────────────────────────────────
+export const getCards = () => req<{ cards: ServiceCard[] }>('/api/cards');
+export const getAdminCards = () => req<{ cards: ServiceCard[] }>('/api/admin/cards');
+export const createCard = (data: Partial<ServiceCard>) =>
+  req<{ ok: boolean }>('/api/admin/cards', { method: 'POST', body: JSON.stringify(data) });
+export const updateCard = (id: number, data: Partial<ServiceCard>) =>
+  req<{ ok: boolean }>(`/api/admin/cards/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteCard = (id: number) =>
+  req<{ ok: boolean }>(`/api/admin/cards/${id}`, { method: 'DELETE' });
+
 export const uploadFile = (file: File) => {
   const fd = new FormData();
   fd.append('file', file);
@@ -135,5 +145,16 @@ export interface KBFile {
   name: string;
   size: number;
   created_at: number;
+}
+
+export interface ServiceCard {
+  id: number;
+  title: string;
+  description: string;
+  icon: string;
+  link: string;
+  type: 'message' | 'link' | 'tab';
+  is_active: number;
+  created_at?: string;
 }
 

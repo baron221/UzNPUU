@@ -130,6 +130,18 @@ def init_db():
         FOREIGN KEY (faculty_id) REFERENCES faculties(id)
     )''')
 
+    # Service cards for student dashboard
+    c.execute('''CREATE TABLE IF NOT EXISTS service_cards (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT,
+        icon TEXT,
+        link TEXT,
+        type TEXT DEFAULT 'message',
+        is_active INTEGER DEFAULT 1,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )''')
+
     conn.commit()
 
     # Create default super admin if not exists
@@ -417,6 +429,43 @@ def add_faq_item(faculty_id, question, answer):
 def delete_faq_item(item_id):
     conn = get_conn()
     conn.execute("UPDATE faq_items SET is_active=0 WHERE id=?", (item_id,))
+    conn.commit()
+    conn.close()
+
+
+# ── SERVICE CARDS ─────────────────────────────────────────────────────────────
+def get_service_cards(only_active=True):
+    conn = get_conn()
+    q = "SELECT * FROM service_cards"
+    if only_active:
+        q += " WHERE is_active=1"
+    q += " ORDER BY id DESC"
+    rows = conn.execute(q).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def add_service_card(title, description, icon, link, type='message'):
+    conn = get_conn()
+    conn.execute(
+        "INSERT INTO service_cards (title, description, icon, link, type) VALUES (?,?,?,?,?)",
+        (title, description, icon, link, type)
+    )
+    conn.commit()
+    conn.close()
+
+def update_service_card(card_id, title, description, icon, link, type, is_active):
+    conn = get_conn()
+    conn.execute("""
+        UPDATE service_cards 
+        SET title=?, description=?, icon=?, link=?, type=?, is_active=? 
+        WHERE id=?
+    """, (title, description, icon, link, type, is_active, card_id))
+    conn.commit()
+    conn.close()
+
+def delete_service_card(card_id):
+    conn = get_conn()
+    conn.execute("DELETE FROM service_cards WHERE id=?", (card_id,))
     conn.commit()
     conn.close()
 

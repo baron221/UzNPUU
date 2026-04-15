@@ -3,7 +3,8 @@ import { useState, useRef, useEffect } from 'react';
 import { askQuestion } from '@/lib/api';
 
 type Msg = { text: string; type: 'user' | 'bot' };
-type Tab = 'chat' | 'faq' | 'profile';
+type Tab = 'home' | 'chat' | 'faq' | 'profile';
+import { getCards, type ServiceCard } from '@/lib/api';
 
 const FAQS = [
   { cat: '📚 HEMIS tizimi', items: [
@@ -25,7 +26,8 @@ const FAQS = [
 const SUGGS = ['Dars jadvali qayerdan ko\'raman?', 'Kontrakt to\'lash', 'HEMIS login', 'Stipendiya shartlari'];
 
 export default function StudentPage() {
-  const [tab, setTab]         = useState<Tab>('chat');
+  const [tab, setTab]         = useState<Tab>('home');
+  const [cards, setCards]     = useState<ServiceCard[]>([]);
   const [msgs, setMsgs]       = useState<Msg[]>([{ text: '👋 Salom! Men UzNPUU botiman. Savolingizni yozing — yordam beraman!', type: 'bot' }]);
   const [input, setInput]     = useState('');
   const [typing, setTyping]   = useState(false);
@@ -36,6 +38,10 @@ export default function StudentPage() {
   useEffect(() => {
     msgsRef.current?.scrollTo({ top: msgsRef.current.scrollHeight, behavior: 'smooth' });
   }, [msgs, typing]);
+
+  useEffect(() => {
+    getCards().then(d => setCards(d.cards));
+  }, []);
 
   async function send(text?: string) {
     const q = (text ?? input).trim();
@@ -72,6 +78,44 @@ export default function StudentPage() {
 
       {/* Content */}
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        {tab === 'home' && (
+          <div className="home-wrap">
+            <div className="home-title">Xizmatlar</div>
+            <div className="card-grid">
+              {/* Static core cards */}
+              <div className="home-card" onClick={() => setTab('faq')}>
+                <div className="card-icon-box" style={{ background: 'rgba(108, 92, 231, 0.1)' }}>📋</div>
+                <div className="card-info">
+                  <div className="card-title">FAQ</div>
+                  <div className="card-desc">Tez-tez so'raladigan savollar</div>
+                </div>
+              </div>
+              <div className="home-card" onClick={() => setTab('profile')}>
+                <div className="card-icon-box" style={{ background: 'rgba(0, 184, 148, 0.1)' }}>👤</div>
+                <div className="card-info">
+                  <div className="card-title">Profilim</div>
+                  <div className="card-desc">GPA va ma'lumotlar</div>
+                </div>
+              </div>
+
+              {/* Dynamic cards from DB */}
+              {cards.map(c => (
+                <div key={c.id} className="home-card" onClick={() => {
+                  if (c.type === 'message') { setTab('chat'); send(c.link || c.title); }
+                  else if (c.type === 'link') window.open(c.link, '_blank');
+                  else if (c.type === 'tab') setTab(c.link as any);
+                }}>
+                  <div className="card-icon-box">{c.icon}</div>
+                  <div className="card-info">
+                    <div className="card-title">{c.title}</div>
+                    <div className="card-desc">{c.description}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {tab === 'chat' && (
           <>
             <div className="chat-area" ref={msgsRef}>
@@ -143,7 +187,7 @@ export default function StudentPage() {
 
       {/* Bottom Nav */}
       <nav className="student-nav">
-        {([['chat','💬','Chat'], ['faq','📋','FAQ'], ['profile','👤','Profil']] as const).map(([t,icon,label]) => (
+        {([['home','🏠','Asosiy'], ['chat','💬','Chat'], ['faq','📋','FAQ'], ['profile','👤','Profil']] as const).map(([t,icon,label]) => (
           <button key={t} className={`s-nav-btn${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>
             <span className="s-nav-icon">{icon}</span>{label}
           </button>

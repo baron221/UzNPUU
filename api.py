@@ -79,6 +79,10 @@ async def ask(request: Request):
 async def get_public_faculties():
     return {"faculties": db.get_all_faculties()}
 
+@app.get("/api/cards")
+async def get_public_cards():
+    return {"cards": db.get_service_cards(only_active=True)}
+
 # ── Admin Auth ────────────────────────────────────────────────────────────────
 @app.post("/api/admin/auth")
 async def admin_auth(request: Request):
@@ -263,3 +267,33 @@ async def get_general_stats():
 @app.get("/api/logs")
 async def get_logs():
     return {"logs": logger.get_logs()[-50:][::-1]}
+
+# ── Admin Cards Management ────────────────────────────────────────────────────
+@app.get("/api/admin/cards")
+async def get_admin_cards(current_user: dict = Depends(get_current_admin)):
+    return {"cards": db.get_service_cards(only_active=False)}
+
+@app.post("/api/admin/cards")
+async def create_card(request: Request, current_user: dict = Depends(get_current_admin)):
+    data = await request.json()
+    db.add_service_card(
+        data.get('title',''), data.get('description',''),
+        data.get('icon',''), data.get('link',''),
+        data.get('type','message')
+    )
+    return {"ok": True}
+
+@app.put("/api/admin/cards/{cid}")
+async def update_card(cid: int, request: Request, current_user: dict = Depends(get_current_admin)):
+    data = await request.json()
+    db.update_service_card(
+        cid, data.get('title',''), data.get('description',''),
+        data.get('icon',''), data.get('link',''),
+        data.get('type','message'), data.get('is_active', 1)
+    )
+    return {"ok": True}
+
+@app.delete("/api/admin/cards/{cid}")
+async def delete_card(cid: int, current_user: dict = Depends(get_current_admin)):
+    db.delete_service_card(cid)
+    return {"ok": True}
