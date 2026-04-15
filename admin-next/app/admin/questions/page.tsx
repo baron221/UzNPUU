@@ -182,9 +182,11 @@ export default function QuestionsPage() {
               let excerpt = '';
               if (latestQ) {
                 if (latestQ.status === 'answered' && latestQ.answer) {
-                  excerpt = `Javob: ${latestQ.answer}`;
+                  excerpt = latestQ.answer.startsWith('Javob:') ? latestQ.answer : `Javob: ${latestQ.answer}`;
                 } else {
-                  excerpt = latestQ.question;
+                  excerpt = latestQ.question === "Adminstruatordan xabari" || latestQ.question === "(Admin xabari)" 
+                    ? "Admin xabari..." 
+                    : latestQ.question;
                 }
               }
               
@@ -237,15 +239,18 @@ export default function QuestionsPage() {
                 {[...activeChat.questions].sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.id - b.id).map(q => (
                   <div key={`thread-${q.id}`} style={{ display:'flex', flexDirection:'column', gap: 16 }}>
                     
-                    <div className="ac-msg-wrap user">
-                      <div className="ac-msg-bubble">
-                        {q.question}
-                        <span className={`badge ${CAT[q.category] ?? 'badge-blue'}`} style={{ marginLeft: 8, fontSize: 10, borderRadius: 6, fontWeight: 700 }}>
-                          {CAT_LABEL[q.category] ?? q.category}
-                        </span>
+                    {/* Only show the 'user' (student) bubble if it has the actual question text */}
+                    {q.question !== "Adminstruatordan xabari" && q.question !== "(Admin xabari)" && (
+                      <div className="ac-msg-wrap user">
+                        <div className="ac-msg-bubble">
+                          {q.question}
+                          <span className={`badge ${CAT[q.category] ?? 'badge-blue'}`} style={{ marginLeft: 8, fontSize: 10, borderRadius: 6, fontWeight: 700 }}>
+                            {CAT_LABEL[q.category] ?? q.category}
+                          </span>
+                        </div>
+                        <div className="ac-msg-time">{formatTimeFull(q.created_at)}</div>
                       </div>
-                      <div className="ac-msg-time">{formatTimeFull(q.created_at)}</div>
-                    </div>
+                    )}
                     
                     {q.status === 'answered' && q.answer && (
                       <div className="ac-msg-wrap admin">
