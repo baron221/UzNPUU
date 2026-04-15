@@ -630,6 +630,7 @@ textarea.form-inp { resize: vertical; min-height: 120px; }
 .student-wrap.dark .home-title { color: #f1f5f9; }
 .student-wrap.dark .faq-search { background: #1e293b; color: #fff; border-color: rgba(255,255,255,0.1); }
 .student-wrap.dark .faq-cat { color: #818cf8; }
+.student-wrap.dark .faq-item { background: #111827; border-color: rgba(255,255,255,0.1); }
 .student-wrap.dark .faq-q { color: #f1f5f9; border-bottom-color: rgba(255,255,255,0.05); }
 .student-wrap.dark .faq-a { background: #1e293b; color: #94a3b8; }
 .student-wrap.dark .chat-area { background: #111827; }
