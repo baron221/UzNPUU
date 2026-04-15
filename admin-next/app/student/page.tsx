@@ -69,12 +69,10 @@ export default function StudentPage() {
     <div className="student-wrap">
       {/* Header */}
       <div className="student-header">
-        <div className="student-logo">
-          <img src="/bot-icon.png" alt="Bot" />
-        </div>
-        <div>
-          <div className="student-title">UzNPUU Bot</div>
-          <div className="student-sub">Universitet yordamchisi • 24/7</div>
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ fontSize: 9, color: '#4338ca', fontWeight: 700, letterSpacing: 1.5, marginBottom: 4 }}>RASMIY BOT</div>
+          <div className="student-title">UzNPUU Yordamchi</div>
+          <div className="student-sub">Nizomiy nomidagi O&#39;zbekiston Milliy pedagogika universiteti</div>
         </div>
       </div>
 
@@ -189,7 +187,7 @@ export default function StudentPage() {
 
       {/* Bottom Nav */}
       <nav className="student-nav">
-        {([['home','🏠','Asosiy'], ['chat','💬','Chat'], ['faq','📋','FAQ'], ['profile','👤','Profil']] as const).map(([t,icon,label]) => (
+        {([['home','🏠','Bosh sahifa'], ['chat','💬','Chat'], ['faq','🌙','Mavzu']] as const).map(([t,icon,label]) => (
           <button key={t} className={`s-nav-btn${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>
             <span className="s-nav-icon">{icon}</span>{label}
           </button>
