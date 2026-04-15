@@ -215,7 +215,12 @@ async def answer_question(qid: int, request: Request, current_user: dict = Depen
     import state
     if state.bot_app:
         try:
-            msg = f"✨ **Sizning savolingizga javob keldi:**\n\n❓ {question['question'] if question['question'] != 'Adminstruatordan xabari' else 'Yangi xabar'}\n\n✅ {answer}"
+            # Natural formatting: If it's a follow-up (placeholder question), use a cleaner format
+            if question['question'] == "Adminstruatordan xabari":
+                msg = f"👤 **Adminstrator:**\n\n{answer}"
+            else:
+                msg = f"✨ **Sizning savolingizga javob keldi:**\n\n❓ {question['question']}\n\n✅ {answer}"
+            
             await state.bot_app.bot.send_message(chat_id=question['student_telegram_id'], text=msg, parse_mode='Markdown')
             
             # If already answered, create a NEW row instead of overwriting
