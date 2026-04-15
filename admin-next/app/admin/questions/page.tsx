@@ -252,7 +252,8 @@ export default function QuestionsPage() {
                       </div>
                     )}
                     
-                    {q.status === 'answered' && q.answer && (
+                    {/* Admin/AI Bubble: Show if an answer exists, even if status is pending */}
+                    {q.answer && (
                       <div className="ac-msg-wrap admin">
                         <div className="ac-msg-bubble">
                           {q.answer}

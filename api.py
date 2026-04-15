@@ -237,6 +237,11 @@ async def answer_question(qid: int, request: Request, current_user: dict = Depen
                     question.get('lang', 'uz'), 
                     "MANUAL"
                 )
+                
+                # Immediately mark the NEW manual follow-up as answered so it shows up in CRM
+                new_q = db_lib.get_conn().execute("SELECT id FROM questions WHERE student_telegram_id=? AND question=? ORDER BY id DESC LIMIT 1", (str(question['student_telegram_id']), "Adminstruatordan xabari")).fetchone()
+                if new_q:
+                    db_lib.update_question_answer(new_q['id'], answer, answered_by="Admin")
             else:
                 db.update_question_answer(qid, answer)
                 
