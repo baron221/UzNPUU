@@ -82,12 +82,12 @@ export default function StudentPage() {
       {/* Header */}
       <div className="student-header">
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ fontSize: 9, color: darkMode ? '#a5b4fc' : '#4f46e5', fontWeight: 800, letterSpacing: 2, marginBottom: 12, opacity: 0.7 }}>RASMIY BOT</div>
+          <div className="student-badge">RASMIY BOT</div>
           <div className="student-title-container">
             <div className="student-title-uznpuu">UzNPUU</div>
             <div className="student-title-yordamchi">Yordamchi</div>
           </div>
-          <div className="student-sub" style={{ marginTop: 16, fontSize: 13, lineHeight: 1.5, maxWidth: '85%' }}>Nizomiy nomidagi O&#39;zbekiston Milliy pedagogika universiteti</div>
+          <div className="student-sub" style={{ marginTop: 20, fontSize: 13, lineHeight: 1.6, maxWidth: '85%', opacity: 0.8, fontWeight: 500 }}>Nizomiy nomidagi O&#39;zbekiston Milliy pedagogika universiteti</div>
         </div>
       </div>
 
@@ -98,7 +98,7 @@ export default function StudentPage() {
             <div className="card-grid">
               {/* Static core cards */}
               <div className="home-card" onClick={() => setTab('faq')}>
-                <div className="card-icon-box" style={{ background: darkMode ? 'rgba(108, 92, 231, 0.2)' : '#eef2ff' }}>📋</div>
+                <div className="card-icon-box" style={{ background: darkMode ? 'rgba(99, 102, 241, 0.15)' : '#eef2ff' }}>📋</div>
                 <div className="card-info">
                   <div className="card-title">FAQ</div>
                   <div className="card-desc">Tez-tez soraladigan</div>
@@ -106,7 +106,7 @@ export default function StudentPage() {
               </div>
               
               <div className="home-card" onClick={() => setTab('profile')}>
-                <div className="card-icon-box" style={{ background: darkMode ? 'rgba(108, 92, 231, 0.2)' : '#eef2ff' }}>👤</div>
+                <div className="card-icon-box" style={{ background: darkMode ? 'rgba(99, 102, 241, 0.15)' : '#eef2ff' }}>👤</div>
                 <div className="card-info">
                   <div className="card-title">Profilim</div>
                   <div className="card-desc">GPA va malumotlar</div>
@@ -182,12 +182,21 @@ export default function StudentPage() {
 
         {tab === 'profile' && (
           <div className="profile-wrap">
-            <div className="profile-card">
-              <div className="profile-avatar">👤</div>
+            <div className="profile-card" style={{ position: 'relative', overflow: 'hidden' }}>
+              <div className="profile-avatar" style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)', color: '#fff', boxShadow: '0 10px 20px -5px rgba(99, 102, 241, 0.4)' }}>
+                👤
+              </div>
               <div className="profile-name">Talaba</div>
-              <div className="profile-role">UzNPUU talabasi</div>
-              <div className="gpa-container">
-                <div className="gpa-ring" style={{ background: `conic-gradient(#4f46e5 ${0 * 3.6}deg, ${darkMode ? '#0f172a' : '#f1f5f9'} 0)` }}>
+              <div className="profile-role">
+                <span style={{ color: '#10b981', marginRight: 4 }}>●</span>
+                FAOL TALABA
+              </div>
+
+              <div className="gpa-container" style={{ margin: '20px 0' }}>
+                <div className="gpa-ring" style={{ 
+                  background: `conic-gradient(#4f46e5 ${0.0 * 3.6}deg, ${darkMode ? '#0f172a' : '#f1f5f9'} 0)`,
+                  boxShadow: '0 0 30px rgba(79, 70, 229, 0.1)'
+                }}>
                   <div className="gpa-content">
                     <span className="gpa-val">—</span>
                     <span className="gpa-label">GPA</span>
@@ -232,22 +241,28 @@ export default function StudentPage() {
 
       {/* Bottom Nav */}
       <nav className="student-nav">
-        {[
-          { t: 'home', icon: '🏠', label: 'Bosh sahifa' },
-          { t: 'chat', icon: '💬', label: 'Chat' },
-          { t: 'theme', icon: darkMode ? '☀️' : '🌙', label: 'Mavzu' },
-        ].map(n => (
-          <button
-            key={n.t}
-            className={`s-nav-btn${tab === n.t ? ' active' : ''}`}
-            onClick={() => {
-              if (n.t === 'theme') toggleTheme();
-              else setTab(n.t as any);
-            }}
-          >
-            <span className="s-nav-icon">{n.icon}</span>{n.label}
-          </button>
-        ))}
+        <button className={`s-nav-btn ${tab === 'home' ? 'active' : ''}`} onClick={() => setTab('home')}>
+          <div className="s-nav-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          </div>
+          <span className="s-nav-label">Asosiy</span>
+        </button>
+        <button className={`s-nav-btn ${tab === 'chat' ? 'active' : ''}`} onClick={() => setTab('chat')}>
+          <div className="s-nav-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><circle cx="12" cy="10" r="1" fill="currentColor"/><circle cx="16" cy="10" r="1" fill="currentColor"/><circle cx="8" cy="10" r="1" fill="currentColor"/></svg>
+          </div>
+          <span className="s-nav-label">Savol-javob</span>
+        </button>
+        <button className="s-nav-btn" onClick={() => setDarkMode(!darkMode)}>
+          <div className="s-nav-icon">
+            {darkMode ? (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            ) : (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+            )}
+          </div>
+          <span className="s-nav-label">Mavzu</span>
+        </button>
       </nav>
     </div>
   );

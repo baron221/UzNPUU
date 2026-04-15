@@ -75,14 +75,15 @@ def find_relevant_pairs(question: str, pairs: list, client, top_n: int = 5) -> s
     working_pairs = pre_filtered if len(pre_filtered) >= 3 else list(enumerate(pairs))
     if not working_pairs:
         return ""
-    filtered_index = "\n".join(f"[{orig_i}] {p['question'][:100].strip()}" for orig_i, p in working_pairs[:50])
+    # Increased window to 80 candidates for better relevance
+    filtered_index = "\n".join(f"[{orig_i}] {p['question'][:120].strip()}" for orig_i, p in working_pairs[:80])
     check = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
-            {"role": "system", "content": f"Return ONLY the {top_n} most relevant index numbers as comma-separated.\nFAQ:\n{filtered_index}"},
+            {"role": "system", "content": f"Return ONLY the {top_n} most relevant index numbers as comma-separated. If many look relevant, pick the best variety.\nFAQ:\n{filtered_index}"},
             {"role": "user", "content": f"Student question: {question}"}
         ],
-        max_tokens=30,
+        max_tokens=60,
     )
     raw = check.choices[0].message.content.strip()
     try:
