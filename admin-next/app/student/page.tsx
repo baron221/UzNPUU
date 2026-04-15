@@ -82,31 +82,34 @@ export default function StudentPage() {
       {/* Header */}
       <div className="student-header">
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ fontSize: 9, color: darkMode ? '#a5b4fc' : '#4338ca', fontWeight: 700, letterSpacing: 1.5, marginBottom: 4 }}>RASMIY BOT</div>
-          <div className="student-title">UzNPUU Yordamchi</div>
-          <div className="student-sub">Nizomiy nomidagi O&#39;zbekiston Milliy pedagogika universiteti</div>
+          <div style={{ fontSize: 9, color: darkMode ? '#a5b4fc' : '#4f46e5', fontWeight: 800, letterSpacing: 2, marginBottom: 12, opacity: 0.7 }}>RASMIY BOT</div>
+          <div className="student-title-container">
+            <div className="student-title-uznpuu">UzNPUU</div>
+            <div className="student-title-yordamchi">Yordamchi</div>
+          </div>
+          <div className="student-sub" style={{ marginTop: 16, fontSize: 13, lineHeight: 1.5, maxWidth: '85%' }}>Nizomiy nomidagi O&#39;zbekiston Milliy pedagogika universiteti</div>
         </div>
       </div>
 
       {/* Content */}
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {tab === 'home' && (
-          <div className="home-wrap">
-            <div className="home-title">Xizmatlar</div>
+          <div className="home-wrap" style={{ paddingTop: 0 }}>
             <div className="card-grid">
               {/* Static core cards */}
               <div className="home-card" onClick={() => setTab('faq')}>
-                <div className="card-icon-box" style={{ background: darkMode ? 'rgba(108, 92, 231, 0.2)' : 'rgba(108, 92, 231, 0.1)' }}>📋</div>
+                <div className="card-icon-box" style={{ background: darkMode ? 'rgba(108, 92, 231, 0.2)' : '#eef2ff' }}>📋</div>
                 <div className="card-info">
                   <div className="card-title">FAQ</div>
-                  <div className="card-desc">Tez-tez so'raladigan savollar</div>
+                  <div className="card-desc">Tez-tez soraladigan</div>
                 </div>
               </div>
+              
               <div className="home-card" onClick={() => setTab('profile')}>
-                <div className="card-icon-box" style={{ background: darkMode ? 'rgba(0, 184, 148, 0.2)' : 'rgba(0, 184, 148, 0.1)' }}>👤</div>
+                <div className="card-icon-box" style={{ background: darkMode ? 'rgba(108, 92, 231, 0.2)' : '#eef2ff' }}>👤</div>
                 <div className="card-info">
                   <div className="card-title">Profilim</div>
-                  <div className="card-desc">GPA va ma'lumotlar</div>
+                  <div className="card-desc">GPA va malumotlar</div>
                 </div>
               </div>
 
