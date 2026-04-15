@@ -7,23 +7,23 @@ type Tab = 'home' | 'chat' | 'faq' | 'profile';
 import { getCards, type ServiceCard, askAdmin } from '@/lib/api';
 
 const FAQS = [
-  { cat: '📚 HEMIS tizimi', items: [
-    { q: 'HEMIS parolimni qanday tiklash mumkin?', a: 'Registrator ofisi xodimlariga murojaat qiling yoki OneID tizimi orqali kiring.' },
-    { q: 'HEMIS da dars jadvalini qanday ko\'raman?', a: 'student.tdpu.uz saytiga kiring — dashboardda Dars jadvali bo\'limi chiqadi.' },
-    { q: 'GPA ballimni qayerdan ko\'raman?', a: 'Akademik ko\'rsatkichlar bo\'limida umumiy o\'rtacha baho (GPA) ko\'rsatiladi.' },
+const FAQS = [
+  { cat: '🎓 Universitet hayoti', items: [
+    { q: 'Yordamchi bot nima qila oladi?', a: 'Sizning universitet, darslar, shartnoma va boshqa akademik masalalardagi savollaringizga AI yordamida tezkor javob beradi.' },
+    { q: 'Adminstrator bilan qanday bog\'lansa bo\'ladi?', a: 'Agar AI savolingizga javob topa olmasa, "Adminstratorga yuborish" tugmasi chiqadi. Shunda mutaxassis bilan bog\'lanishingiz mumkin.' },
+    { q: 'Fakultet guruhlariga qanday qo\'shilish mumkin?', a: 'Botning Asosiy sahifasidagi foydali havolalar orqali o\'z fakultetingiz guruhini topishingiz mumkin.' },
   ]},
-  { cat: '💰 To\'lov va kontrakt', items: [
-    { q: 'Kontrakt to\'lov summasini qayerdan bilaman?', a: 'kontrakt.edu.uz saytiga kiring. Shaxsiy kabinet → To\'lov ma\'lumotlari bo\'limidan ko\'ring.' },
-    { q: 'Shartnoma to\'lovini online to\'lasa bo\'ladimi?', a: 'Ha, shartnoma to\'lovlarini online to\'lash mumkin.' },
-    { q: 'To\'lov kvitansiyasini qayerdan yuklab olaman?', a: 'To\'lovlar tarixi bo\'limida PDF yuklab olish tugmasi orqali kvitansiyani olish mumkin.' },
+  { cat: '💰 To\'lov va shartnoma', items: [
+    { q: 'Shartnoma to\'lovini online to\'lasa bo\'ladimi?', a: 'Ha, shartnoma to\'lovlarini ko\'plab to\'lov tizimlari (Click, Payme) orqali amalga oshirish mumkin.' },
   ]},
+];
   { cat: '🎓 Grant va stipendiya', items: [
     { q: 'Grantga ariza topshirish uchun minimal GPA qancha?', a: '3.5 va undan yuqori.' },
     { q: 'To\'liq grant nima?', a: 'Bir o\'quv yiliga berilib, kontraktning 100% davlat tomonidan qoplanadigan va stipendiya beriladigan grant.' },
   ]},
 ];
 
-const SUGGS = ['Dars jadvali qayerdan ko\'raman?', 'Kontrakt to\'lash', 'HEMIS login', 'Stipendiya shartlari'];
+const SUGGS = ['Dars jadvali', 'Shartnoma to\'lovlari', 'Fakultetlar ro\'yxati', 'Bot qanday ishlaydi?'];
 
 export default function StudentPage() {
   const [darkMode, setDarkMode] = useState(false);
@@ -32,9 +32,9 @@ export default function StudentPage() {
   const [msgs, setMsgs]       = useState<Msg[]>([{ text: '👋 Salom! Men UzNPUU botiman. Savolingizni yozing — yordam beraman!', type: 'bot' }]);
   const [input, setInput]     = useState('');
   const [typing, setTyping]   = useState(false);
-  const [faqQ, setFaqQ]       = useState('');
-  const [openFAQ, setOpenFAQ] = useState<string | null>(null);
   const [lastQuestion, setLastQuestion] = useState('');
+  const [profile, setProfile] = useState<{ student_id?: string; telegram_id?: string; faculty_name?: string } | null>(null);
+  const [fetchingProfile, setFetchingProfile] = useState(false);
   const msgsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,11 +62,21 @@ export default function StudentPage() {
       tg.expand();
       const user = tg.initDataUnsafe?.user;
       if (user) {
-        localStorage.setItem('tg_user', JSON.stringify({
+        const userData = {
           student_telegram_id: String(user.id),
           student_username: user.username,
           student_name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
-        }));
+        };
+        localStorage.setItem('tg_user', JSON.stringify(userData));
+        
+        // Fetch profile from our DB
+        setFetchingProfile(true);
+        import('@/lib/api').then(api => {
+          api.getStudentProfile(String(user.id)).then(p => {
+            if (p.ok) setProfile(p);
+            setFetchingProfile(false);
+          });
+        });
       }
     }
   }, []);
@@ -124,12 +134,26 @@ export default function StudentPage() {
       {/* Header */}
       <div className={`student-header${tab !== 'home' ? ' mini' : ''}`}>
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <div className="student-badge">RASMIY BOT</div>
+          <div className="premium-glow" />
+          <div className="student-badge">UZNPUU ECOSYSTEM</div>
           <div className="student-title-container">
             <div className="student-title-uznpuu">UzNPUU</div>
             <div className="student-title-yordamchi">Yordamchi</div>
           </div>
-          <div className="student-sub" style={{ marginTop: 20, fontSize: 13, lineHeight: 1.6, maxWidth: '85%', opacity: 0.8, fontWeight: 500 }}>Nizomiy nomidagi O&#39;zbekiston Milliy pedagogika universiteti</div>
+          <div className="student-description">
+            Innovatsion ta&#39;lim universiteti uchun aqlli yordamchi tizim
+          </div>
+          <div className="header-actions">
+            <div className="h-stat">
+              <span className="h-stat-val">24/7</span>
+              <span className="h-stat-lbl">Online Support</span>
+            </div>
+            <div className="h-sep" />
+            <div className="h-stat">
+              <span className="h-stat-val">AI</span>
+              <span className="h-stat-lbl">Smart Engine</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -243,58 +267,39 @@ export default function StudentPage() {
 
         {tab === 'profile' && (
           <div className="profile-wrap">
-            <div className="profile-card" style={{ position: 'relative', overflow: 'hidden' }}>
-              <div className="profile-avatar" style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)', color: '#fff', boxShadow: '0 10px 20px -5px rgba(99, 102, 241, 0.4)' }}>
+            <div className="profile-card premium">
+              <div className="profile-avatar shadow">
                 👤
               </div>
-              <div className="profile-name">Talaba</div>
+              <div className="profile-name">
+                {profile?.student_id ? 'Talaba Profili' : 'Ro&#39;yxatdan o&#39;tilmagan'}
+              </div>
               <div className="profile-role">
-                <span style={{ color: '#10b981', marginRight: 4 }}>●</span>
-                FAOL TALABA
-              </div>
-
-              <div className="gpa-container" style={{ margin: '20px 0' }}>
-                <div className="gpa-ring" style={{ 
-                  background: `conic-gradient(#4f46e5 ${0.0 * 3.6}deg, ${darkMode ? '#0f172a' : '#f1f5f9'} 0)`,
-                  boxShadow: '0 0 30px rgba(79, 70, 229, 0.1)'
-                }}>
-                  <div className="gpa-content">
-                    <span className="gpa-val">—</span>
-                    <span className="gpa-label">GPA</span>
-                  </div>
-                </div>
+                <span className="status-dot green" />
+                FAOLLASHTIRILGAN TIZIM
               </div>
             </div>
 
-            <div className="profile-stats">
-              <div className="stat-card red">
-                <span className="stat-label">Kreditor</span>
-                <span className="stat-val">0</span>
-              </div>
-              <div className="stat-card green">
-                <span className="stat-label">Kurs</span>
-                <span className="stat-val">1</span>
-              </div>
-            </div>
-
-            <div className="profile-list">
-              <div className="profile-row">
-                <span className="profile-label">Status</span>
-                <span className="status-badge">Faol talaba</span>
-              </div>
+            <div className="profile-list premium-list">
               <div className="profile-row">
                 <span className="profile-label">Telegram ID</span>
-                <span className="profile-value">—</span>
+                <span className="profile-value">{profile?.telegram_id || (localStorage.getItem('tg_user') ? JSON.parse(localStorage.getItem('tg_user')!).student_telegram_id : '—')}</span>
               </div>
               <div className="profile-row">
-                <span className="profile-label">Foydalanuvchi</span>
-                <span className="profile-value">—</span>
+                <span className="profile-label">Student ID</span>
+                <span className="profile-value" style={{ fontWeight: 700, color: '#4f46e5' }}>{profile?.student_id || '—'}</span>
+              </div>
+              <div className="profile-row">
+                <span className="profile-label">Fakultet</span>
+                <span className="profile-value">{profile?.faculty_name || 'Umumiy'}</span>
+              </div>
+              <div className="profile-row">
+                <span className="profile-label">Toshkent davlat pedagogika universiteti</span>
               </div>
             </div>
 
-            <div className="hemis-box">
-              <div className="hemis-text">To'liq akademik ma'lumotlar uchun HEMIS tizimiga kiring:</div>
-              <a href="https://student.tdpu.uz" target="_blank" className="hemis-link">student.tdpu.uz</a>
+            <div className="premium-footer">
+              UzNPUU Ecosystem — Rasmiy talaba yordamchi tizimi
             </div>
           </div>
         )}
