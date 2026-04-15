@@ -4,10 +4,14 @@ import asyncio
 import database as db
 import state
 
+def esc(text):
+    """Simple HTML escaping for safety."""
+    if not text: return ""
+    return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
 async def forward_to_admin(user_full_name, question, answer, sid, fid=None):
     """
     Forwards a student question to the relevant admin Telegram group.
-    Can be called from both the Telegram Bot and the Web API.
     """
     try:
         if not state.bot_app:
@@ -15,7 +19,7 @@ async def forward_to_admin(user_full_name, question, answer, sid, fid=None):
             return
 
         faculty_name = "Umumiy"
-        group_id = os.environ.get("ADMIN_GROUP_ID") # Fallback general group
+        group_id = os.environ.get("ADMIN_GROUP_ID") 
         
         if fid:
             faculty = db.get_faculty(fid)
@@ -24,19 +28,18 @@ async def forward_to_admin(user_full_name, question, answer, sid, fid=None):
                 group_id = faculty.get('telegram_group_id') or group_id
 
         if group_id:
-            msg = (f"📨 **Yangi savol!**\n"
-                   f"🆔 ID: `{sid}`\n"
-                   f"👤 {user_full_name}\n"
-                   f"🏫 {faculty_name}\n"
-                   f"❓ {question}\n"
-                   f"🤖 AI Javobi: {answer[:200]}...")
+            msg = (f"📨 <b>Yangi savol!</b>\n"
+                   f"🆔 ID: <code>{esc(sid)}</code>\n"
+                   f"👤 <b>{esc(user_full_name)}</b>\n"
+                   f"🏫 {esc(faculty_name)}\n"
+                   f"❓ {esc(question)}\n"
+                   f"🤖 AI Javobi: {esc(answer[:200])}...")
             
-            # Use the bot instance from state.bot_app
-            await state.bot_app.bot.send_message(chat_id=group_id, text=msg, parse_mode='Markdown')
+            await state.bot_app.bot.send_message(chat_id=group_id, text=msg, parse_mode='HTML')
             logging.info(f"✅ Forwarded question from {sid} to group {group_id}")
             
     except Exception as e:
-        logging.error(f"⚠️ Forward error: {e}")
+        logging.error(f"⚠️ Forward error: {str(e)}")
 
 async def notify_admin_manual(user_full_name, question, sid, fid=None):
     """
@@ -55,12 +58,12 @@ async def notify_admin_manual(user_full_name, question, sid, fid=None):
                 group_id = faculty.get('telegram_group_id') or group_id
 
         if group_id:
-            msg = (f"🚨 **ADMIN KERAK! (Manual)**\n"
-                   f"🆔 ID: `{sid}`\n"
-                   f"👤 {user_full_name}\n"
-                   f"🏫 {faculty_name}\n"
-                   f"❓ {question}\n"
+            msg = (f"🚨 <b>ADMIN KERAK! (Manual)</b>\n"
+                   f"🆔 ID: <code>{esc(sid)}</code>\n"
+                   f"👤 <b>{esc(user_full_name)}</b>\n"
+                   f"🏫 {esc(faculty_name)}\n"
+                   f"❓ {esc(question)}\n"
                    f"⚠️ Talaba admin javobini kutmoqda.")
-            await state.bot_app.bot.send_message(chat_id=group_id, text=msg, parse_mode='Markdown')
+            await state.bot_app.bot.send_message(chat_id=group_id, text=msg, parse_mode='HTML')
     except Exception as e:
-        logging.error(f"⚠️ Manual notify error: {e}")
+        logging.error(f"⚠️ Manual notify error: {str(e)}")
