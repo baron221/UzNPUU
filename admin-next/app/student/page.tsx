@@ -69,7 +69,9 @@ export default function StudentPage() {
     <div className="student-wrap">
       {/* Header */}
       <div className="student-header">
-        <div className="student-logo">🎓</div>
+        <div className="student-logo">
+          <img src="/bot-icon.png" alt="Bot" />
+        </div>
         <div>
           <div className="student-title">UzNPUU Bot</div>
           <div className="student-sub">Universitet yordamchisi • 24/7</div>
