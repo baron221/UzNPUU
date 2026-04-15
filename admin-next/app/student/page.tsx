@@ -26,6 +26,7 @@ const FAQS = [
 const SUGGS = ['Dars jadvali qayerdan ko\'raman?', 'Kontrakt to\'lash', 'HEMIS login', 'Stipendiya shartlari'];
 
 export default function StudentPage() {
+  const [darkMode, setDarkMode] = useState(false);
   const [tab, setTab]         = useState<Tab>('home');
   const [cards, setCards]     = useState<ServiceCard[]>([]);
   const [msgs, setMsgs]       = useState<Msg[]>([{ text: '👋 Salom! Men UzNPUU botiman. Savolingizni yozing — yordam beraman!', type: 'bot' }]);
@@ -34,6 +35,17 @@ export default function StudentPage() {
   const [faqQ, setFaqQ]       = useState('');
   const [openFAQ, setOpenFAQ] = useState<string | null>(null);
   const msgsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('student-theme');
+    if (saved === 'dark') setDarkMode(true);
+  }, []);
+
+  const toggleTheme = () => {
+    const next = !darkMode;
+    setDarkMode(next);
+    localStorage.setItem('student-theme', next ? 'dark' : 'light');
+  };
 
   useEffect(() => {
     msgsRef.current?.scrollTo({ top: msgsRef.current.scrollHeight, behavior: 'smooth' });
@@ -66,11 +78,11 @@ export default function StudentPage() {
   })).filter(cat => cat.items.length > 0);
 
   return (
-    <div className="student-wrap">
+    <div className={`student-wrap${darkMode ? ' dark' : ''}`}>
       {/* Header */}
       <div className="student-header">
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ fontSize: 9, color: '#4338ca', fontWeight: 700, letterSpacing: 1.5, marginBottom: 4 }}>RASMIY BOT</div>
+          <div style={{ fontSize: 9, color: darkMode ? '#a5b4fc' : '#4338ca', fontWeight: 700, letterSpacing: 1.5, marginBottom: 4 }}>RASMIY BOT</div>
           <div className="student-title">UzNPUU Yordamchi</div>
           <div className="student-sub">Nizomiy nomidagi O&#39;zbekiston Milliy pedagogika universiteti</div>
         </div>
@@ -84,14 +96,14 @@ export default function StudentPage() {
             <div className="card-grid">
               {/* Static core cards */}
               <div className="home-card" onClick={() => setTab('faq')}>
-                <div className="card-icon-box" style={{ background: 'rgba(108, 92, 231, 0.1)' }}>📋</div>
+                <div className="card-icon-box" style={{ background: darkMode ? 'rgba(108, 92, 231, 0.2)' : 'rgba(108, 92, 231, 0.1)' }}>📋</div>
                 <div className="card-info">
                   <div className="card-title">FAQ</div>
                   <div className="card-desc">Tez-tez so'raladigan savollar</div>
                 </div>
               </div>
               <div className="home-card" onClick={() => setTab('profile')}>
-                <div className="card-icon-box" style={{ background: 'rgba(0, 184, 148, 0.1)' }}>👤</div>
+                <div className="card-icon-box" style={{ background: darkMode ? 'rgba(0, 184, 148, 0.2)' : 'rgba(0, 184, 148, 0.1)' }}>👤</div>
                 <div className="card-info">
                   <div className="card-title">Profilim</div>
                   <div className="card-desc">GPA va ma'lumotlar</div>
@@ -169,17 +181,47 @@ export default function StudentPage() {
           <div className="profile-wrap">
             <div className="profile-card">
               <div className="profile-avatar">👤</div>
-              <div className="profile-name">UzNPUU Talabasi</div>
-              <div className="profile-role">🎓 Bakalavr talabasi</div>
-              <div className="profile-row"><span className="profile-label">Universitet</span><span className="profile-value">UzNPUU</span></div>
-              <div className="profile-row"><span className="profile-label">Bot versiyasi</span><span className="profile-value">v2.0</span></div>
-              <div className="profile-row"><span className="profile-label">Til</span><span className="profile-value">🇺🇿 O&#39;zbek</span></div>
-            </div>
-            <div className="profile-card" style={{ textAlign:'center', padding:20 }}>
-              <div style={{ fontSize:13, color:'var(--muted)', lineHeight:1.7 }}>
-                Bot yordamida arzon va tez ravishda savolaringizga javob oling.<br/>
-                Muammolar bo&#39;lsa adminga murojaat qiling.
+              <div className="profile-name">Talaba</div>
+              <div className="profile-role">UzNPUU talabasi</div>
+              <div className="gpa-container">
+                <div className="gpa-ring" style={{ background: `conic-gradient(#4f46e5 ${0 * 3.6}deg, ${darkMode ? '#0f172a' : '#f1f5f9'} 0)` }}>
+                  <div className="gpa-content">
+                    <span className="gpa-val">—</span>
+                    <span className="gpa-label">GPA</span>
+                  </div>
+                </div>
               </div>
+            </div>
+
+            <div className="profile-stats">
+              <div className="stat-card red">
+                <span className="stat-label">Kreditor</span>
+                <span className="stat-val">0</span>
+              </div>
+              <div className="stat-card green">
+                <span className="stat-label">Kurs</span>
+                <span className="stat-val">1</span>
+              </div>
+            </div>
+
+            <div className="profile-list">
+              <div className="profile-row">
+                <span className="profile-label">Status</span>
+                <span className="status-badge">Faol talaba</span>
+              </div>
+              <div className="profile-row">
+                <span className="profile-label">Telegram ID</span>
+                <span className="profile-value">—</span>
+              </div>
+              <div className="profile-row">
+                <span className="profile-label">Foydalanuvchi</span>
+                <span className="profile-value">—</span>
+              </div>
+            </div>
+
+            <div className="hemis-box">
+              <div className="hemis-text">To'liq akademik ma'lumotlar uchun HEMIS tizimiga kiring:</div>
+              <a href="https://student.tdpu.uz" target="_blank" className="hemis-link">student.tdpu.uz</a>
             </div>
           </div>
         )}
@@ -187,9 +229,20 @@ export default function StudentPage() {
 
       {/* Bottom Nav */}
       <nav className="student-nav">
-        {([['home','🏠','Bosh sahifa'], ['chat','💬','Chat'], ['faq','🌙','Mavzu']] as const).map(([t,icon,label]) => (
-          <button key={t} className={`s-nav-btn${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>
-            <span className="s-nav-icon">{icon}</span>{label}
+        {[
+          { t: 'home', icon: '🏠', label: 'Bosh sahifa' },
+          { t: 'chat', icon: '💬', label: 'Chat' },
+          { t: 'theme', icon: darkMode ? '☀️' : '🌙', label: 'Mavzu' },
+        ].map(n => (
+          <button
+            key={n.t}
+            className={`s-nav-btn${tab === n.t ? ' active' : ''}`}
+            onClick={() => {
+              if (n.t === 'theme') toggleTheme();
+              else setTab(n.t as any);
+            }}
+          >
+            <span className="s-nav-icon">{n.icon}</span>{n.label}
           </button>
         ))}
       </nav>
