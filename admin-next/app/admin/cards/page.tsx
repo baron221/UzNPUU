@@ -2,12 +2,23 @@
 import { useEffect, useState } from 'react';
 import { getAdminCards, createCard, updateCard, deleteCard, type ServiceCard } from '@/lib/api';
 
+const EMOJI_LIST = [
+  '📋','📚','📝','📌','📎','📊','📈','📉','🗂️','🗃️',
+  '🎓','🏫','👤','👥','💬','💡','🔔','🔍','⚙️','🛠️',
+  '💰','💳','🏦','🎁','🌟','✅','❓','📣','🔗','🗓️',
+  '📱','💻','🌐','🏆','📞','✉️','🚀','🧾','🔐','📂',
+];
+
 export default function CardsPage() {
   const [cards, setCards]     = useState<ServiceCard[]>([]);
   const [modal, setModal]     = useState(false);
   const [editId, setEditId]   = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [form, setForm]       = useState({ title: '', description: '', icon: '🌟', link: '', type: 'message' as ServiceCard['type'], is_active: 1 });
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [form, setForm] = useState({
+    title: '', description: '', icon: '🌟', link: '',
+    type: 'message' as ServiceCard['type'], is_active: 1
+  });
 
   async function load() {
     setLoading(true);
@@ -19,9 +30,14 @@ export default function CardsPage() {
 
   async function save() {
     if (!form.title) { alert("Sarlavha kiritish shart!"); return; }
-    if (editId) await updateCard(editId, form);
-    else await createCard(form);
-    
+    let link = form.link;
+    // Auto-add https:// for link type cards if missing
+    if (form.type === 'link' && link && !link.startsWith('http://') && !link.startsWith('https://')) {
+      link = 'https://' + link;
+    }
+    const payload = { ...form, link };
+    if (editId) await updateCard(editId, payload);
+    else await createCard(payload);
     closeModal();
     load();
   }
@@ -34,20 +50,27 @@ export default function CardsPage() {
       setEditId(null);
       setForm({ title: '', description: '', icon: '🌟', link: '', type: 'message', is_active: 1 });
     }
+    setShowEmojiPicker(false);
     setModal(true);
   }
 
   function closeModal() {
     setModal(false);
     setEditId(null);
+    setShowEmojiPicker(false);
   }
+
+  const linkPlaceholder =
+    form.type === 'link' ? 'https://example.com' :
+    form.type === 'tab'  ? 'home | chat | faq | profile' :
+    'Botga yuboriladigan xabar matni...';
 
   return (
     <>
       <div className="page-header">
         <div>
           <div className="page-title">Xizmatlar Boshqaruvi</div>
-          <div className="page-sub">Dashboard kardiogrammalarini boshqarish</div>
+          <div className="page-sub">Dashboard kartalarini boshqarish</div>
         </div>
         <button className="btn btn-primary" onClick={() => openModal()}>+ Yangi card</button>
       </div>
@@ -61,7 +84,8 @@ export default function CardsPage() {
           <table>
             <thead><tr><th>Ikon</th><th>Sarlavha</th><th>Tavsif</th><th>Turi</th><th>Holati</th><th></th></tr></thead>
             <tbody>
-              {cards.length === 0 ? <tr><td colSpan={6} className="empty">Cardlar yo'q</td></tr>
+              {cards.length === 0
+                ? <tr><td colSpan={6} className="empty">Cardlar yo&apos;q</td></tr>
                 : cards.map(c => (
                   <tr key={c.id}>
                     <td style={{ fontSize:20 }}>{c.icon}</td>
@@ -71,10 +95,11 @@ export default function CardsPage() {
                     <td><span className={`badge ${c.is_active ? 'badge-green' : 'badge-red'}`}>{c.is_active ? 'Faol' : 'Nofaol'}</span></td>
                     <td style={{ textAlign:'right' }}>
                       <button className="btn btn-sm" onClick={() => openModal(c)} style={{ marginRight:6 }}>Tahrir</button>
-                      <button className="btn btn-sm btn-red" onClick={async () => { if (confirm("O'chirasizmi?")) { await deleteCard(c.id); load(); } }}>O'chir</button>
+                      <button className="btn btn-sm btn-red" onClick={async () => { if (confirm("O'chirasizmi?")) { await deleteCard(c.id); load(); } }}>O&apos;chir</button>
                     </td>
                   </tr>
-                ))}
+                ))
+              }
             </tbody>
           </table>
         </div>
@@ -83,16 +108,40 @@ export default function CardsPage() {
       {modal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && closeModal()}>
           <div className="modal">
-            <div className="modal-title">{editId ? 'Cardni tahrirlash' : 'Yangi card qo\'shish'}</div>
-            
+            <div className="modal-title">{editId ? 'Cardni tahrirlash' : "Yangi card qo'shish"}</div>
+
+            {/* Emoji Picker */}
             <div className="form-row">
               <label className="form-label">Ikon (Emoji)</label>
-              <input className="form-inp" style={{ width:60, textAlign:'center' }} value={form.icon} onChange={e => setForm(p => ({ ...p, icon: e.target.value }))} />
+              <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                <div
+                  onClick={() => setShowEmojiPicker(p => !p)}
+                  style={{ fontSize:28, cursor:'pointer', width:48, height:48, display:'flex', alignItems:'center', justifyContent:'center', border:'2px solid #e2e8f0', borderRadius:10, background:'#f8fafc' }}
+                >
+                  {form.icon}
+                </div>
+                <span style={{ fontSize:12, color:'#94a3b8' }}>Bosib emoji tanlang</span>
+              </div>
+              {showEmojiPicker && (
+                <div style={{ marginTop:8, display:'grid', gridTemplateColumns:'repeat(10, 1fr)', gap:4, padding:10, background:'#f8fafc', borderRadius:10, border:'1px solid #e2e8f0' }}>
+                  {EMOJI_LIST.map(em => (
+                    <button
+                      key={em}
+                      onClick={() => { setForm(p => ({ ...p, icon: em })); setShowEmojiPicker(false); }}
+                      style={{ fontSize:20, background:'none', border:'none', cursor:'pointer', padding:4, borderRadius:6 }}
+                      onMouseOver={ev => (ev.currentTarget.style.background = '#e2e8f0')}
+                      onMouseOut={ev => (ev.currentTarget.style.background = 'none')}
+                    >
+                      {em}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="form-row">
               <label className="form-label">Sarlavha</label>
-              <input className="form-inp" placeholder="Karda nomi..." value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} />
+              <input className="form-inp" placeholder="Karta nomi..." value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} />
             </div>
 
             <div className="form-row">
@@ -102,16 +151,26 @@ export default function CardsPage() {
 
             <div className="form-row">
               <label className="form-label">Turi</label>
-              <select className="form-inp" value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as any }))}>
-                <option value="message">Xabar yuborish (send as user)</option>
-                <option value="link">Havola (Link)</option>
-                <option value="tab">Ichki Tabga o'tish</option>
+              <select className="form-inp" value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as ServiceCard['type'] }))}>
+                <option value="message">Xabar yuborish (bot savol sifatida)</option>
+                <option value="link">Tashqi havola (URL)</option>
+                <option value="tab">Ichki Tabga o&apos;tish</option>
               </select>
             </div>
 
             <div className="form-row">
-              <label className="form-label">Havola / Xabar / Tab nomi</label>
-              <input className="form-inp" placeholder="Masalan: /faq yoki Salom..." value={form.link} onChange={e => setForm(p => ({ ...p, link: e.target.value }))} />
+              <label className="form-label">
+                {form.type === 'link' ? 'URL manzil' : form.type === 'tab' ? 'Tab nomi' : 'Xabar matni'}
+              </label>
+              <input
+                className="form-inp"
+                placeholder={linkPlaceholder}
+                value={form.link}
+                onChange={e => setForm(p => ({ ...p, link: e.target.value }))}
+              />
+              {form.type === 'link' && (
+                <div style={{ fontSize:11, color:'#94a3b8', marginTop:4 }}>https:// avtomatik qo&apos;shiladi</div>
+              )}
             </div>
 
             <div className="form-row" style={{ flexDirection:'row', alignItems:'center', gap:10 }}>
