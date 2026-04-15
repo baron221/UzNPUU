@@ -100,7 +100,7 @@ export default function StudentPage() {
   return (
     <div className={`student-wrap${darkMode ? ' dark' : ''}`}>
       {/* Header */}
-      <div className="student-header">
+      <div className={`student-header${tab !== 'home' ? ' mini' : ''}`}>
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div className="student-badge">RASMIY BOT</div>
           <div className="student-title-container">

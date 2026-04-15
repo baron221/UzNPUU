@@ -376,6 +376,27 @@ textarea.form-inp { resize: vertical; min-height: 120px; }
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   backdrop-filter: blur(10px);
 }
+.student-header.mini {
+  padding: 16px 24px;
+  margin-bottom: 12px;
+  border-radius: 24px;
+}
+.student-header.mini .student-sub,
+.student-header.mini .student-badge {
+  display: none;
+}
+.student-header.mini .student-title-uznpuu {
+  font-size: 20px;
+}
+.student-header.mini .student-title-yordamchi {
+  font-size: 20px;
+  margin-top: 0;
+}
+.student-header.mini .student-title-container {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+}
 .student-wrap.dark .student-header {
   background: linear-gradient(135deg, rgba(30, 27, 75, 0.4) 0%, rgba(30, 41, 59, 0.4) 100%),
               radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.2) 0, transparent 50%),
