@@ -91,11 +91,11 @@ export const uploadFile = (file: File) => {
 
 
 // ── Ask (Student) ─────────────────────────────────────────────────────────────
-export const askQuestion = (question: string) =>
+export const askQuestion = (question: string, metadata: any = {}) =>
   fetch(`/ask`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, ...metadata }),
   }).then(r => r.json()) as Promise<{ answer: string }>;
 
 // ── Types ─────────────────────────────────────────────────────────────────────

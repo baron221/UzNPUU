@@ -70,9 +70,23 @@ async def ask(request: Request):
     if not q:
         return {"answer": "Savol bo'sh!"}
     
-    # knowledge_base is now in state
+    # Metadata for database persistence
+    student_tg_id = data.get('student_telegram_id', 'WEB')
+    student_id = data.get('student_id', '')
+    username = data.get('student_username', 'WebUser')
+    fullname = data.get('student_name', 'Veb talaba')
+    faculty_id = data.get('faculty_id')
+    
     import state
     answer, options, lang, category = ai_responder.get_answer(q, state.knowledge_base, state.clients)
+    
+    # Save to database so it shows up in Admin dashboard
+    db.save_question(
+        student_tg_id, student_id, username, fullname, 
+        faculty_id, q, answer, lang, category
+    )
+    logger.log_message(student_tg_id, username, q, answer, lang, category)
+
     if options:
         answer += "\n\n" + "\n".join(f"• {o}" for o in options)
     return {"answer": answer}

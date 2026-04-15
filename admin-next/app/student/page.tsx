@@ -51,18 +51,38 @@ export default function StudentPage() {
     msgsRef.current?.scrollTo({ top: msgsRef.current.scrollHeight, behavior: 'smooth' });
   }, [msgs, typing]);
 
+  const [faculty_id, set_faculty_id] = useState<number | null>(null);
+
   useEffect(() => {
-    getCards().then(d => setCards(d.cards));
+    // @ts-ignore
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      const user = tg.initDataUnsafe?.user;
+      if (user) {
+        localStorage.setItem('tg_user', JSON.stringify({
+          student_telegram_id: String(user.id),
+          student_username: user.username,
+          student_name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
+        }));
+      }
+    }
   }, []);
 
   async function send(text?: string) {
     const q = (text ?? input).trim();
     if (!q) return;
+
+    // Get metadata from storage
+    const metaStr = localStorage.getItem('tg_user');
+    const meta = metaStr ? JSON.parse(metaStr) : {};
+
     setInput('');
     setMsgs(p => [...p, { text: q, type: 'user' }]);
     setTyping(true);
     try {
-      const d = await askQuestion(q);
+      const d = await askQuestion(q, meta);
       setMsgs(p => [...p, { text: d.answer || 'Xatolik yuz berdi.', type: 'bot' }]);
     } catch {
       setMsgs(p => [...p, { text: 'Serverga ulanishda xatolik.', type: 'bot' }]);
