@@ -110,15 +110,6 @@ export const askAdmin = (question: string, metadata: any = {}) =>
     body: JSON.stringify({ question, ...metadata }),
   }).then(r => r.json()) as Promise<{ ok: boolean; message?: string }>;
 
-export const getStudentProfile = (tg_id: string) =>
-  fetch(`/api/student/profile?tg_id=${tg_id}`).then(r => r.json()) as Promise<{
-    ok: boolean;
-    student_id?: string;
-    telegram_id?: string;
-    faculty_name?: string;
-    error?: string;
-  }>;
-
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface Question {
   id: number;

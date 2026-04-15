@@ -86,7 +86,7 @@ async def ask(request: Request):
     
     import state
     import asyncio
-    answer, options, lang, category = ai_responder.get_answer(q, state.knowledge_base, state.clients, faculty_id=faculty_id)
+    answer, options, lang, category = ai_responder.get_answer(q, state.knowledge_base, state.clients)
     
     # Save to database
     db.save_question(
@@ -132,26 +132,6 @@ async def get_public_faculties():
 @app.get("/api/cards")
 async def get_public_cards():
     return {"cards": db.get_service_cards(only_active=True)}
-    
-@app.get("/api/student/profile")
-async def get_student_profile(tg_id: str):
-    student = db.get_student(tg_id)
-    if not student:
-        return {"ok": False, "error": "Student not found"}
-    
-    # Enrich with faculty name
-    faculty_name = "Umumiy"
-    if student.get('faculty_id'):
-        f = db.get_faculty(student['faculty_id'])
-        if f: faculty_name = f['name']
-        
-    return {
-        "ok": True,
-        "student_id": student.get('student_id'),
-        "telegram_id": student.get('telegram_id'),
-        "faculty_name": faculty_name,
-        "created_at": student.get('created_at')
-    }
 
 # ── Admin Auth ────────────────────────────────────────────────────────────────
 @app.post("/api/admin/auth")
