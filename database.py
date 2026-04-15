@@ -131,6 +131,12 @@ def init_db():
             conn.commit()
         except sqlite3.OperationalError:
             pass
+    # Fix existing cards: set sort_order based on id if still NULL
+    try:
+        c.execute("UPDATE service_cards SET sort_order=id WHERE sort_order IS NULL")
+        conn.commit()
+    except Exception:
+        pass
 
     # Chat groups (Telegram group IDs per faculty)
     c.execute('''CREATE TABLE IF NOT EXISTS chat_groups (
