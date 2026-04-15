@@ -60,6 +60,10 @@ async def admin():
 async def health():
     return {"status": "ok", "pairs": len(ai_responder._cached_pairs or []), "logs": len(logger._logs)}
 
+@app.get("/api/ping")
+async def ping():
+    return {"ping": "pong"}
+
 # ── Public API ────────────────────────────────────────────────────────────────
 @app.post("/ask")
 async def ask(request: Request):
