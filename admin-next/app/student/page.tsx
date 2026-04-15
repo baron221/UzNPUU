@@ -2,6 +2,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { getCards, type ServiceCard, askAdmin, askQuestion, getStudentProfile } from '@/lib/api';
 
+type Msg = { text: string; type: 'user' | 'bot'; options?: string[]; showAdmin?: boolean };
+type Tab = 'home' | 'chat' | 'faq' | 'profile';
+
 const FAQS = [
   { cat: '🎓 Universitet hayoti', items: [
     { q: 'Yordamchi bot nima qila oladi?', a: 'Sizning universitet, darslar, shartnoma va boshqa akademik masalalardagi savollaringizga AI yordamida tezkor javob beradi.' },
