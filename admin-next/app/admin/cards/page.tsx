@@ -7,7 +7,7 @@ export default function CardsPage() {
   const [modal, setModal]     = useState(false);
   const [editId, setEditId]   = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [form, setForm]       = useState({ title: '', description: '', icon: '🌟', link: '', type: 'message' as const, is_active: 1 });
+  const [form, setForm]       = useState({ title: '', description: '', icon: '🌟', link: '', type: 'message' as ServiceCard['type'], is_active: 1 });
 
   async function load() {
     setLoading(true);
