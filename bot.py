@@ -14,11 +14,11 @@ from logger import log_message
 load_dotenv()
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
 
-print("🚀 Starting University Bot...")
+print("Starting University Bot...")
 knowledge_base = load_knowledge_base("knowledge/")
 clients = setup_ai()
 ai_responder._cached_pairs = parse_qa_pairs(knowledge_base)
-print("✅ Bot is ready!\n")
+print("Bot is ready!\n")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -90,7 +90,7 @@ def main():
     app.add_handler(CallbackQueryHandler(handle_button_click))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(MessageHandler(filters.COMMAND, unknown_command))
-    print("✅ Bot is live!\n")
+    print("Bot is live!\n")
     app.run_polling()
 
 if __name__ == "__main__":

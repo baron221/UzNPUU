@@ -20,7 +20,7 @@ knowledge_base = load_knowledge_base(os.path.join(BASE_DIR, "knowledge"))
 clients = setup_ai()
 ai_responder._cached_pairs = parse_qa_pairs(knowledge_base)
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
-print("✅ AI ready!")
+print("AI ready!")
 
 ADMIN_HTML = """<!DOCTYPE html>
 <html lang="uz">
@@ -455,7 +455,7 @@ def reload_knowledge():
     global knowledge_base
     knowledge_base = load_knowledge_base(os.path.join(BASE_DIR, "knowledge"))
     ai_responder._cached_pairs = parse_qa_pairs(knowledge_base)
-    print(f"🔄 Reloaded: {len(ai_responder._cached_pairs)} pairs")
+    print(f"Reloaded: {len(ai_responder._cached_pairs)} pairs")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -602,5 +602,5 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    print(f"🚀 Starting on port {PORT}")
+    print(f"Starting on port {PORT}")
     HTTPServer(('0.0.0.0', PORT), Handler).serve_forever()

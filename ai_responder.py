@@ -6,10 +6,10 @@ from lang_detector import detect_lang, get_response
 def setup_ai():
     api_key = os.environ.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
     if not api_key:
-        print("❌ GROQ_API_KEY not found! Available env vars:", list(os.environ.keys()))
+        print("GROQ_API_KEY not found! Available env vars:", list(os.environ.keys()))
         raise ValueError("GROQ_API_KEY not found! Please set it in Railway Variables tab.")
     client = Groq(api_key=api_key)
-    print("✅ Groq AI ready (Llama 3.3-70b) — Free!")
+    print("Groq AI ready (Llama 3.3-70b) -- Free!")
     return {"groq": client}
 
 def chunk_knowledge_base(knowledge_base: str, chunk_size: int = 500) -> list:
@@ -43,7 +43,7 @@ def parse_qa_pairs(knowledge_base: str) -> list:
         else:
             if len(block) > 30:
                 pairs.append({"question": block[:200], "answer": block})
-    print(f"📋 Parsed {len(pairs)} Q&A pairs from documents")
+    print(f"Parsed {len(pairs)} Q&A pairs from documents")
     return pairs
 
 def find_relevant_chunks(question: str, chunks: list, client, top_n: int = 5) -> str:
@@ -141,7 +141,7 @@ def get_answer(question: str, knowledge_base: str, clients: dict) -> tuple:
         _cached_pairs = parse_qa_pairs(knowledge_base)
 
     category = classify_question(question, client)
-    print(f"🏷️  [{category}][{lang}] {question[:50]}...")
+    print(f"[{category}][{lang}] {question[:50]}...")
 
     # ── GENERAL / CONVERSATIONAL ──────────────────────────────────────────────
     if category == "GENERAL":
@@ -178,7 +178,7 @@ If they want to speak to an admin, tell them you can help with most info from do
     # ── UNIVERSITY ────────────────────────────────────────────────────────────
     if category == "UNIVERSITY":
         relevant_context = find_relevant_pairs(question, _cached_pairs, client, top_n=5)
-        print(f"🎯 ~{len(relevant_context)//4} tokens used")
+        print(f"Context relevance tokens info used")
 
         if not relevant_context.strip():
             # If it's a university question but no docs found, try to be helpful instead of just saying "not found"

@@ -11,13 +11,13 @@ def load_knowledge_base(folder=None):
     all_text = []
 
     if not os.path.exists(folder):
-        print(f"⚠️  Folder '{folder}' not found. Creating it...")
+        print(f"Warning: Folder '{folder}' not found. Creating it...")
         os.makedirs(folder, exist_ok=True)
         return ""
 
     files = os.listdir(folder)
     if not files:
-        print(f"⚠️  No files found in '{folder}'.")
+        print(f"Warning: No files found in '{folder}'.")
         return ""
 
     for filename in files:
@@ -27,15 +27,15 @@ def load_knowledge_base(folder=None):
             if filename.lower().endswith(".pdf"):
                 reader = PdfReader(path)
                 text = "\n".join(p.extract_text() for p in reader.pages if p.extract_text())
-                print(f"✅ Loaded PDF: {filename}")
+                print(f"Loaded PDF: {filename}")
             elif filename.lower().endswith(".docx"):
                 doc = Document(path)
                 text = "\n".join(p.text for p in doc.paragraphs if p.text.strip())
-                print(f"✅ Loaded DOCX: {filename}")
+                print(f"Loaded DOCX: {filename}")
             elif filename.lower().endswith((".txt", ".md")):
                 with open(path, "r", encoding="utf-8") as f:
                     text = f.read()
-                print(f"✅ Loaded TXT: {filename}")
+                print(f"Loaded TXT: {filename}")
             elif filename.lower().endswith((".xlsx", ".xls")):
                 import openpyxl
                 wb = openpyxl.load_workbook(path)
@@ -48,15 +48,15 @@ def load_knowledge_base(folder=None):
                         if row_text.strip():
                             rows.append(row_text)
                 text = "\n".join(rows)
-                print(f"✅ Loaded Excel: {filename}")
+                print(f"Loaded Excel: {filename}")
             else:
-                print(f"⏭️  Skipped: {filename}")
+                print(f"Skipped: {filename}")
                 continue
 
             if text.strip():
                 all_text.append(f"=== FILE: {filename} ===\n{text.strip()}")
         except Exception as e:
-            print(f"❌ Error reading {filename}: {e}")
+            print(f"Error reading {filename}: {e}")
 
-    print(f"\n📚 Loaded {len(all_text)} file(s) into knowledge base.\n")
+    print(f"\nKnowledge base: Loaded {len(all_text)} file(s).\n")
     return "\n\n".join(all_text)

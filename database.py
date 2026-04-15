@@ -140,7 +140,7 @@ def init_db():
             ('admin', get_password_hash('admin123'), 'Super Admin')
         )
         conn.commit()
-        print("✅ Default super admin created: admin / admin123")
+        print("Default super admin created: admin / admin123")
 
     # Create default faculties
     default_faculties = [
@@ -157,7 +157,7 @@ def init_db():
             pass
     conn.commit()
     conn.close()
-    print("✅ Database initialized!")
+    print("Database initialized!")
 
 
 # ── FACULTY CRUD ──────────────────────────────────────────────────────────────

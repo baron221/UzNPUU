@@ -17,20 +17,20 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ── Initialize ─────────────────────────────────────────────────────────────────
 def initialize():
-    print("🚀 Initializing University Bot...")
+    print("Initializing University Bot...")
     db.init_db()
     
-    print("📂 Loading knowledge base...")
+    print("Loading knowledge base...")
     state.knowledge_base = load_knowledge_base(os.path.join(BASE_DIR, "knowledge"))
     state.clients = setup_ai()
     ai_responder._cached_pairs = parse_qa_pairs(state.knowledge_base)
-    print(f"✅ Ready: {len(ai_responder._cached_pairs)} Q&A pairs")
+    print(f"Ready: {len(ai_responder._cached_pairs)} Q&A pairs")
 
 # ── Web Server (FastAPI) ──────────────────────────────────────────────────────
 def run_api():
     from api import app
     port = int(os.environ.get("PORT", 8080))
-    print(f"🌐 API Server starting on port {port}")
+    print(f"API Server starting on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
 
 # ── Telegram Bot ──────────────────────────────────────────────────────────────
@@ -54,7 +54,7 @@ def run_bot():
     state.bot_app = app  # Store the Application instance for the API
     setup_bot_handlers(app)
     
-    print("✅ Telegram Bot is live!")
+    print("Telegram Bot is live!")
     app.run_polling(drop_pending_updates=True)
 
 # ── Entry Point ────────────────────────────────────────────────────────────────
