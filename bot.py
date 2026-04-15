@@ -53,7 +53,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     if options:
-        keyboard = [[InlineKeyboardButton(opt, callback_data=opt)] for opt in options]
+        keyboard = [[InlineKeyboardButton(opt, callback_data=opt[:40])] for opt in options]
         await update.message.reply_text(answer, reply_markup=InlineKeyboardMarkup(keyboard))
     else:
         await update.message.reply_text(answer)
@@ -71,7 +71,7 @@ async def handle_button_click(update: Update, context: ContextTypes.DEFAULT_TYPE
     log_message(str(user.id), username, selected, answer, lang, category)
 
     if options:
-        keyboard = [[InlineKeyboardButton(opt, callback_data=opt)] for opt in options]
+        keyboard = [[InlineKeyboardButton(opt, callback_data=opt[:40])] for opt in options]
         await query.message.reply_text(answer, reply_markup=InlineKeyboardMarkup(keyboard))
     else:
         await query.message.reply_text(answer)

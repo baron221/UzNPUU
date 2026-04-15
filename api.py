@@ -76,8 +76,8 @@ async def ask(request: Request):
     
     # Try to load student context from DB if tg_id is known
     student = db.get_student(student_tg_id)
-    student_id = data.get('student_id') or (student['student_id'] if student else '')
-    faculty_id = data.get('faculty_id') or (student['faculty_id'] if student else None)
+    student_id = data.get('student_id') or (student.get('student_id') if student else '')
+    faculty_id = data.get('faculty_id') or (student.get('faculty_id') if student else None)
     username = data.get('student_username') or (student.get('username') if student else 'WebUser')
     fullname = data.get('student_name') or (student.get('full_name') if student else 'Veb talaba')
     
