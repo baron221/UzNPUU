@@ -46,16 +46,20 @@ def run_bot():
         
     token = os.environ.get("BOT_TOKEN")
     if not token:
-        raise ValueError("BOT_TOKEN not found!")
+        print("ERROR: BOT_TOKEN not found!")
+        return
     
-    app = (ApplicationBuilder().token(token)
-           .connect_timeout(30).read_timeout(30).write_timeout(30).build())
-    
-    state.bot_app = app  # Store the Application instance for the API
-    setup_bot_handlers(app)
-    
-    print("Telegram Bot is live!")
-    app.run_polling(drop_pending_updates=True)
+    try:
+        app = (ApplicationBuilder().token(token)
+               .connect_timeout(30).read_timeout(30).write_timeout(30).build())
+        
+        state.bot_app = app  # Store the Application instance for the API
+        setup_bot_handlers(app)
+        
+        print("Telegram Bot thread is live!")
+        app.run_polling(drop_pending_updates=True)
+    except Exception as e:
+        print(f"BOT ERROR in thread: {str(e)}")
 
 # ── Entry Point ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
@@ -63,9 +67,10 @@ if __name__ == "__main__":
     
     initialize()
     
-    # Run API in a separate thread
-    api_thread = threading.Thread(target=run_api, daemon=True)
-    api_thread.start()
+    # Run Bot in a separate daemon thread
+    print("Starting Telegram Bot thread...")
+    bot_thread = threading.Thread(target=run_bot, daemon=True)
+    bot_thread.start()
     
-    # Run Bot in the main thread
-    run_bot()
+    # Run API in the main thread (Crucial for Railway health checks)
+    run_api()
