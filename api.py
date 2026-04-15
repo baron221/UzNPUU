@@ -47,9 +47,13 @@ def get_current_admin(token: str = Depends(oauth2_scheme)):
 # ── Static Pages ──────────────────────────────────────────────────────────────
 ADMIN_HTML = get_admin_html()
 
-@app.get("/", response_class=RedirectResponse)
+@app.get("/", response_class=JSONResponse)
 async def index():
-    return "https://uz-npuu.vercel.app/student"
+    return {
+        "status": "online",
+        "message": "UzNPUU Bot API is running",
+        "mini_app": "https://uz-npuu.vercel.app/student"
+    }
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin():
@@ -109,8 +113,8 @@ async def ask_admin(request: Request):
     student_tg_id = data.get('student_telegram_id') or data.get('student_tg_id', 'WEB')
     
     student = db.get_student(student_tg_id)
-    student_id = data.get('student_id') or (student['student_id'] if student else '')
-    faculty_id = data.get('faculty_id') or (student['faculty_id'] if student else None)
+    student_id = data.get('student_id') or (student.get('student_id') if student else '')
+    faculty_id = data.get('faculty_id') or (student.get('faculty_id') if student else None)
     fullname = data.get('student_name') or (student.get('full_name') if student else 'Veb talaba')
     username = data.get('student_username') or (student.get('username') if student else 'WebUser')
 

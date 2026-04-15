@@ -57,7 +57,7 @@ def run_bot():
         setup_bot_handlers(app)
         
         print("Telegram Bot thread is live!")
-        app.run_polling(drop_pending_updates=True)
+        app.run_polling(drop_pending_updates=True, stop_signals=False)
     except Exception as e:
         print(f"BOT ERROR in thread: {str(e)}")
 
