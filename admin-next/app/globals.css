@@ -618,7 +618,15 @@ textarea.form-inp { resize: vertical; min-height: 120px; }
 .card-desc { color: #64748b; font-size: 11px; font-weight: 500; transition: color 0.3s; letter-spacing: 0.01em; opacity: 0.8; }
 .student-wrap.dark .card-desc { color: #94a3b8; }
 
-.student-wrap.dark { background: #0f172a; }
+.student-wrap.dark { 
+  background: #0f172a; 
+  color: #f1f5f9;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --muted2: #64748b;
+  --border: rgba(255, 255, 255, 0.08);
+  --card: #1e293b;
+}
 .student-wrap.dark .home-title { color: #f1f5f9; }
 .student-wrap.dark .faq-search { background: #1e293b; color: #fff; border-color: rgba(255,255,255,0.1); }
 .student-wrap.dark .faq-cat { color: #818cf8; }
