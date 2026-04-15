@@ -216,7 +216,8 @@ async def answer_question(qid: int, request: Request, current_user: dict = Depen
     if state.bot_app:
         try:
             # Natural formatting: If it's a follow-up (placeholder question), use a cleaner format
-            if question['question'] == "Adminstruatordan xabari":
+            # Support both old localized string and new internal tag for backward compatibility
+            if question['question'] in ["Adminstruatordan xabari", "__ADMIN_FOLLOW_UP__"]:
                 msg = f"👤 **Adminstrator:**\n\n{answer}"
             else:
                 msg = f"✨ **Sizning savolingizga javob keldi:**\n\n❓ {question['question']}\n\n✅ {answer}"
@@ -232,14 +233,16 @@ async def answer_question(qid: int, request: Request, current_user: dict = Depen
                     question.get('student_username'),
                     question.get('student_name'),
                     question.get('faculty_id'),
-                    "Adminstruatordan xabari", 
+                    fullname, 
+                    faculty_id, 
+                    "__ADMIN_FOLLOW_UP__", 
                     answer, 
                     question.get('lang', 'uz'), 
                     "MANUAL"
                 )
                 
                 # Immediately mark the NEW manual follow-up as answered so it shows up in CRM
-                new_q = db_lib.get_conn().execute("SELECT id FROM questions WHERE student_telegram_id=? AND question=? ORDER BY id DESC LIMIT 1", (str(question['student_telegram_id']), "Adminstruatordan xabari")).fetchone()
+                new_q = db_lib.get_conn().execute("SELECT id FROM questions WHERE student_telegram_id=? AND question='__ADMIN_FOLLOW_UP__' ORDER BY id DESC LIMIT 1", (str(question['student_telegram_id']),)).fetchone()
                 if new_q:
                     db_lib.update_question_answer(new_q['id'], answer, answered_by="Admin")
             else:
