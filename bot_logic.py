@@ -176,7 +176,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         selected = data.replace("opt_", "")
         await query.message.reply_text(f"🔍 {selected}")
         
-        answer, options, lang, category = ai_responder.get_answer(selected, state.knowledge_base, state.clients)
+        answer, options, lang, category = ai_responder.get_answer(selected, state.knowledge_base, state.clients, faculty_id=fid)
         db.save_question(str(user.id), sid, username, user.full_name or username, fid, selected, answer, lang, category)
         logger.log_message(str(user.id), username, selected, answer, lang, category)
         
@@ -225,7 +225,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.chat.send_action("typing")
         
         # 1. Get Answer
-        answer, options, lang, category = ai_responder.get_answer(question, state.knowledge_base, state.clients)
+        answer, options, lang, category = ai_responder.get_answer(question, state.knowledge_base, state.clients, faculty_id=fid)
 
         # 2. Save Question
         db.save_question(str(user.id), sid, username, user.full_name or username, fid, question, answer, lang, category)

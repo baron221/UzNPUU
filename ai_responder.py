@@ -2,6 +2,7 @@ import os
 import re
 from groq import Groq
 from lang_detector import detect_lang, get_response
+import database as db
 
 def setup_ai():
     api_key = os.environ.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
@@ -150,7 +151,7 @@ def generate_options(question: str, pairs: list) -> list:
 
 _cached_pairs = None
 
-def get_answer(question: str, knowledge_base: str, clients: dict) -> tuple:
+def get_answer(question: str, knowledge_base: str, clients: dict, faculty_id: Optional[int] = None) -> tuple:
     """Returns (answer_text, options_list, lang, category)"""
     global _cached_pairs
     client = clients["groq"]
@@ -161,8 +162,21 @@ def get_answer(question: str, knowledge_base: str, clients: dict) -> tuple:
     if _cached_pairs is None:
         _cached_pairs = parse_qa_pairs(knowledge_base)
 
+    # Fetch DB FAQ items for CURRENT faculty (plus general if needed)
+    db_items = db.get_faq_items(faculty_id)
+    # If student is in a specific faculty, also get general FAQ items (where faculty_id is NULL)
+    if faculty_id:
+        general_items = db.get_faq_items(None)
+        # Filter general_items to only those with faculty_id IS NULL 
+        # (db.get_faq_items(None) currently returns all active FAQ items, let's refine this if needed)
+        # For now, let's just use what we get.
+        db_items.extend([i for i in general_items if i.get('faculty_id') is None])
+
+    # Combine document pairs with dynamic DB pairs
+    all_pairs = _cached_pairs + [{"question": i['question'], "answer": i['answer']} for i in db_items]
+
     category = classify_question(question, client)
-    print(f"[{category}][{lang}] {question[:50]}...")
+    print(f"[{category}][{lang}][FID:{faculty_id}] {question[:50]}...")
 
     # ── GENERAL / CONVERSATIONAL ──────────────────────────────────────────────
     if category == "GENERAL":
@@ -194,14 +208,14 @@ If they want to speak to an admin, tell them you can help with most info from do
 
     # ── VAGUE ─────────────────────────────────────────────────────────────────
     elif category == "VAGUE":
-        options = generate_options(question, _cached_pairs)
+        options = generate_options(question, all_pairs)
         if options:
             return get_response("clarify", lang), options, lang, "VAGUE"
         category = "UNIVERSITY"
 
     # ── UNIVERSITY ────────────────────────────────────────────────────────────
     if category == "UNIVERSITY":
-        relevant_context = find_relevant_pairs(question, _cached_pairs, client, top_n=5)
+        relevant_context = find_relevant_pairs(question, all_pairs, client, top_n=5)
         print(f"Context relevance tokens info used")
 
         if not relevant_context.strip():
