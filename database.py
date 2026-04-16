@@ -3,7 +3,7 @@ database.py — SQLite database for users, faculties, and questions
 """
 import sqlite3
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from auth import get_password_hash, verify_password
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -12,6 +12,13 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 DB_PATH = os.path.join(DATA_DIR, "university.db")
 
+
+# ── HELPERS ───────────────────────────────────────────────────────────────────
+def get_now_uz():
+    """Returns current Tashkent time (UTC+5) as YYYY-MM-DD HH:MM:SS"""
+    now_utc = datetime.utcnow()
+    now_uz = now_utc + timedelta(hours=5)
+    return now_uz.strftime("%Y-%m-%d %H:%M:%S")
 
 def get_conn():
     if not os.path.exists(DATA_DIR):
@@ -324,8 +331,8 @@ def register_student(tg_id, student_id, faculty_id=None):
     conn = get_conn()
     try:
         conn.execute(
-            "INSERT OR REPLACE INTO students (telegram_id, student_id, faculty_id) VALUES (?,?,?)",
-            (str(tg_id), str(student_id), faculty_id)
+            "INSERT OR REPLACE INTO students (telegram_id, student_id, faculty_id, created_at) VALUES (?,?,?,?)",
+            (str(tg_id), str(student_id), faculty_id, get_now_uz())
         )
         conn.commit()
         return True
@@ -345,11 +352,11 @@ def save_question(student_tg_id, student_id, student_username, student_name, fac
 
     conn.execute("""
         INSERT INTO questions
-        (student_telegram_id, student_id, student_username, student_name, faculty_id, question, answer, status, lang, category)
-        VALUES (?,?,?,?,?,?,?,?,?,?)
+        (student_telegram_id, student_id, student_username, student_name, faculty_id, question, answer, status, lang, category, created_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?)
     """, (
         str(student_tg_id), student_id, student_username, student_name, faculty_id,
-        question, answer, status, lang, category
+        question, answer, status, lang, category, get_now_uz()
     ))
     conn.commit()
     conn.close()
@@ -441,8 +448,8 @@ def get_faq_items(faculty_id=None):
 def add_faq_item(faculty_id, question, answer):
     conn = get_conn()
     conn.execute(
-        "INSERT INTO faq_items (faculty_id, question, answer) VALUES (?,?,?)",
-        (faculty_id, question, answer)
+        "INSERT INTO faq_items (faculty_id, question, answer, created_at) VALUES (?,?,?,?)",
+        (faculty_id, question, answer, get_now_uz())
     )
     conn.commit()
     conn.close()
@@ -488,10 +495,8 @@ def add_service_card(title, description, icon, link, type='message',
                      faculty_id=None, sort_order=0, start_date=None, end_date=None):
     conn = get_conn()
     conn.execute(
-        """INSERT INTO service_cards
-           (title, description, icon, link, type, faculty_id, sort_order, start_date, end_date)
-           VALUES (?,?,?,?,?,?,?,?,?)""",
-        (title, description, icon, link, type, faculty_id, sort_order or 0, start_date or None, end_date or None)
+        "INSERT INTO service_cards (title, description, icon, link, type, faculty_id, sort_order, start_date, end_date, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        (title, description, icon, link, type, faculty_id, sort_order, start_date, end_date, get_now_uz())
     )
     conn.commit()
     conn.close()
