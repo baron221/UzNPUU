@@ -464,15 +464,15 @@ def get_service_cards(only_active=True, faculty_id=None):
     params = []
 
     if only_active:
-        conditions.append("is_active=1")
+        conditions.append("sc.is_active=1")
         # Date range filter: show if no dates set, or today is within range
-        conditions.append("(start_date IS NULL OR start_date <= ?)")
+        conditions.append("(sc.start_date IS NULL OR sc.start_date <= ?)")
         params.append(today)
-        conditions.append("(end_date IS NULL OR end_date >= ?)")
+        conditions.append("(sc.end_date IS NULL OR sc.end_date >= ?)")
         params.append(today)
 
     if faculty_id is not None:
-        conditions.append("(faculty_id IS NULL OR faculty_id=?)")
+        conditions.append("(sc.faculty_id IS NULL OR sc.faculty_id=?)")
         params.append(faculty_id)
 
     q = "SELECT sc.*, f.name as faculty_name FROM service_cards sc LEFT JOIN faculties f ON sc.faculty_id=f.id"
