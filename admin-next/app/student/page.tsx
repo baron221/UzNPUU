@@ -185,7 +185,7 @@ export default function StudentPage() {
 
               {!loadingCards && cards.length === 0 && (
                 <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 20, color: 'var(--muted)', fontSize: 13 }}>
-                  Hoziroq yangi xizmatlar qo&apos;shiladi...
+                  New services will be added soon...
                 </div>
               )}
 
