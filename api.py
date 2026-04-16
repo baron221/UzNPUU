@@ -11,7 +11,6 @@ import ai_responder
 import logger
 import auth
 import notifier
-from admin_html import get_admin_html
 from file_loader import load_knowledge_base
 
 app = FastAPI(title="UzNPUU Bot API")
@@ -44,7 +43,6 @@ def get_current_admin(token: str = Depends(oauth2_scheme)):
     return payload
 
 # ── Static Pages ──────────────────────────────────────────────────────────────
-ADMIN_HTML = get_admin_html()
 
 @app.get("/", response_class=JSONResponse)
 async def index():
@@ -56,7 +54,16 @@ async def index():
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin():
-    return ADMIN_HTML
+    return """
+    <html>
+        <head><title>UzNPUU Admin</title></head>
+        <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+            <h1>UzNPUU Admin Panel</h1>
+            <p>Eski admin panel o'chirildi. Iltimos, yangi <b>Next.js</b> panelidan foydalaning.</p>
+            <a href="https://uznpuu-production.up.railway.app" style="color: blue;">Panelni ochish</a>
+        </body>
+    </html>
+    """
 
 @app.get("/health")
 async def health():
