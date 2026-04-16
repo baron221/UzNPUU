@@ -1,5 +1,6 @@
 import os
 import re
+from typing import Optional
 from groq import Groq
 from lang_detector import detect_lang, get_response
 import database as db
