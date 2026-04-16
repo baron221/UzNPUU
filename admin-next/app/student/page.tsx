@@ -35,6 +35,7 @@ export default function StudentPage() {
   const [faqQ, setFaqQ]       = useState('');
   const [openFAQ, setOpenFAQ] = useState<string | null>(null);
   const [lastQuestion, setLastQuestion] = useState('');
+  const [loadingCards, setLoadingCards] = useState(false);
   const msgsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -55,7 +56,24 @@ export default function StudentPage() {
   const [faculty_id, set_faculty_id] = useState<number | null>(null);
 
   useEffect(() => {
-    getCards().then(d => { if (d?.cards) setCards(d.cards); }).catch(() => {});
+    // Attempt to load faculty_id from stored user metadata
+    const metaStr = localStorage.getItem('tg_user');
+    let fid = null;
+    if (metaStr) {
+      try {
+        const meta = JSON.parse(metaStr);
+        fid = meta.faculty_id || null;
+      } catch (e) {}
+    }
+    
+    setLoadingCards(true);
+    getCards(fid).then(d => { 
+      if (d?.cards) setCards(d.cards); 
+    }).catch(err => {
+      console.error('Failed to load cards:', err);
+    }).finally(() => {
+      setLoadingCards(false);
+    });
   }, []);
 
   useEffect(() => {
@@ -158,6 +176,18 @@ export default function StudentPage() {
                   <div className="card-desc">GPA va malumotlar</div>
                 </div>
               </div>
+
+              {loadingCards && (
+                <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 20 }}>
+                  <div className="dots" style={{ margin: '0 auto' }}><span /><span /><span /></div>
+                </div>
+              )}
+
+              {!loadingCards && cards.length === 0 && (
+                <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 20, color: 'var(--muted)', fontSize: 13 }}>
+                  Hoziroq yangi xizmatlar qo&apos;shiladi...
+                </div>
+              )}
 
               {/* Dynamic cards from DB */}
               {cards.map(c => (

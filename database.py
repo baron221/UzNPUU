@@ -40,6 +40,53 @@ def init_db():
         is_active INTEGER DEFAULT 1
     )''')
 
+    # Service cards for student dashboard
+    c.execute('''CREATE TABLE IF NOT EXISTS service_cards (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT,
+        icon TEXT,
+        link TEXT,
+        type TEXT DEFAULT 'message',
+        is_active INTEGER DEFAULT 1,
+        faculty_id INTEGER,
+        sort_order INTEGER DEFAULT 0,
+        start_date TEXT,
+        end_date TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )''')
+
+    # MIGRATIONS (For existing databases)
+    # 1. Add student_id to questions
+    try:
+        c.execute("ALTER TABLE questions ADD COLUMN student_id TEXT")
+        conn.commit()
+    except Exception: pass 
+
+    # 2. Add category to questions
+    try:
+        c.execute("ALTER TABLE questions ADD COLUMN category TEXT DEFAULT 'UNIVERSITY'")
+        conn.commit()
+    except Exception: pass
+
+    # 3. Add new fields to service_cards (for transition)
+    for col_sql in [
+        "ALTER TABLE service_cards ADD COLUMN faculty_id INTEGER",
+        "ALTER TABLE service_cards ADD COLUMN sort_order INTEGER DEFAULT 0",
+        "ALTER TABLE service_cards ADD COLUMN start_date TEXT",
+        "ALTER TABLE service_cards ADD COLUMN end_date TEXT",
+    ]:
+        try:
+            c.execute(col_sql)
+            conn.commit()
+        except Exception: pass
+
+    # Fix existing cards: set sort_order based on id if still NULL
+    try:
+        c.execute("UPDATE service_cards SET sort_order=id WHERE sort_order IS NULL")
+        conn.commit()
+    except Exception: pass
+
     # Users table (staff/faculty members who answer questions)
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -104,39 +151,6 @@ def init_db():
         FOREIGN KEY (faculty_id) REFERENCES faculties(id)
     )''')
 
-    # MIGRATIONS (For existing databases)
-    # 1. Add student_id to questions
-    try:
-        c.execute("ALTER TABLE questions ADD COLUMN student_id TEXT")
-        conn.commit() # Save the change!
-    except sqlite3.OperationalError:
-        pass 
-
-    # 2. Add category to questions
-    try:
-        c.execute("ALTER TABLE questions ADD COLUMN category TEXT DEFAULT 'UNIVERSITY'")
-        conn.commit()
-    except sqlite3.OperationalError:
-        pass
-
-    # 3. Add new fields to service_cards
-    for col_sql in [
-        "ALTER TABLE service_cards ADD COLUMN faculty_id INTEGER",
-        "ALTER TABLE service_cards ADD COLUMN sort_order INTEGER DEFAULT 0",
-        "ALTER TABLE service_cards ADD COLUMN start_date TEXT",
-        "ALTER TABLE service_cards ADD COLUMN end_date TEXT",
-    ]:
-        try:
-            c.execute(col_sql)
-            conn.commit()
-        except sqlite3.OperationalError:
-            pass
-    # Fix existing cards: set sort_order based on id if still NULL
-    try:
-        c.execute("UPDATE service_cards SET sort_order=id WHERE sort_order IS NULL")
-        conn.commit()
-    except Exception:
-        pass
 
     # Chat groups (Telegram group IDs per faculty)
     c.execute('''CREATE TABLE IF NOT EXISTS chat_groups (
@@ -147,18 +161,6 @@ def init_db():
         added_at TEXT DEFAULT CURRENT_TIMESTAMP,
         is_active INTEGER DEFAULT 1,
         FOREIGN KEY (faculty_id) REFERENCES faculties(id)
-    )''')
-
-    # Service cards for student dashboard
-    c.execute('''CREATE TABLE IF NOT EXISTS service_cards (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        description TEXT,
-        icon TEXT,
-        link TEXT,
-        type TEXT DEFAULT 'message',
-        is_active INTEGER DEFAULT 1,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )''')
 
     conn.commit()

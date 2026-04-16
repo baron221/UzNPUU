@@ -131,7 +131,11 @@ async def get_public_faculties():
 
 @app.get("/api/cards")
 async def get_public_cards(faculty_id: Optional[int] = None):
-    return {"cards": db.get_service_cards(only_active=True, faculty_id=faculty_id)}
+    try:
+        return {"cards": db.get_service_cards(only_active=True, faculty_id=faculty_id)}
+    except Exception as e:
+        logger.log_message("SYSTEM", "API", f"Cards Error: {str(e)}", "ERROR", "SYSTEM", "ERROR")
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 # ── Admin Auth ────────────────────────────────────────────────────────────────
 @app.post("/api/admin/auth")
