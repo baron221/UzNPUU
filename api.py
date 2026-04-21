@@ -253,9 +253,9 @@ async def answer_question(qid: int, request: Request, current_user: dict = Depen
                 # Immediately mark the NEW manual follow-up as answered so it shows up in CRM
                 new_q = db_lib.get_conn().execute("SELECT id FROM questions WHERE student_telegram_id=? AND question='__ADMIN_FOLLOW_UP__' ORDER BY id DESC LIMIT 1", (str(question['student_telegram_id']),)).fetchone()
                 if new_q:
-                    db.answer_question(new_q['id'], answer, current_user['id'], db.get_now_uz())
+                    db.update_question_answer(new_q['id'], answer, current_user['id'])
             else:
-                db.update_question_answer(qid, answer)
+                db.update_question_answer(qid, answer, current_user['id'])
                 
             return {"ok": True}
         except Exception as e:

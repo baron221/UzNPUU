@@ -133,12 +133,28 @@ Reply ONE word only."""},
         pass
     return "UNIVERSITY"
 
+def clean_label(text: str) -> str:
+    """Removes 'Savol:', 'Question:', 'Вопрос:', leading numbers, and dots."""
+    # Remove leading numbering like "1.", "1)", etc.
+    text = re.sub(r'^\d+[\.\)]\s*', '', text)
+    
+    # Remove common question prefixes case-insensitively
+    prefixes = [
+        r'^(?:Savol|SAVOL)\s*[:.\s-]*',
+        r'^(?:Question|QUESTION)\s*[:.\s-]*',
+        r'^(?:Вопрос|ВОПРОС)\s*[:.\s-]*'
+    ]
+    for p in prefixes:
+        text = re.sub(p, '', text, flags=re.IGNORECASE)
+    
+    return text.strip()
+
 def generate_options(question: str, pairs: list) -> list:
     q_lower = question.lower().strip()
     matched = []
     for p in pairs:
         if any(word in p['question'].lower() for word in q_lower.split() if len(word) > 2):
-            label = p['question'].strip()
+            label = clean_label(p['question'])
             if len(label) > 60: label = label[:57] + "..."
             matched.append(label)
     seen = set()
@@ -220,16 +236,8 @@ If they want to speak to an admin, tell them you can help with most info from do
         print(f"Context relevance tokens info used")
 
         if not relevant_context.strip():
-            # If it's a university question but no docs found, try to be helpful instead of just saying "not found"
-            completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[
-                    {"role": "system", "content": f"You are the UzNPUU assistant. No specific document was found for this query. Reply politely in {lang} saying you don't have the exact document answer but suggest what they might be looking for or to wait for an admin."},
-                    {"role": "user", "content": question}
-                ],
-                max_tokens=200,
-            )
-            return completion.choices[0].message.content.strip(), [], lang, "UNANSWERED"
+            # Use standardized polite response when no documents are matched
+            return get_response("not_found", lang), [], lang, "UNANSWERED"
 
         lang_instruction = {
             "uz": "Javobni O'ZBEK tilida bering.",

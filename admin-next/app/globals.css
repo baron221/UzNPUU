@@ -201,6 +201,17 @@ body {
 .nav-item.active .nav-icon { transform: scale(1.1); filter: drop-shadow(0 0 12px var(--indigo)); color: #fff; }
 
 .nav-icon { font-size: 18px; width: 24px; text-align: center; transition: all 0.3s; color: inherit; }
+.nav-badge {
+  background: #ef4444; color: #fff; font-size: 10px; font-weight: 800;
+  padding: 2px 7px; border-radius: 999px; margin-left: auto;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+  animation: pulse-small 2s infinite;
+}
+@keyframes pulse-small {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.1); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5); }
+  100% { transform: scale(1); }
+}
 
 .sidebar-footer { margin-top: auto; padding: 32px 24px; }
 .logout-btn {

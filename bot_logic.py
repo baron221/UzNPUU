@@ -173,8 +173,19 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             asyncio.create_task(notifier.notify_admin_manual(user.full_name or username, original_q, sid, fid))
             return
 
-        selected = data.replace("opt_", "")
-        await query.message.reply_text(f"🔍 {selected}")
+        if data.startswith("opt_idx_"):
+            idx = int(data.replace("opt_idx_", ""))
+            temp_options = context.user_data.get('temp_options', [])
+            if idx < len(temp_options):
+                selected = temp_options[idx]
+            else:
+                selected = "Noma'lum savol"
+        else:
+            selected = data.replace("opt_", "")
+            
+        # Display the full selected question clearly
+        clean_q = ai_responder.clean_label(selected)
+        await query.message.reply_text(f"🔍 Tanlandi: {clean_q}")
         
         answer, options, lang, category = ai_responder.get_answer(selected, state.knowledge_base, state.clients, faculty_id=fid)
         db.save_question(str(user.id), sid, username, user.full_name or username, fid, selected, answer, lang, category)
@@ -182,11 +193,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # Check if we should show Admin button (not found or refers to staff)
         referral_kws = ["topilmadi", "not found", "murojaat qiling", "mas'ul xodimi", "adminstrator", "ofisiga"]
-        show_admin_btn = any(kw in answer.lower() for kw in referral_kws)
+        show_admin_btn = (category == "UNANSWERED") or any(kw in answer.lower() for kw in referral_kws)
         
         kb = []
         if options:
-            kb = [[InlineKeyboardButton(o[:40], callback_data=f"opt_{o[:40]}")] for o in options]
+            context.user_data['temp_options'] = options
+            kb = [[InlineKeyboardButton(o, callback_data=f"opt_idx_{i}")] for i, o in enumerate(options)]
         if show_admin_btn:
             kb.append([InlineKeyboardButton("👤 Adminstratorga yuborish", callback_data="ask_admin")])
             context.user_data['last_question'] = selected
@@ -233,11 +245,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # 3. Respond to Student FIRST
         referral_kws = ["topilmadi", "not found", "murojaat qiling", "mas'ul xodimi", "adminstrator", "ofisiga"]
-        show_admin_btn = any(kw in answer.lower() for kw in referral_kws)
+        show_admin_btn = (category == "UNANSWERED") or any(kw in answer.lower() for kw in referral_kws)
         
         kb = []
         if options:
-            kb = [[InlineKeyboardButton(o[:40], callback_data=f"opt_{o[:40]}")] for o in options]
+            context.user_data['temp_options'] = options
+            kb = [[InlineKeyboardButton(o, callback_data=f"opt_idx_{i}")] for i, o in enumerate(options)]
         if show_admin_btn:
             kb.append([InlineKeyboardButton("👤 Adminstratorga yuborish", callback_data="ask_admin")])
             context.user_data['last_question'] = question

@@ -1,7 +1,8 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { getStats } from '@/lib/api';
 
 /* ── SVG Icons ──────────────────────────────────────────────────────────── */
 const ICONS: Record<string, React.ReactNode> = {
@@ -17,7 +18,7 @@ const ICONS: Record<string, React.ReactNode> = {
 
 const NAV = [
   { href: '/admin',            icon: 'home',     label: 'Umumiy' },
-  { href: '/admin/questions',  icon: 'chat',     label: 'Savollar' },
+  { href: '/admin/questions',  icon: 'chat',     label: 'Chat' },
   { href: '/admin/faculties',  icon: 'building', label: 'Fakultetlar' },
   { href: '/admin/users',      icon: 'users',    label: 'Xodimlar' },
   { href: '/admin/faq',        icon: 'help',     label: 'FAQ' },
@@ -28,9 +29,23 @@ const NAV = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname  = usePathname();
   const router    = useRouter();
+  const [unansweredCount, setUnansweredCount] = useState(0);
 
   useEffect(() => {
-    if (!localStorage.getItem('admin_token')) router.replace('/');
+    if (!localStorage.getItem('admin_token')) {
+      router.replace('/');
+      return;
+    }
+
+    // Initial fetch
+    getStats().then(s => setUnansweredCount(s.unanswered || 0)).catch(() => {});
+
+    // Poll for updates every 30 seconds
+    const interval = setInterval(() => {
+      getStats().then(s => setUnansweredCount(s.unanswered || 0)).catch(() => {});
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   function logout() {
@@ -51,7 +66,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {NAV.slice(0, 2).map(n => (
           <Link key={n.href} href={n.href}
             className={`nav-item${pathname === n.href ? ' active' : ''}`}>
-            <span className="nav-icon">{ICONS[n.icon]}</span>{n.label}
+            <span className="nav-icon">{ICONS[n.icon]}</span>
+            <span>{n.label}</span>
+            {n.href === '/admin/questions' && unansweredCount > 0 && (
+              <span className="nav-badge">{unansweredCount}</span>
+            )}
           </Link>
         ))}
 
@@ -59,7 +78,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {NAV.slice(2, 4).map(n => (
           <Link key={n.href} href={n.href}
             className={`nav-item${pathname === n.href ? ' active' : ''}`}>
-            <span className="nav-icon">{ICONS[n.icon]}</span>{n.label}
+            <span className="nav-icon">{ICONS[n.icon]}</span>
+            <span>{n.label}</span>
+            {n.href === '/admin/questions' && unansweredCount > 0 && (
+              <span className="nav-badge">{unansweredCount}</span>
+            )}
           </Link>
         ))}
 
@@ -67,7 +90,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {NAV.slice(4).map(n => (
           <Link key={n.href} href={n.href}
             className={`nav-item${pathname === n.href ? ' active' : ''}`}>
-            <span className="nav-icon">{ICONS[n.icon]}</span>{n.label}
+            <span className="nav-icon">{ICONS[n.icon]}</span>
+            <span>{n.label}</span>
+            {n.href === '/admin/questions' && unansweredCount > 0 && (
+              <span className="nav-badge">{unansweredCount}</span>
+            )}
           </Link>
         ))}
 
