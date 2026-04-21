@@ -76,12 +76,11 @@ def init_db():
         conn.commit()
     except Exception: pass
 
-    # 3. Add new fields to service_cards (for transition)
+    # 4. Add admin tracking fields to questions
     for col_sql in [
-        "ALTER TABLE service_cards ADD COLUMN faculty_id INTEGER",
-        "ALTER TABLE service_cards ADD COLUMN sort_order INTEGER DEFAULT 0",
-        "ALTER TABLE service_cards ADD COLUMN start_date TEXT",
-        "ALTER TABLE service_cards ADD COLUMN end_date TEXT",
+        "ALTER TABLE questions ADD COLUMN admin_message_id TEXT",
+        "ALTER TABLE questions ADD COLUMN admin_chat_id TEXT",
+        "ALTER TABLE questions ADD COLUMN answered_by_name TEXT",
     ]:
         try:
             c.execute(col_sql)
@@ -350,7 +349,8 @@ def save_question(student_tg_id, student_id, student_username, student_name, fac
     # It's only 'answered' if it's NOT a wait message AND NOT a 'not found' message
     status = 'unanswered' if (is_wait or is_not_found or category == "MANUAL") else 'answered'
 
-    conn.execute("""
+    cur = conn.cursor()
+    cur.execute("""
         INSERT INTO questions
         (student_telegram_id, student_id, student_username, student_name, faculty_id, question, answer, status, lang, category, created_at)
         VALUES (?,?,?,?,?,?,?,?,?,?,?)
@@ -358,8 +358,10 @@ def save_question(student_tg_id, student_id, student_username, student_name, fac
         str(student_tg_id), student_id, student_username, student_name, faculty_id,
         question, answer, status, lang, category, get_now_uz()
     ))
+    new_id = cur.lastrowid
     conn.commit()
     conn.close()
+    return new_id
 
 def get_questions(faculty_id=None, status=None, limit=50):
     conn = get_conn()
@@ -541,6 +543,30 @@ def reorder_service_card(card_id, direction):
 def delete_service_card(card_id):
     conn = get_conn()
     conn.execute("DELETE FROM service_cards WHERE id=?", (card_id,))
+    conn.commit()
+    conn.close()
+
+def link_admin_message(qid, chat_id, message_id):
+    conn = get_conn()
+    conn.execute("UPDATE questions SET admin_chat_id=?, admin_message_id=? WHERE id=?", 
+                 (str(chat_id), str(message_id), qid))
+    conn.commit()
+    conn.close()
+
+def get_question_by_admin_message(chat_id, message_id):
+    conn = get_conn()
+    row = conn.execute("SELECT * FROM questions WHERE admin_chat_id=? AND admin_message_id=?", 
+                       (str(chat_id), str(message_id))).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def update_question_answer_tg(qid, answer, tg_id, tg_name):
+    conn = get_conn()
+    conn.execute("""
+        UPDATE questions 
+        SET answer=?, status='answered', answered_by=?, answered_by_name=?, answered_at=CURRENT_TIMESTAMP 
+        WHERE id=?
+    """, (answer, f"TG:{tg_id}", tg_name, qid))
     conn.commit()
     conn.close()
 

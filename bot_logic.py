@@ -34,6 +34,7 @@ def setup_bot_handlers(app):
     app.add_handler(CommandHandler("faculty", change_faculty))
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_handler(MessageHandler(filters.REPLY & (filters.ChatType.GROUPS | filters.ChatType.SUPERGROUPS), handle_admin_reply))
     app.add_handler(MessageHandler(filters.COMMAND, unknown))
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -166,11 +167,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if data == "ask_admin":
             original_q = context.user_data.get('last_question', 'Noma\'lum savol')
-            db.save_question(str(user.id), sid, username, user.full_name or username, fid, original_q, "Admin javobini kuting...", "uz", "MANUAL")
+            qid = db.save_question(str(user.id), sid, username, user.full_name or username, fid, original_q, "Admin javobini kuting...", "uz", "MANUAL")
             await query.message.reply_text("📩 Savolingiz adminstratorga yuborildi. Tez orada javob olasiz!")
             
-            # Non-blocking forward
-            asyncio.create_task(notifier.notify_admin_manual(user.full_name or username, original_q, sid, fid))
+            # Non-blocking forward and link
+            asyncio.create_task(forward_and_link(qid, user.full_name or username, original_q, None, sid, fid, is_manual=True))
             return
 
         if data.startswith("opt_idx_"):
@@ -240,7 +241,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         answer, options, lang, category = ai_responder.get_answer(question, state.knowledge_base, state.clients, faculty_id=fid)
 
         # 2. Save Question
-        db.save_question(str(user.id), sid, username, user.full_name or username, fid, question, answer, lang, category)
+        qid = db.save_question(str(user.id), sid, username, user.full_name or username, fid, question, answer, lang, category)
         logger.log_message(str(user.id), username, question, answer, lang, category)
 
         # 3. Respond to Student FIRST
@@ -258,7 +259,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(answer, reply_markup=InlineKeyboardMarkup(kb) if kb else None)
 
         # 4. Forward to Admin (As background task)
-        asyncio.create_task(notifier.forward_to_admin(user.full_name or username, question, answer, sid, fid))
+        asyncio.create_task(forward_and_link(qid, user.full_name or username, question, answer, sid, fid))
 
     except Exception as e:
         err_msg = str(e)
@@ -271,3 +272,45 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Noma'lum buyruq. Savolingizni yozishingiz mumkin! 😊")
+
+async def forward_and_link(qid, name, q, a, sid, fid, is_manual=False):
+    try:
+        if is_manual:
+            chat_id, mid = await notifier.notify_admin_manual(name, q, sid, fid)
+        else:
+            chat_id, mid = await notifier.forward_to_admin(name, q, a, sid, fid)
+        
+        if qid and chat_id and mid:
+            db.link_admin_message(qid, chat_id, mid)
+    except Exception as e:
+        logging.error(f"❌ Error in forward_and_link: {str(e)}")
+
+async def handle_admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Only process text replies in groups
+    if not update.message or not update.message.reply_to_message or not update.message.text:
+        return
+    
+    chat_id = update.effective_chat.id
+    reply_to_mid = update.message.reply_to_message.message_id
+    
+    # 1. Find linked question
+    question_data = db.get_question_by_admin_message(chat_id, reply_to_mid)
+    if not question_data:
+        return # Not a reply to a bot question
+    
+    # 2. Extract answer and admin info
+    answer = update.message.text
+    admin_user = update.effective_user
+    
+    # 3. Relay to student
+    student_tg_id = question_data['student_telegram_id']
+    relay_msg = f"✨ **Sizning savolingizga javob keldi:**\n\n❓ {question_data['question']}\n\n✅ {answer}"
+    
+    try:
+        await context.bot.send_message(chat_id=student_tg_id, text=relay_msg, parse_mode='Markdown')
+        # 4. Update DB
+        db.update_question_answer_tg(question_data['id'], answer, admin_user.id, admin_user.full_name)
+        await update.message.reply_text("✅ Javobingiz talabaga yuborildi.")
+    except Exception as e:
+        logging.error(f"❌ Error relaying admin reply: {str(e)}")
+        await update.message.reply_text("⚠️ Xatolik: Javobni talabaga yuborib bo'lmadi. (Balki talaba botni bloklagandur)")

@@ -35,8 +35,10 @@ async def forward_to_admin(user_full_name, question, answer, sid, fid=None):
                    f"❓ {esc(question)}\n"
                    f"🤖 AI Javobi: {esc(answer[:200])}...")
             
-            await state.bot_app.bot.send_message(chat_id=group_id, text=msg, parse_mode='HTML')
+            sent_msg = await state.bot_app.bot.send_message(chat_id=group_id, text=msg, parse_mode='HTML')
             logging.info(f"✅ Forwarded question from {sid} to group {group_id}")
+            return group_id, sent_msg.message_id
+        return None, None
             
     except Exception as e:
         logging.error(f"⚠️ Forward error: {str(e)}")
@@ -64,6 +66,8 @@ async def notify_admin_manual(user_full_name, question, sid, fid=None):
                    f"🏫 {esc(faculty_name)}\n"
                    f"❓ {esc(question)}\n"
                    f"⚠️ Talaba admin javobini kutmoqda.")
-            await state.bot_app.bot.send_message(chat_id=group_id, text=msg, parse_mode='HTML')
+            sent_msg = await state.bot_app.bot.send_message(chat_id=group_id, text=msg, parse_mode='HTML')
+            return group_id, sent_msg.message_id
+        return None, None
     except Exception as e:
         logging.error(f"⚠️ Manual notify error: {str(e)}")
