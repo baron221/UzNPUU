@@ -166,6 +166,7 @@ export default function UploadPage() {
                     </td>
                   </tr>
                 ) : (
+                  files.map(f => (
                     <tr key={f.name}>
                       <td style={{ fontWeight: 600 }}>{f.name}</td>
                       <td style={{ color: 'var(--muted)', fontSize: 12 }}>{formatSize(f.size)}</td>
