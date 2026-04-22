@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { uploadFile, getFiles, deleteFile, KBFile } from '@/lib/api';
+import { uploadFile, getFiles, deleteFile, updateFileStatus, KBFile } from '@/lib/api';
 
 export default function UploadPage() {
   const [file, setFile]     = useState<File | null>(null);
@@ -49,6 +49,15 @@ export default function UploadPage() {
       if (d.ok) loadFiles();
       else alert(`Xatolik: ${d.error}`);
     } catch (e) { alert('Serverga ulanishda xatolik'); }
+  }
+
+  async function toggleStatus(filename: string, current: string) {
+    const next = current === 'trained' ? 'draft' : 'trained';
+    try {
+      const d = await updateFileStatus(filename, next);
+      if (d.ok) loadFiles();
+      else alert(`Xatolik: ${d.error}`);
+    } catch { alert('Serverga ulanishda xatolik'); }
   }
 
   const handleDrag = (e: React.DragEvent) => {
@@ -139,6 +148,7 @@ export default function UploadPage() {
                 <tr>
                   <th>Fayl nomi</th>
                   <th>Hajmi</th>
+                  <th>Status</th>
                   <th style={{ textAlign: 'right' }}>Amallar</th>
                 </tr>
               </thead>
@@ -156,10 +166,24 @@ export default function UploadPage() {
                     </td>
                   </tr>
                 ) : (
-                  files.map(f => (
                     <tr key={f.name}>
                       <td style={{ fontWeight: 600 }}>{f.name}</td>
                       <td style={{ color: 'var(--muted)', fontSize: 12 }}>{formatSize(f.size)}</td>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span className={`badge ${f.status === 'trained' ? 'badge-blue' : 'badge-red'}`} style={{ fontSize: 10 }}>
+                            {f.status === 'trained' ? 'Trained' : 'Draft'}
+                          </span>
+                          <button 
+                            className="btn btn-sm" 
+                            onClick={() => toggleStatus(f.name, f.status)}
+                            style={{ padding: '2px 6px', fontSize: 10, background: '#f8fafc', border: '1px solid #e2e8f0' }}
+                          >
+                            {f.status === 'trained' ? 'Draftga' : 'O\'qitish'}
+                          </button>
+                        </div>
+                        <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>{f.pairs} pairs</div>
+                      </td>
                       <td style={{ textAlign: 'right' }}>
                         <button 
                           className="btn btn-red btn-sm" 

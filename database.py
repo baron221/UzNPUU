@@ -125,6 +125,15 @@ def init_db():
         FOREIGN KEY (faculty_id) REFERENCES faculties(id)
     )''')
 
+    # Knowledge files status table
+    c.execute('''CREATE TABLE IF NOT EXISTS knowledge_files (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        filename TEXT UNIQUE,
+        status TEXT DEFAULT 'draft',
+        pairs_count INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )''')
+
     # Student questions table
     c.execute('''CREATE TABLE IF NOT EXISTS questions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -569,6 +578,36 @@ def update_question_answer_tg(qid, answer, tg_id, tg_name):
     """, (answer, f"TG:{tg_id}", tg_name, qid))
     conn.commit()
     conn.close()
+
+def get_file_statuses():
+    conn = get_conn()
+    rows = conn.execute("SELECT * FROM knowledge_files").fetchall()
+    conn.close()
+    return {r['filename']: {'status': r['status'], 'pairs': r['pairs_count']} for r in rows}
+
+def upsert_file_status(filename, status='draft', pairs=0):
+    conn = get_conn()
+    conn.execute("""
+        INSERT INTO knowledge_files (filename, status, pairs_count) 
+        VALUES (?, ?, ?)
+        ON CONFLICT(filename) DO UPDATE SET 
+            status=excluded.status, 
+            pairs_count=excluded.pairs_count
+    """, (filename, status, pairs))
+    conn.commit()
+    conn.close()
+
+def delete_file_status(filename):
+    conn = get_conn()
+    conn.execute("DELETE FROM knowledge_files WHERE filename=?", (filename,))
+    conn.commit()
+    conn.close()
+
+def get_trained_filenames():
+    conn = get_conn()
+    rows = conn.execute("SELECT filename FROM knowledge_files WHERE status='trained'").fetchall()
+    conn.close()
+    return [r['filename'] for r in rows]
 
 
 if __name__ == "__main__":

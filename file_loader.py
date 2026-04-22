@@ -4,7 +4,7 @@ from docx import Document
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-def load_knowledge_base(folder=None):
+def load_knowledge_base(folder=None, include_files=None):
     if folder is None:
         folder = os.path.join(BASE_DIR, "knowledge")
 
@@ -16,8 +16,11 @@ def load_knowledge_base(folder=None):
         return ""
 
     files = os.listdir(folder)
+    if include_files is not None:
+        files = [f for f in files if f in include_files]
+
     if not files:
-        print(f"Warning: No files found in '{folder}'.")
+        print(f"Warning: No files found/included in '{folder}'.")
         return ""
 
     for filename in files:

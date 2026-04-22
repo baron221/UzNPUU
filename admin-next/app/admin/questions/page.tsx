@@ -224,7 +224,12 @@ export default function QuestionsPage() {
             <>
               <div className="ac-main-header">
                 <div>
-                  <div className="ac-header-name">{activeChat.name}</div>
+                  <div className="ac-header-name">
+                    {activeChat.name}
+                    <span style={{ marginLeft: 12, fontSize: 13, background: '#f1f5f9', padding: '2px 8px', borderRadius: 6, color: '#64748b', fontWeight: 600 }}>
+                      ID: {activeChat.questions[0]?.student_id || activeChat.id}
+                    </span>
+                  </div>
                   <div className="ac-header-meta">
                     <span>{activeChat.username ? `@${activeChat.username}` : activeChat.id}</span>
                     &bull;

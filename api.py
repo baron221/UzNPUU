@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 from typing import Optional, List
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -14,6 +15,18 @@ import notifier
 from file_loader import load_knowledge_base
 
 app = FastAPI(title="UzNPUU Bot API")
+
+def reload_kb():
+    import state
+    from file_loader import load_knowledge_base
+    import ai_responder
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    # Only load files marked as 'trained'
+    trained_files = db.get_trained_filenames()
+    kb_folder = os.path.join(BASE_DIR, "knowledge")
+    state.knowledge_base = load_knowledge_base(kb_folder, include_files=trained_files)
+    ai_responder._cached_pairs = ai_responder.parse_qa_pairs(state.knowledge_base)
+    logging.info(f"Knowledge Base reloaded: {len(trained_files)} trained files.")
 
 # Serve static assets (favicon, etc.)
 import pathlib
@@ -291,12 +304,16 @@ async def upload_file(file: UploadFile = File(...), current_user: dict = Depends
     with open(save_path, 'wb') as f:
         f.write(await file.read())
     
-    # Reload knowledge base
-    import state
-    state.knowledge_base = load_knowledge_base(os.path.join(BASE_DIR, "knowledge"))
-    ai_responder._cached_pairs = ai_responder.parse_qa_pairs(state.knowledge_base)
+    # Calculate pairs but keep as draft initially
+    with open(save_path, 'r', encoding='utf-8', errors='ignore') as f:
+        content = f.read()
+    temp_pairs = ai_responder.parse_qa_pairs(content)
+    db.upsert_file_status(filename, status='draft', pairs=len(temp_pairs))
+
+    # Reload KB (will only include trained files, so this new one stays out for now)
+    reload_kb()
     
-    return {"ok": True, "filename": filename, "pairs": len(ai_responder._cached_pairs)}
+    return {"ok": True, "filename": filename, "pairs": len(temp_pairs)}
 
 @app.get("/api/admin/files")
 async def get_admin_files(current_user: dict = Depends(get_current_admin)):
@@ -304,17 +321,45 @@ async def get_admin_files(current_user: dict = Depends(get_current_admin)):
     folder = os.path.join(BASE_DIR, "knowledge")
     if not os.path.exists(folder): return {"files": []}
     
+    statuses = db.get_file_statuses()
     files = []
     for f in os.listdir(folder):
         path = os.path.join(folder, f)
         if os.path.isfile(path):
             stat = os.stat(path)
+            s = statuses.get(f, {'status': 'draft', 'pairs': 0})
             files.append({
                 "name": f,
                 "size": stat.st_size,
-                "created_at": stat.st_mtime
+                "created_at": stat.st_mtime,
+                "status": s['status'],
+                "pairs": s['pairs']
             })
     return {"files": sorted(files, key=lambda x: x['created_at'], reverse=True)}
+
+@app.put("/api/admin/files/{filename}/status")
+async def update_file_status(filename: str, request: Request, current_user: dict = Depends(get_current_admin)):
+    data = await request.json()
+    new_status = data.get('status')
+    if new_status not in ['draft', 'trained']:
+        return {"ok": False, "error": "Invalid status"}
+    
+    # Update pairs count while at it
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(BASE_DIR, 'knowledge', filename)
+    if os.path.exists(path):
+        # We need to reload just this text to count pairs if we don't have it
+        pairs_count = 0
+        try:
+             # Just use the existing loader logic indirectly
+             temp_kb = load_knowledge_base(None, include_files=[filename])
+             pairs_count = len(ai_responder.parse_qa_pairs(temp_kb))
+        except: pass
+        
+        db.upsert_file_status(filename, status=new_status, pairs=pairs_count)
+        reload_kb()
+        return {"ok": True}
+    return {"ok": False, "error": "File not found"}
 
 @app.delete("/api/admin/files/{filename}")
 async def delete_admin_file(filename: str, current_user: dict = Depends(get_current_admin)):
@@ -325,10 +370,8 @@ async def delete_admin_file(filename: str, current_user: dict = Depends(get_curr
     
     if os.path.exists(path):
         os.remove(path)
-        # Reload knowledge base
-        import state
-        state.knowledge_base = load_knowledge_base(os.path.join(BASE_DIR, "knowledge"))
-        ai_responder._cached_pairs = ai_responder.parse_qa_pairs(state.knowledge_base)
+        db.delete_file_status(safe_filename)
+        reload_kb()
         return {"ok": True}
     return {"ok": False, "error": "File not found"}
 

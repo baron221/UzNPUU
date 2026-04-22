@@ -89,11 +89,13 @@ export default function CardsPage() {
     <>
       <div className="page-header">
         <div>
-          <div className="page-title">Xizmatlar Boshqaruvi</div>
-          <div className="page-sub">Student dashboard kartalarini boshqarish</div>
+          <div className="page-title">Cards</div>
+          <div className="page-sub">Talaba dashboardidagi xizmatlar va kartalar boshqaruvi</div>
         </div>
-        <button className="btn btn-primary" onClick={() => openModal()}>+ Yangi card</button>
+        <button className="btn btn-primary" onClick={() => openModal()}>+ Yangi Card</button>
       </div>
+
+      <div className="section-title">Mavjud Cards ({cards.length})</div>
 
       {loading ? (
         <div className="table-card">

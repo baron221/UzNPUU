@@ -23,7 +23,7 @@ const NAV = [
   { href: '/admin/users',      icon: 'users',    label: 'Xodimlar' },
   { href: '/admin/faq',        icon: 'help',     label: 'FAQ' },
   { href: '/admin/upload',     icon: 'upload',   label: 'Hujjat Yuklash' },
-  { href: '/admin/cards',      icon: 'grid',     label: 'Xizmatlar' },
+  { href: '/admin/cards',      icon: 'grid',     label: 'Cards' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
