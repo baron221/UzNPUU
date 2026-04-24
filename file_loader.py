@@ -36,9 +36,12 @@ def load_knowledge_base(folder=None, include_files=None):
                 paras = [p.text for p in doc.paragraphs if p.text.strip()]
                 for table in doc.tables:
                     for row in table.rows:
-                        row_text = " ".join(cell.text.strip() for cell in row.cells if cell.text.strip())
-                        if row_text:
-                            paras.append(row_text)
+                        cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+                        if len(cells) >= 2:
+                            # Assume first column is question, second is answer
+                            paras.append(f"Savol: {cells[0]}\nJavob: {cells[1]}")
+                        elif len(cells) == 1:
+                            paras.append(cells[0])
                 text = "\n".join(paras)
                 print(f"Loaded DOCX: {filename}")
             elif filename.lower().endswith((".txt", ".md")):
