@@ -68,8 +68,7 @@ export const deleteFAQ = (id: number) =>
 
 export const getFiles = () => req<{ files: KBFile[] }>('/api/admin/files');
 export const deleteFile = (filename: string) => req<{ ok: boolean; error?: string }>(`/api/admin/files/${filename}`, { method: 'DELETE' });
-export const updateFileStatus = (filename: string, status: string) =>
-  req<{ ok: boolean; error?: string }>(`/api/admin/files/${filename}/status`, { method: 'PUT', body: JSON.stringify({ status }) });
+
 
 // ── Service Cards ─────────────────────────────────────────────────────────────
 export const getCards = (faculty_id?: number) => {

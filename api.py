@@ -376,7 +376,7 @@ async def upload_file(file: UploadFile = File(...), current_user: dict = Depends
         logging.warning(f"Pair count failed for {filename}: {e}")
         pair_count = 0
 
-    db.upsert_file_status(filename, status='trained', pairs=pair_count)
+
 
     # Reload KB (new file is trained so it will be active immediately)
     reload_kb()
@@ -390,45 +390,21 @@ async def get_admin_files(current_user: dict = Depends(get_current_admin)):
     folder = os.path.join(BASE_DIR, "data", "knowledge")
     if not os.path.exists(folder): return {"files": []}
     
-    statuses = db.get_file_statuses()
     files = []
     for f in os.listdir(folder):
         path = os.path.join(folder, f)
         if os.path.isfile(path):
             stat = os.stat(path)
-            s = statuses.get(f, {'status': 'draft', 'pairs': 0})
             files.append({
                 "name": f,
                 "size": stat.st_size,
                 "created_at": stat.st_mtime,
-                "status": s['status'],
-                "pairs": s['pairs']
+                "status": "active",
+                "pairs": "N/A"
             })
     return {"files": sorted(files, key=lambda x: x['created_at'], reverse=True)}
 
-@app.put("/api/admin/files/{filename}/status")
-async def update_file_status(filename: str, request: Request, current_user: dict = Depends(get_current_admin)):
-    data = await request.json()
-    new_status = data.get('status')
-    if new_status not in ['draft', 'trained']:
-        return {"ok": False, "error": "Invalid status"}
-    
-    # Update pairs count while at it
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    path = os.path.join(BASE_DIR, 'data', 'knowledge', filename)
-    if os.path.exists(path):
-        # We need to reload just this text to count pairs if we don't have it
-        pairs_count = 0
-        try:
-             # Just use the existing loader logic indirectly
-             temp_kb = load_knowledge_base(None, include_files=[filename])
-             pairs_count = len(ai_responder.parse_qa_pairs(temp_kb))
-        except: pass
-        
-        db.upsert_file_status(filename, status=new_status, pairs=pairs_count)
-        reload_kb()
-        return {"ok": True}
-    return {"ok": False, "error": "File not found"}
+
 
 @app.delete("/api/admin/files/{filename}")
 async def delete_admin_file(filename: str, current_user: dict = Depends(get_current_admin)):
@@ -439,7 +415,6 @@ async def delete_admin_file(filename: str, current_user: dict = Depends(get_curr
     
     if os.path.exists(path):
         os.remove(path)
-        db.delete_file_status(safe_filename)
         reload_kb()
         return {"ok": True}
     return {"ok": False, "error": "File not found"}

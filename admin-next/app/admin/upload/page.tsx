@@ -51,14 +51,7 @@ export default function UploadPage() {
     } catch (e) { alert('Serverga ulanishda xatolik'); }
   }
 
-  async function toggleStatus(filename: string, current: string) {
-    const next = current === 'trained' ? 'draft' : 'trained';
-    try {
-      const d = await updateFileStatus(filename, next);
-      if (d.ok) loadFiles();
-      else alert(`Xatolik: ${d.error}`);
-    } catch { alert('Serverga ulanishda xatolik'); }
-  }
+
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault(); e.stopPropagation();
@@ -172,18 +165,11 @@ export default function UploadPage() {
                       <td style={{ color: 'var(--muted)', fontSize: 12 }}>{formatSize(f.size)}</td>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span className={`badge ${f.status === 'trained' ? 'badge-blue' : 'badge-red'}`} style={{ fontSize: 10 }}>
-                            {f.status === 'trained' ? 'Trained' : 'Draft'}
+                          <span className="badge badge-blue" style={{ fontSize: 10 }}>
+                            Faol
                           </span>
-                          <button 
-                            className="btn btn-sm" 
-                            onClick={() => toggleStatus(f.name, f.status)}
-                            style={{ padding: '2px 6px', fontSize: 10, background: '#f8fafc', border: '1px solid #e2e8f0' }}
-                          >
-                            {f.status === 'trained' ? 'Draftga' : 'O\'qitish'}
-                          </button>
                         </div>
-                        <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>{f.pairs} pairs</div>
+                        <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>Tayyor</div>
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <button 

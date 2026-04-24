@@ -38,9 +38,9 @@ def initialize():
         for f in os.listdir(git_kb):
             src = os.path.join(git_kb, f)
             dst = os.path.join(data_kb, f)
-            if os.path.isfile(src) and not os.path.exists(dst):
+            if os.path.isfile(src):
                 shutil.copy2(src, dst)
-                print(f"Synced {f} to persistent storage")
+                print(f"Synced/Updated {f} in persistent storage")
 
     print("Loading knowledge base...")
     state.knowledge_base = load_knowledge_base(data_kb)
