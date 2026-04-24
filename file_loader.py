@@ -33,7 +33,13 @@ def load_knowledge_base(folder=None, include_files=None):
                 print(f"Loaded PDF: {filename}")
             elif filename.lower().endswith(".docx"):
                 doc = Document(path)
-                text = "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+                paras = [p.text for p in doc.paragraphs if p.text.strip()]
+                for table in doc.tables:
+                    for row in table.rows:
+                        row_text = " ".join(cell.text.strip() for cell in row.cells if cell.text.strip())
+                        if row_text:
+                            paras.append(row_text)
+                text = "\n".join(paras)
                 print(f"Loaded DOCX: {filename}")
             elif filename.lower().endswith((".txt", ".md")):
                 with open(path, "r", encoding="utf-8") as f:
