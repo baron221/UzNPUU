@@ -72,14 +72,29 @@ def find_relevant_pairs(question: str, pairs: list, client, top_n: int = 5) -> s
     if not pairs:
         return ""
     q_lower = question.lower()
-    pre_filtered = [(i, p) for i, p in enumerate(pairs)
-        if any(word in p['question'].lower() or word in p['answer'].lower()
-               for word in q_lower.split() if len(word) > 2)]
-    working_pairs = pre_filtered if len(pre_filtered) >= 3 else list(enumerate(pairs))
+    q_words = [w for w in q_lower.split() if len(w) > 2]
+    
+    # Pre-filter by keyword match
+    pre_filtered = []
+    if q_words:
+        pre_filtered = [(i, p) for i, p in enumerate(pairs)
+            if any(word in p['question'].lower() or word in p['answer'].lower()
+                   for word in q_words)]
+    
+    # If we found ANY matches, use them. If not, fallback to all pairs.
+    working_pairs = pre_filtered if pre_filtered else list(enumerate(pairs))
     if not working_pairs:
         return ""
-    # Increased window to 80 candidates for better relevance
-    filtered_index = "\n".join(f"[{orig_i}] {p['question'][:120].strip()}" for orig_i, p in working_pairs[:80])
+        
+    # Include both question and a small snippet of the answer so Groq can see context
+    filtered_index_lines = []
+    for orig_i, p in working_pairs[:80]:
+        q_text = p['question'].replace('\n', ' ')[:100]
+        a_text = p['answer'].replace('\n', ' ')[:50]
+        filtered_index_lines.append(f"[{orig_i}] Q: {q_text} | A: {a_text}...")
+        
+    filtered_index = "\n".join(filtered_index_lines)
+    
     check = safe_completion(
         client,
         messages=[
@@ -92,9 +107,13 @@ def find_relevant_pairs(question: str, pairs: list, client, top_n: int = 5) -> s
     try:
         indices = [int(x.strip()) for x in raw.split(",") if x.strip().isdigit()]
         selected = [f"Savol: {pairs[i]['question']}\nJavob: {pairs[i]['answer']}" for i in indices if i < len(pairs)]
+        if not selected:
+            raise ValueError("No valid indices parsed")
         return "\n\n---\n\n".join(selected)
     except:
+        # Fallback if Groq fails parsing
         return "\n\n---\n\n".join(f"Savol: {p['question']}\nJavob: {p['answer']}" for _, p in working_pairs[:top_n])
+
 
 def safe_completion(client, **kwargs):
     """Attempt a completion with fallback model support."""
