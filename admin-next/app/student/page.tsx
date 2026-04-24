@@ -1,10 +1,9 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { askQuestion } from '@/lib/api';
+import { askQuestion, getCards, askAdmin, getStudentHistory, type ServiceCard, type HistoryItem } from '@/lib/api';
 
-type Msg = { text: string; type: 'user' | 'bot'; options?: string[]; showAdmin?: boolean };
+type Msg = { text: string; type: 'user' | 'bot'; options?: string[]; showAdmin?: boolean; isHistory?: boolean; isPending?: boolean };
 type Tab = 'home' | 'chat' | 'faq' | 'profile';
-import { getCards, type ServiceCard, askAdmin } from '@/lib/api';
 
 const FAQS = [
   { cat: '📚 HEMIS tizimi', items: [
@@ -29,7 +28,9 @@ export default function StudentPage() {
   const [darkMode, setDarkMode] = useState(false);
   const [tab, setTab]         = useState<Tab>('home');
   const [cards, setCards]     = useState<ServiceCard[]>([]);
-  const [msgs, setMsgs]       = useState<Msg[]>([{ text: '👋 Salom! Men UzNPUU botiman. Savolingizni yozing — yordam beraman!', type: 'bot' }]);
+  const [msgs, setMsgs]       = useState<Msg[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [input, setInput]     = useState('');
   const [typing, setTyping]   = useState(false);
   const [faqQ, setFaqQ]       = useState('');
@@ -92,6 +93,57 @@ export default function StudentPage() {
       }
     }
   }, []);
+
+  // Load unified history (bot + mini app) once when component mounts
+  useEffect(() => {
+    if (historyLoaded) return;
+    const metaStr = localStorage.getItem('tg_user');
+    if (!metaStr) {
+      // No TG identity yet — show default welcome and mark done
+      setMsgs([{ text: '👋 Salom! Men UzNPUU botiman. Savolingizni yozing — yordam beraman!', type: 'bot' }]);
+      setHistoryLoaded(true);
+      return;
+    }
+    const meta = JSON.parse(metaStr);
+    const tgId: string = meta.student_telegram_id || '';
+    if (!tgId || tgId === 'WEB') {
+      setMsgs([{ text: '👋 Salom! Men UzNPUU botiman. Savolingizni yozing — yordam beraman!', type: 'bot' }]);
+      setHistoryLoaded(true);
+      return;
+    }
+    setLoadingHistory(true);
+    getStudentHistory(tgId)
+      .then(({ history }) => {
+        const histMsgs: Msg[] = [];
+        history.forEach((item: HistoryItem) => {
+          // Student question
+          histMsgs.push({ text: item.question, type: 'user', isHistory: true });
+          // Bot/admin answer
+          const answerText = item.answer && item.answer !== 'Admin javobini kuting...'
+            ? item.answer
+            : null;
+          if (answerText) {
+            histMsgs.push({ text: answerText, type: 'bot', isHistory: true });
+          } else {
+            histMsgs.push({ text: '⏳ Admin javobini kutilmoqda...', type: 'bot', isHistory: true, isPending: true });
+          }
+        });
+        // Build final message list
+        const welcomeMsg: Msg = { text: '👋 Salom! Men UzNPUU botiman. Savolingizni yozing — yordam beraman!', type: 'bot' };
+        if (histMsgs.length > 0) {
+          setMsgs([welcomeMsg, ...histMsgs]);
+        } else {
+          setMsgs([welcomeMsg]);
+        }
+      })
+      .catch(() => {
+        setMsgs([{ text: '👋 Salom! Men UzNPUU botiman. Savolingizni yozing — yordam beraman!', type: 'bot' }]);
+      })
+      .finally(() => {
+        setHistoryLoaded(true);
+        setLoadingHistory(false);
+      });
+  }, [historyLoaded]);
 
   async function send(text?: string) {
     const q = (text ?? input).trim();
@@ -210,33 +262,73 @@ export default function StudentPage() {
         {tab === 'chat' && (
           <>
             <div className="chat-area" ref={msgsRef}>
-              {msgs.map((m, i) => (
-                <div key={i}>
-                  <div className={`msg ${m.type}`}>{m.text}</div>
-                  {m.type === 'bot' && (m.options?.length || m.showAdmin) && (
-                    <div className="suggs" style={{ marginTop: 8, marginBottom: 16 }}>
-                      {m.options?.map(opt => (
-                        <button key={opt} className="sugg" onClick={() => send(opt)}>{opt}</button>
-                      ))}
-                      {m.showAdmin && (
-                        <button 
-                          className="sugg" 
-                          style={{ borderColor: '#ef4444', color: '#ef4444' }} 
-                          onClick={() => { m.showAdmin = false; handleAskAdmin(); }}>
-                          👤 Adminstratorga yuborish
-                        </button>
-                      )}
-                    </div>
-                  )}
+              {/* Loading history skeleton */}
+              {loadingHistory && (
+                <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--muted)', fontSize: 12 }}>
+                  <div className="dots" style={{ margin: '0 auto 8px' }}><span /><span /><span /></div>
+                  Oldingi suhbat yuklanmoqda...
                 </div>
-              ))}
+              )}
+
+              {/* History separator — only show if there are history messages */}
+              {!loadingHistory && msgs.some(m => m.isHistory) && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '12px 16px', color: 'var(--muted)', fontSize: 11,
+                }}>
+                  <div style={{ flex: 1, height: 1, background: 'var(--border, rgba(99,102,241,0.15))' }} />
+                  <span style={{ whiteSpace: 'nowrap', fontWeight: 600, letterSpacing: '0.05em' }}>📅 OLDINGI SUHBAT</span>
+                  <div style={{ flex: 1, height: 1, background: 'var(--border, rgba(99,102,241,0.15))' }} />
+                </div>
+              )}
+
+              {msgs.map((m, i) => {
+                // Separator between history and new session messages
+                const isFirstLive = !m.isHistory && i > 0 && msgs[i - 1]?.isHistory;
+                return (
+                  <div key={i}>
+                    {isFirstLive && (
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '12px 16px', color: 'var(--muted)', fontSize: 11,
+                      }}>
+                        <div style={{ flex: 1, height: 1, background: 'var(--border, rgba(99,102,241,0.15))' }} />
+                        <span style={{ whiteSpace: 'nowrap', fontWeight: 600, letterSpacing: '0.05em' }}>✨ YANGI SUHBAT</span>
+                        <div style={{ flex: 1, height: 1, background: 'var(--border, rgba(99,102,241,0.15))' }} />
+                      </div>
+                    )}
+                    <div
+                      className={`msg ${m.type}`}
+                      style={m.isHistory ? { opacity: m.isPending ? 0.6 : 0.75 } : undefined}
+                    >
+                      {m.text}
+                    </div>
+                    {m.type === 'bot' && (m.options?.length || m.showAdmin) && (
+                      <div className="suggs" style={{ marginTop: 8, marginBottom: 16 }}>
+                        {m.options?.map(opt => (
+                          <button key={opt} className="sugg" onClick={() => send(opt)}>{opt}</button>
+                        ))}
+                        {m.showAdmin && (
+                          <button
+                            className="sugg"
+                            style={{ borderColor: '#ef4444', color: '#ef4444' }}
+                            onClick={() => { m.showAdmin = false; handleAskAdmin(); }}>
+                            👤 Adminstratorga yuborish
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               {typing && (
                 <div className="msg bot">
                   <div className="dots"><span /><span /><span /></div>
                 </div>
               )}
             </div>
-            {msgs.length === 1 && (
+            {/* Show suggestions only when no history and no live messages yet */}
+            {!loadingHistory && msgs.filter(m => !m.isHistory).length <= 1 && (
               <div className="suggs">
                 {SUGGS.map(s => <button key={s} className="sugg" onClick={() => send(s)}>{s}</button>)}
               </div>

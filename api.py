@@ -145,6 +145,18 @@ async def ask_admin(request: Request):
     
     return {"ok": True, "message": "Savolingiz adminstratorga yuborildi."}
 
+@app.get("/api/student/history")
+async def get_student_history(student_telegram_id: str, limit: int = 30):
+    """
+    Public endpoint: returns a student's chat history from both
+    the Telegram bot and the mini app (same questions table).
+    Gated only by knowing your own student_telegram_id.
+    """
+    if not student_telegram_id or student_telegram_id in ("WEB", ""):
+        return {"history": []}
+    items = db.get_student_history(student_telegram_id, limit=min(limit, 50))
+    return {"history": items}
+
 @app.get("/api/faculties")
 async def get_public_faculties():
     return {"faculties": db.get_all_faculties()}

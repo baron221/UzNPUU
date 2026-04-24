@@ -562,6 +562,24 @@ def link_admin_message(qid, chat_id, message_id):
     conn.commit()
     conn.close()
 
+def get_student_history(student_tg_id, limit=30):
+    """
+    Returns a student's past Q&A history ordered oldest→newest.
+    Excludes internal __ADMIN_FOLLOW_UP__ placeholder rows.
+    Used by the mini app chat to show unified history across bot + web.
+    """
+    conn = get_conn()
+    rows = conn.execute("""
+        SELECT id, question, answer, status, category, lang, created_at, answered_at
+        FROM questions
+        WHERE student_telegram_id = ?
+          AND question != '__ADMIN_FOLLOW_UP__'
+        ORDER BY created_at ASC
+        LIMIT ?
+    """, (str(student_tg_id), limit)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
 def get_question_by_admin_message(chat_id, message_id):
     conn = get_conn()
     row = conn.execute("SELECT * FROM questions WHERE admin_chat_id=? AND admin_message_id=?", 

@@ -117,6 +117,21 @@ export const askAdmin = (question: string, metadata: any = {}) =>
     body: JSON.stringify({ question, ...metadata }),
   }).then(r => r.json()) as Promise<{ ok: boolean; message?: string }>;
 
+export const getStudentHistory = (tgId: string) =>
+  fetch(`/api/student/history?student_telegram_id=${encodeURIComponent(tgId)}`)
+    .then(r => r.json()) as Promise<{ history: HistoryItem[] }>;
+
+export interface HistoryItem {
+  id: number;
+  question: string;
+  answer: string | null;
+  status: 'answered' | 'unanswered';
+  category: string;
+  lang: string;
+  created_at: string;
+  answered_at: string | null;
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface Question {
   id: number;
