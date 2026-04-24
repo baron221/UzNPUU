@@ -1,5 +1,6 @@
 import os
 import re
+import logging
 from typing import Optional
 from groq import Groq
 from lang_detector import detect_lang, get_response
