@@ -376,9 +376,9 @@ async def upload_file(file: UploadFile = File(...), current_user: dict = Depends
         logging.warning(f"Pair count failed for {filename}: {e}")
         pair_count = 0
 
-    db.upsert_file_status(filename, status='draft', pairs=pair_count)
+    db.upsert_file_status(filename, status='trained', pairs=pair_count)
 
-    # Reload KB (new file stays draft so won't be active until trained)
+    # Reload KB (new file is trained so it will be active immediately)
     reload_kb()
 
     return {"ok": True, "filename": filename, "pairs": pair_count}
