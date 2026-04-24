@@ -21,7 +21,7 @@ def reload_kb():
     from file_loader import load_knowledge_base
     import ai_responder
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    kb_folder = os.path.join(BASE_DIR, "knowledge")
+    kb_folder = os.path.join(BASE_DIR, "data", "knowledge")
 
     # Only load files marked as 'trained'
     trained_files = db.get_trained_filenames()
@@ -358,7 +358,7 @@ async def upload_file(file: UploadFile = File(...), current_user: dict = Depends
         return {"ok": False, "error": "Type not allowed"}
 
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    kb_folder = os.path.join(BASE_DIR, 'knowledge')
+    kb_folder = os.path.join(BASE_DIR, 'data', 'knowledge')
     os.makedirs(kb_folder, exist_ok=True)
     save_path = os.path.join(kb_folder, filename)
 
@@ -387,7 +387,7 @@ async def upload_file(file: UploadFile = File(...), current_user: dict = Depends
 @app.get("/api/admin/files")
 async def get_admin_files(current_user: dict = Depends(get_current_admin)):
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    folder = os.path.join(BASE_DIR, "knowledge")
+    folder = os.path.join(BASE_DIR, "data", "knowledge")
     if not os.path.exists(folder): return {"files": []}
     
     statuses = db.get_file_statuses()
@@ -415,7 +415,7 @@ async def update_file_status(filename: str, request: Request, current_user: dict
     
     # Update pairs count while at it
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    path = os.path.join(BASE_DIR, 'knowledge', filename)
+    path = os.path.join(BASE_DIR, 'data', 'knowledge', filename)
     if os.path.exists(path):
         # We need to reload just this text to count pairs if we don't have it
         pairs_count = 0
@@ -435,7 +435,7 @@ async def delete_admin_file(filename: str, current_user: dict = Depends(get_curr
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     # Basic protection against directory traversal
     safe_filename = os.path.basename(filename)
-    path = os.path.join(BASE_DIR, 'knowledge', safe_filename)
+    path = os.path.join(BASE_DIR, 'data', 'knowledge', safe_filename)
     
     if os.path.exists(path):
         os.remove(path)
