@@ -192,26 +192,51 @@ def get_answer(question: str, knowledge_base: str, clients: dict, faculty_id: Op
     # Combine document pairs with dynamic DB pairs
     all_pairs = _cached_pairs + [{"question": i['question'], "answer": i['answer']} for i in db_items]
 
+    # ── SHORT QUESTION PRE-CHECK (bypass Groq for speed + accuracy) ─────────────
+    # If ≤3 words or matches known university keywords → treat as VAGUE first.
+    # This prevents Groq from mis-classifying Uzbek/Russian single keywords.
+    q_words = question.strip().split()
+    VAGUE_KEYWORDS = {
+        # Uzbek
+        "to'lov", "tolov", "imtihon", "jadval", "stipendiya", "grant", "hemis",
+        "kontrakt", "shartnoma", "diplom", "kvitansiya", "gpa", "kredit",
+        "dekanat", "rektor", "registrator", "talaba", "kitobxona", "yotoqxona",
+        "sport", "kutubxona", "fakultet", "kafedra", "amaliyot", "kurs",
+        # Russian
+        "оплата", "расписание", "стипендия", "контракт", "диплом", "гпа",
+        "общежитие", "библиотека", "факультет", "экзамен", "зачёт",
+        # English
+        "payment", "schedule", "scholarship", "contract", "diploma", "dormitory",
+        "library", "faculty", "exam",
+    }
+    q_lower_words = set(w.lower().strip(".,!?:;\"'") for w in q_words)
+    is_short = len(q_words) <= 3
+    has_vague_kw = bool(q_lower_words & VAGUE_KEYWORDS)
+
+    if is_short or has_vague_kw:
+        options = generate_options(question, all_pairs)
+        if options:
+            logging.info(f"[VAGUE-FAST][{lang}] '{question[:40]}' → {len(options)} options")
+            return get_response("clarify", lang), options, lang, "VAGUE"
+        # No options found → fall through to full Groq classification
+
     category = classify_question(question, client)
-    print(f"[{category}][{lang}][FID:{faculty_id}] {question[:50]}...")
+    logging.info(f"[{category}][{lang}][FID:{faculty_id}] {question[:50]}")
 
     # ── GENERAL / CONVERSATIONAL ──────────────────────────────────────────────
     if category == "GENERAL":
         q = question.lower().strip()
-        # Fast path for very common words
         if any(w in q for w in ["assalomu","salom","hello","hi","hey","привет","здравствуйте"]):
             return get_response("greeting", lang), [], lang, "GENERAL"
         if any(w in q for w in ["rahmat","tashakkur","спасибо","thanks","thank"]):
             return get_response("thanks", lang), [], lang, "GENERAL"
-        if any(w in q for w in ["xayr","bye","goodbye","пока","до svi daniya"]):
+        if any(w in q for w in ["xayr","bye","goodbye","пока"]):
             return get_response("bye", lang), [], lang, "GENERAL"
-        
-        # Smart conversational response for other general queries
         try:
             completion = safe_completion(
                 client,
                 messages=[
-                    {"role": "system", "content": f"""You are the UzNPUU University Assistant. 
+                    {"role": "system", "content": f"""You are the UzNPUU University Assistant.
 The user is asking a general or conversational question (not a specific academic one).
 Reply politely, concisely, and in the student's language ({lang}).
 If they want to speak to an admin, tell them you can help with most info from documents, but an admin will reply soon in this chat if needed."""},
@@ -223,12 +248,13 @@ If they want to speak to an admin, tell them you can help with most info from do
         except:
             return get_response("error", lang), [], lang, "ERROR"
 
-    # ── VAGUE ─────────────────────────────────────────────────────────────────
+    # ── VAGUE (Groq-classified) ───────────────────────────────────────────────
     elif category == "VAGUE":
         options = generate_options(question, all_pairs)
         if options:
             return get_response("clarify", lang), options, lang, "VAGUE"
         category = "UNIVERSITY"
+
 
     # ── UNIVERSITY ────────────────────────────────────────────────────────────
     if category == "UNIVERSITY":
