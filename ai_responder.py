@@ -193,6 +193,16 @@ def get_answer(question: str, knowledge_base: str, clients: dict, faculty_id: Op
     # Combine document pairs with dynamic DB pairs
     all_pairs = _cached_pairs + [{"question": i['question'], "answer": i['answer']} for i in db_items]
 
+    # ── EXACT MATCH PRE-CHECK (Option button tapped) ──────────────────────────
+    # If the question exactly matches a known KB question, answer it directly.
+    # This breaks the infinite loop where an option containing a "vague" keyword
+    # triggers generate_options() again instead of answering.
+    clean_q_exact = question.strip().lower()
+    for pair in all_pairs:
+        if clean_q_exact == pair['question'].strip().lower():
+            logging.info(f"[EXACT-MATCH][{lang}] {question[:50]}")
+            return pair['answer'], [], lang, "UNIVERSITY"
+
     # ── SHORT QUESTION PRE-CHECK (bypass Groq for speed + accuracy) ─────────────
     # If ≤3 words or matches known university keywords → treat as VAGUE first.
     # This prevents Groq from mis-classifying Uzbek/Russian single keywords.
