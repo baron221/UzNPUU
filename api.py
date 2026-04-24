@@ -23,17 +23,9 @@ def reload_kb():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     kb_folder = os.path.join(BASE_DIR, "data", "knowledge")
 
-    # Only load files marked as 'trained'
-    trained_files = db.get_trained_filenames()
-
-    if trained_files:
-        # Load only trained files
-        state.knowledge_base = load_knowledge_base(kb_folder, include_files=trained_files)
-        logging.info(f"Knowledge Base reloaded: {len(trained_files)} trained files.")
-    else:
-        # Fallback: load ALL files so the bot is never left empty
-        state.knowledge_base = load_knowledge_base(kb_folder)
-        logging.warning("No trained files found — loaded ALL knowledge files as fallback.")
+    # Load all files in the folder (logic removed for trained/draft)
+    state.knowledge_base = load_knowledge_base(kb_folder)
+    logging.info("Knowledge Base reloaded from all available files.")
 
     ai_responder._cached_pairs = ai_responder.parse_qa_pairs(state.knowledge_base)
 
@@ -403,6 +395,11 @@ async def get_admin_files(current_user: dict = Depends(get_current_admin)):
                 "pairs": "N/A"
             })
     return {"files": sorted(files, key=lambda x: x['created_at'], reverse=True)}
+
+@app.put("/api/admin/files/{filename}/status")
+async def dummy_status(filename: str):
+    # Dummy endpoint to prevent 404s for old front-end code
+    return {"ok": True}
 
 
 
