@@ -44,10 +44,21 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if student:
         context.user_data['student_id'] = student['student_id']
         context.user_data['faculty_id'] = student['faculty_id']
-        if student['faculty_id']:
-            fac = db.get_faculty(student['faculty_id'])
-            context.user_data['faculty_name'] = fac['name'] if fac else "Umumiy"
-        
+
+        # Student registered but has no faculty — ask them to pick one
+        if not student['faculty_id']:
+            faculties = [f for f in db.get_all_faculties() if f['is_active']]
+            keyboard = [[InlineKeyboardButton(f['name'], callback_data=f"reg_fac_{f['id']}")] for f in faculties]
+            keyboard.append([InlineKeyboardButton("👤 Adminstrator (Umumiy)", callback_data="reg_fac_none")])
+            await update.message.reply_text(
+                f"Assalomu alaykum! 🎓 Sizning ID: {student['student_id']}\n\n"
+                "Fakultetingiz hali tanlanmagan. Iltimos, fakultetingizni tanlang:",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+            return ConversationHandler.END
+
+        fac = db.get_faculty(student['faculty_id'])
+        context.user_data['faculty_name'] = fac['name'] if fac else "Umumiy"
         await update.message.reply_text(
             f"Assalomu alaykum! UzNPUU botiga qayta xush kelibsiz! 🎓\n\n"
             f"Sizning ID: {student['student_id']}\n"
@@ -134,7 +145,35 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     import state
 
-    if data.startswith("fac_"):
+    if data.startswith("reg_fac_"):
+        # Fallback handler: fires when bot restarted mid-registration and
+        # the ConversationHandler lost its REGISTER_FACULTY state.
+        raw_fid = data.replace("reg_fac_", "")
+        fid = None if raw_fid == "none" else int(raw_fid)
+        user_id = query.from_user.id
+        student_id = context.user_data.get('temp_student_id') or context.user_data.get('student_id')
+        # Try to load from DB if context is empty
+        if not student_id:
+            s_db = db.get_student(user_id)
+            if s_db:
+                student_id = s_db['student_id']
+        if student_id:
+            db.register_student(user_id, student_id, fid)
+            context.user_data['student_id'] = student_id
+            context.user_data['faculty_id'] = fid
+            faculty_name = "Umumiy"
+            if fid:
+                faculty = db.get_faculty(fid)
+                faculty_name = faculty['name'] if faculty else "Umumiy"
+            context.user_data['faculty_name'] = faculty_name
+            await query.message.edit_text(
+                f"🎉 Tabriklaymiz! Siz {faculty_name} talabasi sifatida ro'yxatdan o'tdingiz.\n\n"
+                "Endi savolingizni yozishingiz mumkin! 🎓"
+            )
+        else:
+            await query.message.reply_text("❌ Xatolik: avval /start orqali ID kiriting.")
+
+    elif data.startswith("fac_"):
         raw_fid = data.replace("fac_", "")
         fid = None if raw_fid == "none" else int(raw_fid)
         
