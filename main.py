@@ -2,6 +2,7 @@ import os
 import threading
 import uvicorn
 import logging
+import time
 from dotenv import load_dotenv
 
 # ── Shared State ──────────────────────────────────────────────────────────────
@@ -15,11 +16,19 @@ import ai_responder
 load_dotenv()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# ── Initialize ─────────────────────────────────────────────────────────────────
+# ── Bot Health Tracking ───────────────────────────────────────────────────────
+bot_status = {
+    "attempts": 0,
+    "last_start": None,
+    "last_error": None,
+    "running": False,
+}
+
+# ── Initialize ────────────────────────────────────────────────────────────────
 def initialize():
     print("Initializing University Bot...")
     db.init_db()
-    
+
     print("Loading knowledge base...")
     state.knowledge_base = load_knowledge_base(os.path.join(BASE_DIR, "knowledge"))
     state.clients = setup_ai()
@@ -37,6 +46,27 @@ def run_api():
 from telegram.ext import ApplicationBuilder
 from bot_logic import setup_bot_handlers
 
+
+def delete_webhook(token: str):
+    """
+    Delete any existing Telegram webhook before starting polling.
+    CRITICAL: If a webhook is active, Telegram sends all updates there
+    and getUpdates (polling) receives NOTHING — bot appears completely silent.
+    """
+    import urllib.request
+    import json
+    try:
+        url = f"https://api.telegram.org/bot{token}/deleteWebhook?drop_pending_updates=true"
+        with urllib.request.urlopen(url, timeout=10) as r:
+            result = json.loads(r.read())
+            if result.get("result"):
+                logging.info("✅ Webhook deleted (or was not set). Polling is clear.")
+            else:
+                logging.warning(f"⚠️ deleteWebhook response: {result}")
+    except Exception as e:
+        logging.error(f"❌ Failed to delete webhook: {e}")
+
+
 def run_bot_once():
     """Start the bot polling. Raises on failure so the watchdog can retry."""
     import asyncio
@@ -49,38 +79,53 @@ def run_bot_once():
     if not token:
         raise RuntimeError("BOT_TOKEN not found in environment!")
 
+    # CRITICAL: delete webhook before polling so Telegram sends updates here
+    delete_webhook(token)
+
     app = (ApplicationBuilder().token(token)
            .connect_timeout(30).read_timeout(30).write_timeout(30).build())
 
     state.bot_app = app
     setup_bot_handlers(app)
 
+    bot_status["running"] = True
+    bot_status["last_start"] = time.strftime("%Y-%m-%d %H:%M:%S")
+    bot_status["last_error"] = None
     logging.info("✅ Telegram Bot polling started.")
     app.run_polling(drop_pending_updates=True, stop_signals=False)
 
 
 def run_bot_with_restart():
     """Watchdog: keeps the bot running by restarting on any crash."""
-    import time
     delay = 5  # initial retry delay in seconds
-    attempt = 0
     while True:
-        attempt += 1
+        bot_status["attempts"] += 1
+        bot_status["running"] = False
         try:
-            logging.info(f"🤖 Bot attempt #{attempt} starting...")
+            logging.info(f"🤖 Bot attempt #{bot_status['attempts']} starting...")
             run_bot_once()
-            # run_polling() returned cleanly — still restart it
+            # run_polling() returned cleanly — reset delay and restart
             logging.warning("⚠️ Bot polling exited cleanly. Restarting in 5s...")
+            delay = 5  # reset backoff after clean exit
         except Exception as e:
-            logging.error(f"❌ Bot crashed (attempt #{attempt}): {e}. Restarting in {delay}s...")
-            state.bot_app = None  # Clear so API doesn't use dead instance
+            err = str(e)
+            bot_status["last_error"] = err
+            bot_status["running"] = False
+            state.bot_app = None  # Clear so API doesn't send through dead instance
+            logging.error(
+                f"❌ Bot crashed (attempt #{bot_status['attempts']}): {err}. "
+                f"Restarting in {delay}s..."
+            )
         time.sleep(delay)
         delay = min(delay * 2, 60)  # Exponential backoff, max 60s
 
 
-# ── Entry Point ────────────────────────────────────────────────────────────────
+# ── Entry Point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        level=logging.INFO
+    )
 
     initialize()
 
@@ -90,4 +135,4 @@ if __name__ == "__main__":
     bot_thread.start()
 
     # Run API in the main thread (crucial for Railway health checks)
-    run_api()
+    run_api()

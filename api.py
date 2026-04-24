@@ -95,6 +95,23 @@ async def health():
 async def ping():
     return {"ping": "pong"}
 
+@app.get("/api/bot/status")
+async def bot_status_endpoint():
+    """Diagnostic: check if the Telegram bot polling thread is alive."""
+    import main as main_module
+    import state
+    s = main_module.bot_status
+    return {
+        "bot_running": s.get("running", False),
+        "bot_app_set": state.bot_app is not None,
+        "attempts": s.get("attempts", 0),
+        "last_start": s.get("last_start"),
+        "last_error": s.get("last_error"),
+        "kb_loaded": bool(state.knowledge_base),
+        "ai_ready": bool(state.clients),
+        "kb_pairs": len(getattr(__import__('ai_responder'), '_cached_pairs') or []),
+    }
+
 # ── Public API ────────────────────────────────────────────────────────────────
 @app.post("/ask")
 async def ask(request: Request):
