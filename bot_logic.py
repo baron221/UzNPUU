@@ -238,7 +238,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         kb = []
         if options:
             context.user_data['temp_options'] = options
-            kb = [[InlineKeyboardButton(o, callback_data=f"opt_idx_{i}")] for i, o in enumerate(options)]
+            kb = [[InlineKeyboardButton(o[:57] + "..." if len(o) > 60 else o, callback_data=f"opt_idx_{i}")] for i, o in enumerate(options)]
         if show_admin_btn:
             kb.append([InlineKeyboardButton("👤 Adminstratorga yuborish", callback_data="ask_admin")])
             context.user_data['last_question'] = selected
@@ -293,7 +293,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         kb = []
         if options:
             context.user_data['temp_options'] = options
-            kb = [[InlineKeyboardButton(o, callback_data=f"opt_idx_{i}")] for i, o in enumerate(options)]
+            kb = [[InlineKeyboardButton(o[:57] + "..." if len(o) > 60 else o, callback_data=f"opt_idx_{i}")] for i, o in enumerate(options)]
         if show_admin_btn:
             kb.append([InlineKeyboardButton("👤 Adminstratorga yuborish", callback_data="ask_admin")])
             context.user_data['last_question'] = question

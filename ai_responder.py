@@ -175,7 +175,6 @@ def generate_options(question: str, pairs: list) -> list:
     for p in pairs:
         if any(word in p['question'].lower() for word in q_lower.split() if len(word) > 2):
             label = clean_label(p['question'])
-            if len(label) > 60: label = label[:57] + "..."
             matched.append(label)
     seen = set()
     options = []
@@ -213,12 +212,11 @@ def get_answer(question: str, knowledge_base: str, clients: dict, faculty_id: Op
     all_pairs = _cached_pairs + [{"question": i['question'], "answer": i['answer']} for i in db_items]
 
     # ── EXACT MATCH PRE-CHECK (Option button tapped) ──────────────────────────
-    # If the question exactly matches a known KB question, answer it directly.
-    # This breaks the infinite loop where an option containing a "vague" keyword
-    # triggers generate_options() again instead of answering.
+    # 1. Exact Match Check (to break infinite option loops)
     clean_q_exact = question.strip().lower()
     for pair in all_pairs:
-        if clean_q_exact == pair['question'].strip().lower():
+        # Compare against the cleaned label to match the generated options
+        if clean_q_exact == clean_label(pair['question']).strip().lower():
             logging.info(f"[EXACT-MATCH][{lang}] {question[:50]}")
             return pair['answer'], [], lang, "UNIVERSITY"
 
