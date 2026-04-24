@@ -186,18 +186,30 @@ def clean_label(text: str) -> str:
 
 def generate_options(question: str, pairs: list) -> list:
     q_lower = question.lower().strip()
-    matched = []
+    import re
+    q_words = [re.sub(r'[^\w]', '', w) for w in q_lower.split() if len(w) > 2]
+    
+    if not q_words:
+        return []
+
+    scored_matches = []
     for p in pairs:
-        if any(word in p['question'].lower() for word in q_lower.split() if len(word) > 2):
+        p_q_lower = p['question'].lower()
+        score = sum(1 for w in q_words if w in p_q_lower)
+        if score > 0:
             label = clean_label(p['question'])
-            matched.append(label)
+            scored_matches.append((score, label))
+    
+    # Sort by score (descending)
+    scored_matches.sort(key=lambda x: x[0], reverse=True)
+    
     seen = set()
     options = []
-    for m in matched:
+    for score, m in scored_matches:
         if m not in seen:
             seen.add(m)
             options.append(m)
-        if len(options) == 4: break
+        if len(options) == 6: break # Show up to 6 options
     return options
 
 _cached_pairs = None
@@ -253,10 +265,11 @@ def get_answer(question: str, knowledge_base: str, clients: dict, faculty_id: Op
         "library", "faculty", "exam",
     }
     q_lower_words = set(w.lower().strip(".,!?:;\"'") for w in q_words)
-    is_short = len(q_words) <= 3
+    is_short = len(q_words) <= 1
     has_vague_kw = bool(q_lower_words & VAGUE_KEYWORDS)
 
-    if is_short or has_vague_kw:
+    # Only trigger options if it's a single word OR a 2-word vague phrase
+    if is_short or (len(q_words) <= 2 and has_vague_kw):
         options = generate_options(question, all_pairs)
         if options:
             logging.info(f"[VAGUE-FAST][{lang}] '{question[:40]}' → {len(options)} options")
