@@ -230,10 +230,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         import state
         
         # Verify AI state
-        if not state.clients or not state.knowledge_base:
-            logging.error("❌ AI State is not initialized in handle_message")
-            await update.message.reply_text("⚠️ Kechirasiz, AI tizimi hozirda faol emas. Iltimos, keyinroq urinib ko'ring.")
+        if not state.clients:
+            logging.error("❌ AI clients not initialized in handle_message")
+            await update.message.reply_text("⚠️ Kechirasiz, AI xizmat hozirda ishlamayapti. Tez orada tuzatiladi.")
             return
+        if not state.knowledge_base:
+            logging.warning("⚠️ Knowledge base is empty — answering with AI only (no documents)")
+            # Don't block — let it answer from FAQ DB items even without file KB
 
         await update.message.chat.send_action("typing")
         

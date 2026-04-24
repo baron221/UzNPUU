@@ -21,12 +21,21 @@ def reload_kb():
     from file_loader import load_knowledge_base
     import ai_responder
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    kb_folder = os.path.join(BASE_DIR, "knowledge")
+
     # Only load files marked as 'trained'
     trained_files = db.get_trained_filenames()
-    kb_folder = os.path.join(BASE_DIR, "knowledge")
-    state.knowledge_base = load_knowledge_base(kb_folder, include_files=trained_files)
+
+    if trained_files:
+        # Load only trained files
+        state.knowledge_base = load_knowledge_base(kb_folder, include_files=trained_files)
+        logging.info(f"Knowledge Base reloaded: {len(trained_files)} trained files.")
+    else:
+        # Fallback: load ALL files so the bot is never left empty
+        state.knowledge_base = load_knowledge_base(kb_folder)
+        logging.warning("No trained files found — loaded ALL knowledge files as fallback.")
+
     ai_responder._cached_pairs = ai_responder.parse_qa_pairs(state.knowledge_base)
-    logging.info(f"Knowledge Base reloaded: {len(trained_files)} trained files.")
 
 # Serve static assets (favicon, etc.)
 import pathlib
