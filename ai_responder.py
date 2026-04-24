@@ -69,66 +69,32 @@ def find_relevant_chunks(question: str, chunks: list, client, top_n: int = 5) ->
         return "\n\n".join(chunks[:top_n])
 
 def find_relevant_pairs(question: str, pairs: list, client, top_n: int = 5) -> str:
-    if not pairs:
+    import vector_store
+    
+    # 1. Semantic Search using Vector Store (ChromaDB)
+    # We fetch more than top_n to allow for AI re-ranking
+    semantic_context = vector_store.search_vector_db(question, n_results=10)
+    
+    if not semantic_context:
         return ""
-    # Clean punctuation and split
-    import re
-    q_lower = question.lower()
-    q_words = [re.sub(r'[^\w]', '', w) for w in q_lower.split()]
-    q_words = [w for w in q_words if len(w) >= 2]
-    
-    # Pre-filter by keyword match
-    pre_filtered = []
-    if q_words:
-        for i, p in enumerate(pairs):
-            text_to_search = (p['question'] + " " + p['answer']).lower()
-            # Clean text_to_search of non-alphanumeric for matching
-            text_to_search_clean = re.sub(r'[^\w\s]', '', text_to_search)
-            if any(word in text_to_search_clean for word in q_words):
-                pre_filtered.append((i, p))
-    
-    # If we found ANY matches, use them. If not, fallback to all pairs.
-    working_pairs = pre_filtered if pre_filtered else list(enumerate(pairs))
-    if not working_pairs:
-        return ""
-        
-    # Include both question and a small snippet of the answer so Groq can see context
-    filtered_index_lines = []
-    # Sort by relevance (number of matching keywords)
-    scored_pairs = []
-    for orig_i, p in working_pairs:
-        text = (p['question'] + " " + p['answer']).lower()
-        score = sum(1 for w in q_words if w in text)
-        scored_pairs.append((score, orig_i, p))
-    
-    scored_pairs.sort(key=lambda x: x[0], reverse=True)
-    
-    for score, orig_i, p in scored_pairs[:60]: # Send top 60 relevant chunks to Groq
-        q_text = p['question'].replace('\n', ' ')[:100]
-        a_text = p['answer'].replace('\n', ' ')[:50]
-        filtered_index_lines.append(f"[{orig_i}] Q: {q_text} | A: {a_text}...")
-        
-    filtered_index = "\n".join(filtered_index_lines)
-    
-    check = safe_completion(
-        client,
-        messages=[
-            {"role": "system", "content": f"You are a search assistant. Return ONLY the {top_n} most relevant index numbers as comma-separated list. Student question is about university.\nFAQ:\n{filtered_index}"},
-            {"role": "user", "content": f"Student question: {question}"}
-        ],
-        max_tokens=100,
-    )
-    raw = check.choices[0].message.content.strip()
+
+    # 2. AI Re-ranking (Groq)
+    # Give the retrieved chunks to Groq to pick the most relevant ones
+    # This ensures the final context is highly precise
     try:
-        # Extract numbers even if the AI added text
-        indices = [int(x) for x in re.findall(r'\d+', raw)]
-        selected = [f"Savol: {pairs[i]['question']}\nJavob: {pairs[i]['answer']}" for i in indices if i < len(pairs)]
-        if not selected:
-            raise ValueError("No valid indices parsed")
-        return "\n\n---\n\n".join(selected)
-    except:
-        # Fallback: just return top scoring pairs
-        return "\n\n---\n\n".join(f"Savol: {p['question']}\nJavob: {p['answer']}" for score, orig_i, p in scored_pairs[:top_n])
+        check = safe_completion(
+            client,
+            messages=[
+                {"role": "system", "content": f"You are a search assistant. Below are several document chunks. Return ONLY the {top_n} most relevant chunks as a single concatenated string. If a chunk is not relevant to the user question, ignore it.\n\nCHUNKS:\n{semantic_context}"},
+                {"role": "user", "content": f"Student question: {question}"}
+            ],
+            max_tokens=1024,
+        )
+        return check.choices[0].message.content.strip()
+    except Exception as e:
+        logging.error(f"Reranking failed: {e}")
+        # Fallback: just return the raw semantic search results
+        return semantic_context
 
 
 def safe_completion(client, **kwargs):

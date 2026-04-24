@@ -20,6 +20,7 @@ def reload_kb():
     import state
     from file_loader import load_knowledge_base
     import ai_responder
+    import vector_store
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     kb_folder = os.path.join(BASE_DIR, "data", "knowledge")
 
@@ -28,6 +29,10 @@ def reload_kb():
     logging.info("Knowledge Base reloaded from all available files.")
 
     ai_responder._cached_pairs = ai_responder.parse_qa_pairs(state.knowledge_base)
+    
+    # Update Vector Store
+    vector_store.clear_vector_db()
+    vector_store.add_to_vector_db(ai_responder._cached_pairs)
 
 # Serve static assets (favicon, etc.)
 import pathlib

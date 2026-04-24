@@ -11,6 +11,7 @@ import database as db
 from file_loader import load_knowledge_base
 from ai_responder import setup_ai, parse_qa_pairs
 import ai_responder
+import vector_store
 
 # ── Load Env ──────────────────────────────────────────────────────────────────
 load_dotenv()
@@ -46,7 +47,13 @@ def initialize():
     state.knowledge_base = load_knowledge_base(data_kb)
     state.clients = setup_ai()
     ai_responder._cached_pairs = parse_qa_pairs(state.knowledge_base)
-    print(f"Ready: {len(ai_responder._cached_pairs)} Q&A pairs")
+    
+    # Vector DB Indexing
+    print("Indexing Vector DB (ChromaDB)...")
+    vector_store.clear_vector_db()
+    vector_store.add_to_vector_db(ai_responder._cached_pairs)
+    
+    print(f"Ready: {len(ai_responder._cached_pairs)} Q&A pairs indexed.")
 
 # ── Web Server (FastAPI) ──────────────────────────────────────────────────────
 def run_api():
