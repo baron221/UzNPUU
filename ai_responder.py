@@ -223,6 +223,25 @@ def get_answer(question: str, knowledge_base: str, clients: dict, faculty_id: Op
     # Detect language
     lang = detect_lang(question)
 
+    # NEW: Cross-lingual search support
+    # If the question is not in Uzbek, create an internal Uzbek translation for search purposes
+    search_query = question
+    if lang != 'uz' and len(question.split()) > 1:
+        try:
+            translation = safe_completion(
+                client,
+                messages=[
+                    {"role": "system", "content": "Translate the user question to UZBEK for internal university database search. Return ONLY the translation, no extra text."},
+                    {"role": "user", "content": question}
+                ],
+                max_tokens=256
+            )
+            search_query = translation.choices[0].message.content.strip()
+            logging.info(f"[CROSS-LINGUAL] Translated '{question[:30]}' to '{search_query[:30]}'")
+        except Exception as e:
+            logging.error(f"[CROSS-LINGUAL-ERR] {e}")
+            pass
+
     if _cached_pairs is None:
         _cached_pairs = parse_qa_pairs(knowledge_base)
 
@@ -271,7 +290,7 @@ def get_answer(question: str, knowledge_base: str, clients: dict, faculty_id: Op
 
     # Only trigger options if it's a single word OR a 2-word vague phrase
     if is_short or (len(q_words) <= 2 and has_vague_kw):
-        options = generate_options(question, all_pairs)
+        options = generate_options(search_query, all_pairs)
         if options:
             logging.info(f"[VAGUE-FAST][{lang}] '{question[:40]}' → {len(options)} options")
             return get_response("clarify", lang), options, lang, "VAGUE"
@@ -307,7 +326,7 @@ If they want to speak to an admin, tell them you can help with most info from do
 
     # ── VAGUE (Groq-classified) ───────────────────────────────────────────────
     elif category == "VAGUE":
-        options = generate_options(question, all_pairs)
+        options = generate_options(search_query, all_pairs)
         if options:
             return get_response("clarify", lang), options, lang, "VAGUE"
         category = "UNIVERSITY"
@@ -316,7 +335,7 @@ If they want to speak to an admin, tell them you can help with most info from do
     # ── UNIVERSITY ────────────────────────────────────────────────────────────
     if category == "UNIVERSITY":
         # 3. AI Search with context
-        context = find_relevant_pairs(question, all_pairs, client)
+        context = find_relevant_pairs(search_query, all_pairs, client)
         if not context:
             logging.warning(f"[NO-CONTEXT] {question[:50]}")
             return "Hujjatda bunday ma'lumot topilmadi", [], lang, "UNIVERSITY"
