@@ -237,42 +237,64 @@ async def answer_question(qid: int, request: Request, current_user: dict = Depen
         return {"ok": False, "error": "Savol topilmadi"}
 
     import state
+    import html as html_lib
+
+    def esc_html(text):
+        """Escape text for Telegram HTML parse mode."""
+        if not text:
+            return ""
+        return html_lib.escape(str(text))
+
     if state.bot_app:
         try:
-            # Natural formatting: If it's a follow-up (placeholder question), use a cleaner format
-            # Support both old localized string and new internal tag for backward compatibility
+            # Use HTML parse mode (same as notifier.py) to avoid Markdown parse errors
+            # caused by special characters like *, _, `, [ in question/answer text
             if question['question'] in ["Adminstruatordan xabari", "__ADMIN_FOLLOW_UP__"]:
-                msg = f"👤 **Adminstrator:**\n\n{answer}"
+                msg = f"👤 <b>Adminstrator:</b>\n\n{esc_html(answer)}"
             else:
-                msg = f"✨ **Sizning savolingizga javob keldi:**\n\n❓ {question['question']}\n\n✅ {answer}"
-            
-            await state.bot_app.bot.send_message(chat_id=question['student_telegram_id'], text=msg, parse_mode='Markdown')
-            
+                msg = (
+                    f"✨ <b>Sizning savolingizga javob keldi:</b>\n\n"
+                    f"❓ {esc_html(question['question'])}\n\n"
+                    f"✅ {esc_html(answer)}"
+                )
+
+            await state.bot_app.bot.send_message(
+                chat_id=question['student_telegram_id'],
+                text=msg,
+                parse_mode='HTML'
+            )
+
             # If already answered, create a NEW row instead of overwriting
             if question['status'] == 'answered':
                 import database as db_lib
                 db_lib.save_question(
-                    question['student_telegram_id'], 
+                    question['student_telegram_id'],
                     question.get('student_id'),
                     question.get('student_username'),
                     question.get('student_name'),
                     question.get('faculty_id'),
-                    "__ADMIN_FOLLOW_UP__", 
-                    answer, 
-                    question.get('lang', 'uz'), 
+                    "__ADMIN_FOLLOW_UP__",
+                    answer,
+                    question.get('lang', 'uz'),
                     "MANUAL"
                 )
-                
+
                 # Immediately mark the NEW manual follow-up as answered so it shows up in CRM
-                new_q = db_lib.get_conn().execute("SELECT id FROM questions WHERE student_telegram_id=? AND question='__ADMIN_FOLLOW_UP__' ORDER BY id DESC LIMIT 1", (str(question['student_telegram_id']),)).fetchone()
+                new_q = db_lib.get_conn().execute(
+                    "SELECT id FROM questions WHERE student_telegram_id=? AND question='__ADMIN_FOLLOW_UP__' ORDER BY id DESC LIMIT 1",
+                    (str(question['student_telegram_id']),)
+                ).fetchone()
                 if new_q:
                     db.update_question_answer(new_q['id'], answer, current_user['id'])
             else:
                 db.update_question_answer(qid, answer, current_user['id'])
-                
+
             return {"ok": True}
         except Exception as e:
-            return {"ok": False, "error": f"Telegram xatosi: {str(e)}"}
+            # Use repr(e) to get the full exception type + message, not just str(e)
+            error_detail = getattr(e, 'message', None) or repr(e)
+            logging.error(f"❌ Telegram send error for qid={qid}: {error_detail}")
+            return {"ok": False, "error": f"Telegram xatosi: {error_detail}"}
     else:
         return {"ok": False, "error": "Bot faol emas"}
 
