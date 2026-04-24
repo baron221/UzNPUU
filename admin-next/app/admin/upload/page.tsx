@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { uploadFile, getFiles, deleteFile, updateFileStatus, KBFile } from '@/lib/api';
+import { uploadFile, getFiles, deleteFile, KBFile } from '@/lib/api';
 
 export default function UploadPage() {
   const [file, setFile]     = useState<File | null>(null);
