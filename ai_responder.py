@@ -71,15 +71,20 @@ def find_relevant_chunks(question: str, chunks: list, client, top_n: int = 5) ->
 def find_relevant_pairs(question: str, pairs: list, client, top_n: int = 5) -> str:
     if not pairs:
         return ""
-    q_lower = question.lower()
-    q_words = [w for w in q_lower.split() if len(w) > 2]
+    # Clean punctuation and split
+    import re
+    q_words = [re.sub(r'[^\w]', '', w) for w in q_lower.split()]
+    q_words = [w for w in q_words if len(w) >= 2]
     
     # Pre-filter by keyword match
     pre_filtered = []
     if q_words:
-        pre_filtered = [(i, p) for i, p in enumerate(pairs)
-            if any(word in p['question'].lower() or word in p['answer'].lower()
-                   for word in q_words)]
+        for i, p in enumerate(pairs):
+            text_to_search = (p['question'] + " " + p['answer']).lower()
+            # Clean text_to_search of non-alphanumeric for matching
+            text_to_search_clean = re.sub(r'[^\w\s]', '', text_to_search)
+            if any(word in text_to_search_clean for word in q_words):
+                pre_filtered.append((i, p))
     
     # If we found ANY matches, use them. If not, fallback to all pairs.
     working_pairs = pre_filtered if pre_filtered else list(enumerate(pairs))
@@ -286,8 +291,14 @@ If they want to speak to an admin, tell them you can help with most info from do
 
     # ── UNIVERSITY ────────────────────────────────────────────────────────────
     if category == "UNIVERSITY":
-        relevant_context = find_relevant_pairs(question, all_pairs, client, top_n=5)
-        print(f"Context relevance tokens info used")
+        # 3. AI Search with context
+        context = find_relevant_pairs(question, all_pairs, client)
+        if not context:
+            logging.warning(f"[NO-CONTEXT] {question[:50]}")
+            return "Hujjatda bunday ma'lumot topilmadi", [], lang, "UNIVERSITY"
+
+        logging.info(f"[AI-SEARCH] Context found for: {question[:50]}")
+        relevant_context = context
 
         if not relevant_context.strip():
             # Use standardized polite response when no documents are matched

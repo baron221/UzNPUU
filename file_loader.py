@@ -38,9 +38,10 @@ def load_knowledge_base(folder=None, include_files=None):
                     for row in table.rows:
                         cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
                         if len(cells) >= 2:
-                            # Assume first column is question, second is answer
                             paras.append(f"Savol: {cells[0]}\nJavob: {cells[1]}")
                         elif len(cells) == 1:
+                            # If a cell contains 'Savol:' or 'Javob:', append as is.
+                            # Otherwise just append it, relying on parser to handle chunks.
                             paras.append(cells[0])
                 text = "\n".join(paras)
                 print(f"Loaded DOCX: {filename}")
