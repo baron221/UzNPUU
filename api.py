@@ -356,24 +356,33 @@ async def upload_file(file: UploadFile = File(...), current_user: dict = Depends
     filename = file.filename
     if not filename.lower().endswith(('.pdf','.docx','.txt','.xlsx','.md')):
         return {"ok": False, "error": "Type not allowed"}
-    
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    save_path = os.path.join(BASE_DIR, 'knowledge', filename)
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    
-    with open(save_path, 'wb') as f:
-        f.write(await file.read())
-    
-    # Calculate pairs but keep as draft initially
-    with open(save_path, 'r', encoding='utf-8', errors='ignore') as f:
-        content = f.read()
-    temp_pairs = ai_responder.parse_qa_pairs(content)
-    db.upsert_file_status(filename, status='draft', pairs=len(temp_pairs))
 
-    # Reload KB (will only include trained files, so this new one stays out for now)
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    kb_folder = os.path.join(BASE_DIR, 'knowledge')
+    os.makedirs(kb_folder, exist_ok=True)
+    save_path = os.path.join(kb_folder, filename)
+
+    # Write binary (works for PDF, DOCX, XLSX, TXT)
+    content_bytes = await file.read()
+    with open(save_path, 'wb') as f:
+        f.write(content_bytes)
+
+    # Count Q&A pairs using the proper file loader (handles PDF/DOCX/XLSX/TXT)
+    try:
+        temp_text = load_knowledge_base(kb_folder, include_files=[filename])
+        temp_pairs = ai_responder.parse_qa_pairs(temp_text)
+        pair_count = len(temp_pairs)
+    except Exception as e:
+        logging.warning(f"Pair count failed for {filename}: {e}")
+        pair_count = 0
+
+    db.upsert_file_status(filename, status='draft', pairs=pair_count)
+
+    # Reload KB (new file stays draft so won't be active until trained)
     reload_kb()
-    
-    return {"ok": True, "filename": filename, "pairs": len(temp_pairs)}
+
+    return {"ok": True, "filename": filename, "pairs": pair_count}
+
 
 @app.get("/api/admin/files")
 async def get_admin_files(current_user: dict = Depends(get_current_admin)):
