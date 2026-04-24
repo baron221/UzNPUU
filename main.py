@@ -37,40 +37,57 @@ def run_api():
 from telegram.ext import ApplicationBuilder
 from bot_logic import setup_bot_handlers
 
-def run_bot():
+def run_bot_once():
+    """Start the bot polling. Raises on failure so the watchdog can retry."""
     import asyncio
     try:
         asyncio.get_running_loop()
     except RuntimeError:
         asyncio.set_event_loop(asyncio.new_event_loop())
-        
+
     token = os.environ.get("BOT_TOKEN")
     if not token:
-        print("ERROR: BOT_TOKEN not found!")
-        return
-    
-    try:
-        app = (ApplicationBuilder().token(token)
-               .connect_timeout(30).read_timeout(30).write_timeout(30).build())
-        
-        state.bot_app = app  # Store the Application instance for the API
-        setup_bot_handlers(app)
-        
-        print("Telegram Bot thread is live!")
-        app.run_polling(drop_pending_updates=True, stop_signals=False)
-    except Exception as e:
-        print(f"BOT ERROR in thread: {str(e)}")
+        raise RuntimeError("BOT_TOKEN not found in environment!")
+
+    app = (ApplicationBuilder().token(token)
+           .connect_timeout(30).read_timeout(30).write_timeout(30).build())
+
+    state.bot_app = app
+    setup_bot_handlers(app)
+
+    logging.info("✅ Telegram Bot polling started.")
+    app.run_polling(drop_pending_updates=True, stop_signals=False)
+
+
+def run_bot_with_restart():
+    """Watchdog: keeps the bot running by restarting on any crash."""
+    import time
+    delay = 5  # initial retry delay in seconds
+    attempt = 0
+    while True:
+        attempt += 1
+        try:
+            logging.info(f"🤖 Bot attempt #{attempt} starting...")
+            run_bot_once()
+            # run_polling() returned cleanly — still restart it
+            logging.warning("⚠️ Bot polling exited cleanly. Restarting in 5s...")
+        except Exception as e:
+            logging.error(f"❌ Bot crashed (attempt #{attempt}): {e}. Restarting in {delay}s...")
+            state.bot_app = None  # Clear so API doesn't use dead instance
+        time.sleep(delay)
+        delay = min(delay * 2, 60)  # Exponential backoff, max 60s
+
 
 # ── Entry Point ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
-    
+
     initialize()
-    
-    # Run Bot in a separate daemon thread
-    print("Starting Telegram Bot thread...")
-    bot_thread = threading.Thread(target=run_bot, daemon=True)
+
+    # Run Bot watchdog in a separate daemon thread (auto-restarts on crash)
+    logging.info("Starting Telegram Bot watchdog thread...")
+    bot_thread = threading.Thread(target=run_bot_with_restart, daemon=True)
     bot_thread.start()
-    
-    # Run API in the main thread (Crucial for Railway health checks)
-    run_api()
+
+    # Run API in the main thread (crucial for Railway health checks)
+    run_api()
