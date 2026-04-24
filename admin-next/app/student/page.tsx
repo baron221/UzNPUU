@@ -286,11 +286,12 @@ export default function StudentPage() {
                 // Separator between history and new session messages
                 const isFirstLive = !m.isHistory && i > 0 && msgs[i - 1]?.isHistory;
                 return (
-                  <div key={i}>
+                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: m.type === 'user' ? 'flex-end' : 'flex-start' }}>
                     {isFirstLive && (
                       <div style={{
                         display: 'flex', alignItems: 'center', gap: 8,
                         padding: '12px 16px', color: 'var(--muted)', fontSize: 11,
+                        width: '100%', alignSelf: 'center'
                       }}>
                         <div style={{ flex: 1, height: 1, background: 'var(--border, rgba(99,102,241,0.15))' }} />
                         <span style={{ whiteSpace: 'nowrap', fontWeight: 600, letterSpacing: '0.05em' }}>✨ YANGI SUHBAT</span>
