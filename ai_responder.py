@@ -93,7 +93,16 @@ def find_relevant_pairs(question: str, pairs: list, client, top_n: int = 5) -> s
         
     # Include both question and a small snippet of the answer so Groq can see context
     filtered_index_lines = []
-    for orig_i, p in working_pairs[:80]:
+    # Sort by relevance (number of matching keywords)
+    scored_pairs = []
+    for orig_i, p in working_pairs:
+        text = (p['question'] + " " + p['answer']).lower()
+        score = sum(1 for w in q_words if w in text)
+        scored_pairs.append((score, orig_i, p))
+    
+    scored_pairs.sort(key=lambda x: x[0], reverse=True)
+    
+    for score, orig_i, p in scored_pairs[:60]: # Send top 60 relevant chunks to Groq
         q_text = p['question'].replace('\n', ' ')[:100]
         a_text = p['answer'].replace('\n', ' ')[:50]
         filtered_index_lines.append(f"[{orig_i}] Q: {q_text} | A: {a_text}...")
@@ -103,21 +112,22 @@ def find_relevant_pairs(question: str, pairs: list, client, top_n: int = 5) -> s
     check = safe_completion(
         client,
         messages=[
-            {"role": "system", "content": f"Return ONLY the {top_n} most relevant index numbers as comma-separated. If many look relevant, pick the best variety.\nFAQ:\n{filtered_index}"},
+            {"role": "system", "content": f"You are a search assistant. Return ONLY the {top_n} most relevant index numbers as comma-separated list. Student question is about university.\nFAQ:\n{filtered_index}"},
             {"role": "user", "content": f"Student question: {question}"}
         ],
-        max_tokens=60,
+        max_tokens=100,
     )
     raw = check.choices[0].message.content.strip()
     try:
-        indices = [int(x.strip()) for x in raw.split(",") if x.strip().isdigit()]
+        # Extract numbers even if the AI added text
+        indices = [int(x) for x in re.findall(r'\d+', raw)]
         selected = [f"Savol: {pairs[i]['question']}\nJavob: {pairs[i]['answer']}" for i in indices if i < len(pairs)]
         if not selected:
             raise ValueError("No valid indices parsed")
         return "\n\n---\n\n".join(selected)
     except:
-        # Fallback if Groq fails parsing
-        return "\n\n---\n\n".join(f"Savol: {p['question']}\nJavob: {p['answer']}" for _, p in working_pairs[:top_n])
+        # Fallback: just return top scoring pairs
+        return "\n\n---\n\n".join(f"Savol: {p['question']}\nJavob: {p['answer']}" for score, orig_i, p in scored_pairs[:top_n])
 
 
 def safe_completion(client, **kwargs):
