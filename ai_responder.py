@@ -73,6 +73,7 @@ def find_relevant_pairs(question: str, pairs: list, client, top_n: int = 5) -> s
         return ""
     # Clean punctuation and split
     import re
+    q_lower = question.lower()
     q_words = [re.sub(r'[^\w]', '', w) for w in q_lower.split()]
     q_words = [w for w in q_words if len(w) >= 2]
     

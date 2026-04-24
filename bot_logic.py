@@ -256,11 +256,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Maybe they didn't finish the flow? Check if they have an ID in context
             sid = context.user_data.get('student_id') or context.user_data.get('temp_student_id')
             if not sid:
-                await update.message.reply_text("Iltimos, avval /start buyrug'i orqali ro'yxatdan o'ting! 😊")
-                return
-            # They have an ID but it wasn't in DB? Register them now with "Umumiy"
-            db.register_student(user.id, sid, None)
-            student = {"student_id": sid, "faculty_id": None}
+                # NEW: Auto-register as Guest to ensure the question is saved
+                sid = f"GUEST_{user.id}"
+                db.register_student(user.id, sid, None)
+                student = {"student_id": sid, "faculty_id": None}
+                # Also notify them they can register for a better experience later
+                # but don't block the AI answer now
+            else:
+                # They have a temp ID but weren't in DB yet
+                db.register_student(user.id, sid, None)
+                student = {"student_id": sid, "faculty_id": None}
 
         sid = student.get('student_id')
         fid = context.user_data.get('faculty_id') or student.get('faculty_id')
