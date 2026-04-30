@@ -19,7 +19,10 @@ REGISTER_ID, REGISTER_FACULTY = range(2)
 def setup_bot_handlers(app):
     # Registration Flow
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[
+            CommandHandler("start", start),
+            CallbackQueryHandler(start_reset_id, pattern="^reset_id$")
+        ],
         states={
             REGISTER_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_id)],
             REGISTER_FACULTY: [CallbackQueryHandler(receive_faculty, pattern="^reg_fac_")],
@@ -59,13 +62,35 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         fac = db.get_faculty(student['faculty_id'])
         context.user_data['faculty_name'] = fac['name'] if fac else "Umumiy"
+        
+        kb = [[InlineKeyboardButton("🔄 Boshqa ID bilan kirish", callback_data="reset_id")]]
         await update.message.reply_text(
             f"Assalomu alaykum! UzNPUU botiga qayta xush kelibsiz! 🎓\n\n"
             f"Sizning ID: {student['student_id']}\n"
             f"Fakultet: {context.user_data.get('faculty_name', 'Umumiy')}\n\n"
-            "Savolingizni yozishingiz mumkin ✍️"
+            "Savolingizni yozishingiz mumkin ✍️",
+            reply_markup=InlineKeyboardMarkup(kb)
         )
         return ConversationHandler.END
+
+async def start_reset_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    user_id = query.from_user.id
+    conn = db.get_conn()
+    conn.execute("DELETE FROM students WHERE telegram_id=?", (str(user_id),))
+    conn.commit()
+    conn.close()
+    
+    context.user_data.clear()
+    
+    await query.message.reply_text(
+        "Eski ma'lumotlaringiz tizimdan o'chirildi.\n\n"
+        "Iltimos, yangi **6 xonali talaba ID raqamingizni** kiriting (masalan: 123456):",
+        parse_mode='Markdown'
+    )
+    return REGISTER_ID
 
     await update.message.reply_text(
         "Assalomu alaykum! UzNPUU botiga xush kelibsiz! 🎓\n\n"
