@@ -243,7 +243,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             kb.append([InlineKeyboardButton("👤 Adminstratorga yuborish", callback_data="ask_admin")])
             context.user_data['last_question'] = selected
             
-        await query.message.reply_text(answer, reply_markup=InlineKeyboardMarkup(kb) if kb else None)
+        await query.message.reply_text(f"🤖 AI Yordamchi:\n\n{answer}", reply_markup=InlineKeyboardMarkup(kb) if kb else None)
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -303,7 +303,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             kb.append([InlineKeyboardButton("👤 Adminstratorga yuborish", callback_data="ask_admin")])
             context.user_data['last_question'] = question
             
-        await update.message.reply_text(answer, reply_markup=InlineKeyboardMarkup(kb) if kb else None)
+        await update.message.reply_text(f"🤖 AI Yordamchi:\n\n{answer}", reply_markup=InlineKeyboardMarkup(kb) if kb else None)
 
         # 4. Forward to Admin (As background task)
         asyncio.create_task(forward_and_link(qid, user.full_name or username, question, answer, sid, fid))
@@ -351,7 +351,8 @@ async def handle_admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE)
     
     # 3. Relay to student
     student_tg_id = question_data['student_telegram_id']
-    relay_msg = f"✨ **Sizning savolingizga javob keldi:**\n\n❓ {question_data['question']}\n\n✅ {answer}"
+    admin_name = admin_user.full_name or "Adminstrator"
+    relay_msg = f"✨ **Sizning savolingizga javob keldi:**\n\n❓ {question_data['question']}\n\n✅ 👤 **{admin_name} javobi:**\n{answer}"
     
     try:
         await context.bot.send_message(chat_id=student_tg_id, text=relay_msg, parse_mode='Markdown')

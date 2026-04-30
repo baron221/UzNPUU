@@ -282,15 +282,20 @@ async def answer_question(qid: int, request: Request, current_user: dict = Depen
 
     if state.bot_app:
         try:
+            conn = db.get_conn()
+            admin_row = conn.execute("SELECT full_name FROM admins WHERE username=?", (current_user.get('sub'),)).fetchone()
+            conn.close()
+            admin_name = admin_row['full_name'] if admin_row and admin_row['full_name'] else current_user.get('sub', 'Adminstrator')
+
             # Use HTML parse mode (same as notifier.py) to avoid Markdown parse errors
             # caused by special characters like *, _, `, [ in question/answer text
             if question['question'] in ["Adminstruatordan xabari", "__ADMIN_FOLLOW_UP__"]:
-                msg = f"👤 <b>Adminstrator:</b>\n\n{esc_html(answer)}"
+                msg = f"👤 <b>{esc_html(admin_name)}:</b>\n\n{esc_html(answer)}"
             else:
                 msg = (
                     f"✨ <b>Sizning savolingizga javob keldi:</b>\n\n"
                     f"❓ {esc_html(question['question'])}\n\n"
-                    f"✅ {esc_html(answer)}"
+                    f"✅ 👤 <b>{esc_html(admin_name)} javobi:</b>\n{esc_html(answer)}"
                 )
 
             await state.bot_app.bot.send_message(
