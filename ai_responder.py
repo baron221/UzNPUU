@@ -102,6 +102,9 @@ def safe_completion(client, **kwargs):
     primary_model = "llama-3.3-70b-versatile"
     fallback_model = "llama-3.1-8b-instant"
     
+    if 'temperature' not in kwargs:
+        kwargs['temperature'] = 0.1
+    
     try:
         kwargs['model'] = primary_model
         return client.chat.completions.create(**kwargs)
@@ -113,6 +116,17 @@ def safe_completion(client, **kwargs):
         except Exception as e2:
             print(f"Fallback model ({fallback_model}) also failed: {e2}")
             raise e2
+
+def transcribe_audio(file_path: str, client) -> str:
+    """Uses Groq Whisper API to transcribe audio file to text."""
+    with open(file_path, "rb") as file:
+        transcription = client.audio.transcriptions.create(
+            file=(os.path.basename(file_path), file.read()),
+            model="whisper-large-v3", # or whisper-large-v3-turbo
+            response_format="json",
+            language="uz", # Helps with Uzbek specifically
+        )
+        return transcription.text
 
 def classify_question(question: str, client) -> str:
     try:
@@ -325,18 +339,25 @@ If they want to speak to an admin, tell them you can help with most info from do
                 messages=[
                     {"role": "system", "content": f"""You are a strict document-based university assistant for UzNPUU.
 RULES:
-1. Answer ONLY using the documents below. No extra info.
-2. If not found: respond with the not-found message.
+1. Answer ONLY using the facts from the DOCUMENTS below. Do NOT use outside knowledge.
+2. If the answer is not clearly found in the DOCUMENTS, you MUST reply EXACTLY with: NOT_FOUND
 3. {lang_instruction}
-4. Be concise. Use bullet points for lists.
+4. Be concise and helpful. Use bullet points if appropriate.
 
 === DOCUMENTS ===
 {relevant_context}"""},
-                    {"role": "user", "content": question}
+                    {"role": "user", "content": f"Student Question: {question}"}
                 ],
                 max_tokens=1024,
             )
-            return completion.choices[0].message.content.strip(), [], lang, "UNIVERSITY"
+            
+            ans = completion.choices[0].message.content.strip()
+            
+            # Strict fallback check
+            if "NOT_FOUND" in ans.upper() or len(ans) < 5:
+                return get_response("not_found", lang), [], lang, "UNANSWERED"
+                
+            return ans, [], lang, "UNIVERSITY"
         except:
             return get_response("error", lang), [], lang, "ERROR"
 

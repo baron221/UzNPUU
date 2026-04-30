@@ -36,6 +36,7 @@ def setup_bot_handlers(app):
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("faculty", change_faculty))
     app.add_handler(CallbackQueryHandler(handle_callback))
+    app.add_handler(MessageHandler(filters.VOICE, handle_voice))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(MessageHandler(filters.REPLY & (filters.ChatType.GROUPS | filters.ChatType.SUPERGROUP), handle_admin_reply))
     app.add_handler(MessageHandler(filters.COMMAND, unknown))
@@ -269,6 +270,43 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data['last_question'] = selected
             
         await query.message.reply_text(f"🤖 AI Yordamchi:\n\n{answer}", reply_markup=InlineKeyboardMarkup(kb) if kb else None)
+
+async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    import tempfile
+    
+    # 1. Yuklab olish
+    voice = update.message.voice
+    file = await context.bot.get_file(voice.file_id)
+    
+    with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as tf:
+        await file.download_to_drive(custom_path=tf.name)
+        file_path = tf.name
+
+    await update.message.chat.send_action("typing")
+    
+    # 2. Matnga o'girish
+    import state
+    try:
+        text = ai_responder.transcribe_audio(file_path, state.clients['groq'])
+    except Exception as e:
+        logging.error(f"Voice Transcription Error: {e}")
+        await update.message.reply_text("Ovozli xabarni o'qishda xatolik yuz berdi. Iltimos, yozib yuboring.")
+        return
+    finally:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+    if not text or len(text.strip()) < 2:
+        await update.message.reply_text("Ovozli xabarda nima deyilganini tushunib bo'lmadi.")
+        return
+
+    # 3. Foydalanuvchiga matnni ko'rsatish
+    await update.message.reply_text(f"🎤 Siz: <i>{text}</i>", parse_mode='HTML')
+    
+    # 4. Oddiy matn kabi davom ettirish
+    update.message.text = text
+    await handle_message(update, context)
+
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
