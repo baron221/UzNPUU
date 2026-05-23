@@ -214,5 +214,7 @@ export interface Settings {
   bot_end_time: string;
   bot_work_days: string;
   bot_offline_message: string;
+  rate_limit_requests?: string;
+  rate_limit_window?: string;
 }
 
