@@ -277,6 +277,14 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(offline_msg)
         return
 
+    import state
+    is_allowed, wait_time = state.check_rate_limit(str(update.effective_user.id), max_requests=2, window_seconds=120)
+    if not is_allowed:
+        minutes = wait_time // 60
+        seconds = wait_time % 60
+        await update.message.reply_text(f"⏳ Siz qisqa vaqt ichida ko'p savol berdingiz. Iltimos {minutes} daqiqa va {seconds} soniya kuting.")
+        return
+
     import tempfile
     
     # 1. Yuklab olish
@@ -318,6 +326,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         is_working, offline_msg = db.is_within_working_hours()
         if not is_working:
             await update.message.reply_text(offline_msg)
+            return
+
+        import state
+        is_allowed, wait_time = state.check_rate_limit(str(update.effective_user.id), max_requests=2, window_seconds=120)
+        if not is_allowed:
+            minutes = wait_time // 60
+            seconds = wait_time % 60
+            await update.message.reply_text(f"⏳ Siz qisqa vaqt ichida ko'p savol berdingiz. Iltimos {minutes} daqiqa va {seconds} soniya kuting.")
             return
 
         question = update.message.text

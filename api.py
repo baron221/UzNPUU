@@ -125,6 +125,13 @@ async def ask(request: Request):
     # Metadata for database persistence
     student_tg_id = data.get('student_telegram_id') or data.get('student_tg_id', 'WEB')
     
+    import state
+    is_allowed, wait_time = state.check_rate_limit(str(student_tg_id), max_requests=2, window_seconds=120)
+    if not is_allowed:
+        minutes = wait_time // 60
+        seconds = wait_time % 60
+        return {"answer": f"⏳ Siz qisqa vaqt ichida ko'p savol berdingiz. Iltimos {minutes} daqiqa va {seconds} soniya kuting."}
+    
     # Try to load student context from DB if tg_id is known
     student = db.get_student(student_tg_id)
     student_id = data.get('student_id') or (student.get('student_id') if student else '')
@@ -163,6 +170,13 @@ async def ask_admin(request: Request):
         
     q = data.get('question', '').strip()
     student_tg_id = data.get('student_telegram_id') or data.get('student_tg_id', 'WEB')
+    
+    import state
+    is_allowed, wait_time = state.check_rate_limit(str(student_tg_id), max_requests=2, window_seconds=120)
+    if not is_allowed:
+        minutes = wait_time // 60
+        seconds = wait_time % 60
+        return {"ok": False, "message": f"⏳ Iltimos {minutes} daqiqa va {seconds} soniya kuting."}
     
     student = db.get_student(student_tg_id)
     student_id = data.get('student_id') or (student.get('student_id') if student else '')
