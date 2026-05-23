@@ -157,8 +157,8 @@ async def ask(request: Request):
     )
     logger.log_message(str(student_tg_id), username, q, answer, lang, category)
 
-    # Real-time Forward to Admin
-    asyncio.create_task(notifier.forward_to_admin(fullname, q, answer, student_id, faculty_id))
+    # Real-time Forward to Admin (Disabled: now only forwards when 'Ask Admin' is clicked)
+    # asyncio.create_task(notifier.forward_to_admin(fullname, q, answer, student_id, faculty_id))
 
     return {
         "answer": answer,

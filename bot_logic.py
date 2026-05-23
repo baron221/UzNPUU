@@ -400,8 +400,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
         await update.message.reply_text(f"🤖 AI Yordamchi:\n\n{answer}", reply_markup=InlineKeyboardMarkup(kb) if kb else None)
 
-        # 4. Forward to Admin (As background task)
-        asyncio.create_task(forward_and_link(qid, user.full_name or username, question, answer, sid, fid))
+        # 4. Forward to Admin (As background task) - Disabled: now only forwards when 'Ask Admin' is clicked
+        # asyncio.create_task(forward_and_link(qid, user.full_name or username, question, answer, sid, fid))
 
     except Exception as e:
         err_msg = str(e)
