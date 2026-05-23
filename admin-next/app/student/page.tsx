@@ -5,23 +5,6 @@ import { askQuestion, getCards, askAdmin, getStudentHistory, getPublicFAQ, getPu
 type Msg = { text: string; type: 'user' | 'bot'; options?: string[]; showAdmin?: boolean; isHistory?: boolean; isPending?: boolean };
 type Tab = 'home' | 'chat' | 'faq' | 'profile';
 
-const FAQS = [
-  { cat: '📚 HEMIS tizimi', items: [
-    { q: 'HEMIS parolimni qanday tiklash mumkin?', a: 'Registrator ofisi xodimlariga murojaat qiling yoki OneID tizimi orqali kiring.' },
-    { q: 'HEMIS da dars jadvalini qanday ko\'raman?', a: 'student.tdpu.uz saytiga kiring — dashboardda Dars jadvali bo\'limi chiqadi.' },
-    { q: 'GPA ballimni qayerdan ko\'raman?', a: 'Akademik ko\'rsatkichlar bo\'limida umumiy o\'rtacha baho (GPA) ko\'rsatiladi.' },
-  ]},
-  { cat: '💰 To\'lov va kontrakt', items: [
-    { q: 'Kontrakt to\'lov summasini qayerdan bilaman?', a: 'kontrakt.edu.uz saytiga kiring. Shaxsiy kabinet → To\'lov ma\'lumotlari bo\'limidan ko\'ring.' },
-    { q: 'Shartnoma to\'lovini online to\'lasa bo\'ladimi?', a: 'Ha, shartnoma to\'lovlarini online to\'lash mumkin.' },
-    { q: 'To\'lov kvitansiyasini qayerdan yuklab olaman?', a: 'To\'lovlar tarixi bo\'limida PDF yuklab olish tugmasi orqali kvitansiyani olish mumkin.' },
-  ]},
-  { cat: '🎓 Grant va stipendiya', items: [
-    { q: 'Grantga ariza topshirish uchun minimal GPA qancha?', a: '3.5 va undan yuqori.' },
-    { q: 'To\'liq grant nima?', a: 'Bir o\'quv yiliga berilib, kontraktning 100% davlat tomonidan qoplanadigan va stipendiya beriladigan grant.' },
-  ]},
-];
-
 const SUGGS = ['Dars jadvali qayerdan ko\'raman?', 'Kontrakt to\'lash', 'HEMIS login', 'Stipendiya shartlari'];
 
 export default function StudentPage() {
@@ -37,7 +20,7 @@ export default function StudentPage() {
   const [openFAQ, setOpenFAQ] = useState<string | null>(null);
   const [lastQuestion, setLastQuestion] = useState('');
   const [loadingCards, setLoadingCards] = useState(false);
-  const [faqs, setFaqs] = useState<{ cat: string, items: { q: string, a: string }[] }[]>(FAQS);
+  const [faqs, setFaqs] = useState<{ cat: string, items: { q: string, a: string }[] }[]>([]);
   const [files, setFiles] = useState<{ name: string; url: string }[]>([]);
   const msgsRef = useRef<HTMLDivElement>(null);
 
@@ -80,8 +63,7 @@ export default function StudentPage() {
 
     getPublicFAQ(fid || undefined).then(d => {
       if (d?.items && d.items.length > 0) {
-        // Start with existing FAQS
-        const mergedFaqs = JSON.parse(JSON.stringify(FAQS));
+        const mergedFaqs: any[] = [];
         
         d.items.forEach(item => {
           const catName = item.faculty_name ? `📚 ${item.faculty_name}` : '📚 Umumiy savollar';
