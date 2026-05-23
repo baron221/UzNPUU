@@ -278,7 +278,10 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     import state
-    is_allowed, wait_time = state.check_rate_limit(str(update.effective_user.id), max_requests=2, window_seconds=120)
+    max_req = int(db.get_setting("rate_limit_requests", "2"))
+    win_sec = int(db.get_setting("rate_limit_window", "120"))
+    
+    is_allowed, wait_time = state.check_rate_limit(str(update.effective_user.id), max_requests=max_req, window_seconds=win_sec)
     if not is_allowed:
         minutes = wait_time // 60
         seconds = wait_time % 60
@@ -329,7 +332,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         import state
-        is_allowed, wait_time = state.check_rate_limit(str(update.effective_user.id), max_requests=2, window_seconds=120)
+        max_req = int(db.get_setting("rate_limit_requests", "2"))
+        win_sec = int(db.get_setting("rate_limit_window", "120"))
+        
+        is_allowed, wait_time = state.check_rate_limit(str(update.effective_user.id), max_requests=max_req, window_seconds=win_sec)
         if not is_allowed:
             minutes = wait_time // 60
             seconds = wait_time % 60

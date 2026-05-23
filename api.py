@@ -126,7 +126,10 @@ async def ask(request: Request):
     student_tg_id = data.get('student_telegram_id') or data.get('student_tg_id', 'WEB')
     
     import state
-    is_allowed, wait_time = state.check_rate_limit(str(student_tg_id), max_requests=2, window_seconds=120)
+    max_req = int(db.get_setting("rate_limit_requests", "2"))
+    win_sec = int(db.get_setting("rate_limit_window", "120"))
+    
+    is_allowed, wait_time = state.check_rate_limit(str(student_tg_id), max_requests=max_req, window_seconds=win_sec)
     if not is_allowed:
         minutes = wait_time // 60
         seconds = wait_time % 60
@@ -172,7 +175,10 @@ async def ask_admin(request: Request):
     student_tg_id = data.get('student_telegram_id') or data.get('student_tg_id', 'WEB')
     
     import state
-    is_allowed, wait_time = state.check_rate_limit(str(student_tg_id), max_requests=2, window_seconds=120)
+    max_req = int(db.get_setting("rate_limit_requests", "2"))
+    win_sec = int(db.get_setting("rate_limit_window", "120"))
+    
+    is_allowed, wait_time = state.check_rate_limit(str(student_tg_id), max_requests=max_req, window_seconds=win_sec)
     if not is_allowed:
         minutes = wait_time // 60
         seconds = wait_time % 60
@@ -269,13 +275,16 @@ async def get_admin_settings(current_user: dict = Depends(get_current_admin)):
         "bot_start_time": db.get_setting("bot_start_time", "09:00"),
         "bot_end_time": db.get_setting("bot_end_time", "18:00"),
         "bot_work_days": db.get_setting("bot_work_days", "0,1,2,3,4"),
-        "bot_offline_message": db.get_setting("bot_offline_message", "Bot hozirda dam olish rejimida. Iltimos, ish vaqtida murojaat qiling.")
+        "bot_offline_message": db.get_setting("bot_offline_message", "Bot hozirda dam olish rejimida. Iltimos, ish vaqtida murojaat qiling."),
+        "rate_limit_requests": db.get_setting("rate_limit_requests", "2"),
+        "rate_limit_window": db.get_setting("rate_limit_window", "120")
     }
 
 @app.post("/api/admin/settings")
 async def update_admin_settings(request: Request, current_user: dict = Depends(get_current_admin)):
     data = await request.json()
-    for key in ["bot_start_time", "bot_end_time", "bot_work_days", "bot_offline_message"]:
+    allowed_keys = ["bot_start_time", "bot_end_time", "bot_work_days", "bot_offline_message", "rate_limit_requests", "rate_limit_window"]
+    for key in allowed_keys:
         if key in data:
             db.set_setting(key, str(data[key]))
     return {"ok": True}

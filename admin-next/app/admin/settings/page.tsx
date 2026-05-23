@@ -17,7 +17,9 @@ export default function SettingsPage() {
     bot_start_time: '09:00',
     bot_end_time: '18:00',
     bot_work_days: '0,1,2,3,4',
-    bot_offline_message: 'Bot hozirda dam olish rejimida. Iltimos, ish vaqtida murojaat qiling.'
+    bot_offline_message: 'Bot hozirda dam olish rejimida. Iltimos, ish vaqtida murojaat qiling.',
+    rate_limit_requests: '2',
+    rate_limit_window: '120'
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -126,6 +128,30 @@ export default function SettingsPage() {
             value={form.bot_offline_message}
             onChange={e => setForm({ ...form, bot_offline_message: e.target.value })}
           />
+        </div>
+
+        <div className="section-title" style={{ marginTop: 40, marginBottom: 20 }}>Xabarlar cheklovi (Rate Limit)</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+          <div className="form-row">
+            <label className="form-label">Maksimal savollar soni</label>
+            <div className="form-desc" style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>Bir foydalanuvchi bera oladigan savollar soni</div>
+            <input 
+              type="number" 
+              className="form-inp" 
+              value={form.rate_limit_requests || '2'}
+              onChange={e => setForm({ ...form, rate_limit_requests: e.target.value })}
+            />
+          </div>
+          <div className="form-row">
+            <label className="form-label">Vaqt oralig'i (soniyada)</label>
+            <div className="form-desc" style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>Qancha vaqt ichida shuncha savol bera oladi (120 = 2 daqiqa)</div>
+            <input 
+              type="number" 
+              className="form-inp" 
+              value={form.rate_limit_window || '120'}
+              onChange={e => setForm({ ...form, rate_limit_window: e.target.value })}
+            />
+          </div>
         </div>
 
         <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
