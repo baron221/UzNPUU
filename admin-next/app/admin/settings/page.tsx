@@ -65,7 +65,9 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="card" style={{ maxWidth: 600 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24, alignItems: 'start', maxWidth: 1000 }}>
+        {/* --- LEFT CARD: WORKING HOURS --- */}
+        <div className="card">
         <div className="section-title" style={{ marginBottom: 20 }}>Ish vaqti oraliqlari</div>
         
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
@@ -130,8 +132,12 @@ export default function SettingsPage() {
           />
         </div>
 
-        <div className="section-title" style={{ marginTop: 40, marginBottom: 20 }}>Xabarlar cheklovi (Rate Limit)</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+        </div>
+        
+        {/* --- RIGHT CARD: RATE LIMIT --- */}
+        <div className="card">
+          <div className="section-title" style={{ marginBottom: 20 }}>Xabarlar cheklovi (Rate Limit)</div>
+          
           <div className="form-row">
             <label className="form-label">Maksimal savollar soni</label>
             <div className="form-desc" style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>Bir foydalanuvchi bera oladigan savollar soni</div>
@@ -142,6 +148,7 @@ export default function SettingsPage() {
               onChange={e => setForm({ ...form, rate_limit_requests: e.target.value })}
             />
           </div>
+          
           <div className="form-row">
             <label className="form-label">Vaqt oralig'i (soniyada)</label>
             <div className="form-desc" style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>Qancha vaqt ichida shuncha savol bera oladi (120 = 2 daqiqa)</div>
@@ -153,18 +160,18 @@ export default function SettingsPage() {
             />
           </div>
         </div>
+      </div>
 
-        <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
-          <button 
-            className="btn btn-primary" 
-            onClick={handleSave} 
-            disabled={saving}
-            style={{ padding: '12px 24px' }}
-          >
-            {saving ? 'Saqlanmoqda...' : 'Saqlash'}
-          </button>
-          {status && <div style={{ fontSize: 14, fontWeight: 500, color: status.startsWith('✅') ? '#10b981' : '#ef4444' }}>{status}</div>}
-        </div>
+      <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
+        <button 
+          className="btn btn-primary" 
+          onClick={handleSave} 
+          disabled={saving}
+          style={{ padding: '12px 24px', fontSize: 15, fontWeight: 500 }}
+        >
+          {saving ? 'Saqlanmoqda...' : 'Saqlash'}
+        </button>
+        {status && <div style={{ fontSize: 14, fontWeight: 500, color: status.startsWith('✅') ? '#10b981' : '#ef4444' }}>{status}</div>}
       </div>
     </>
   );
