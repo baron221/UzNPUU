@@ -387,8 +387,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.log_message(str(user.id), username, question, answer, lang, category)
 
         # 3. Respond to Student FIRST
+        question_lower = question.lower()
+        admin_req_kws = ["admin", "operator", "bog'la", "boglan", "aloqa"]
+        is_req_admin = any(kw in question_lower for kw in admin_req_kws)
+
         referral_kws = ["topilmadi", "not found", "murojaat qiling", "mas'ul xodimi", "adminstrator", "ofisiga"]
-        show_admin_btn = (category == "UNANSWERED") or any(kw in answer.lower() for kw in referral_kws)
+        show_admin_btn = (category == "UNANSWERED") or is_req_admin or any(kw in answer.lower() for kw in referral_kws)
         
         kb = []
         if options:

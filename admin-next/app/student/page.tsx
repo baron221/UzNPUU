@@ -183,8 +183,12 @@ export default function StudentPage() {
         return;
       }
 
+      const qLower = q.toLowerCase();
+      const adminReqKws = ["admin", "operator", "bog'la", "boglan", "aloqa"];
+      const isReqAdmin = adminReqKws.some(kw => qLower.includes(kw));
+
       const kws = ["topilmadi", "not found", "murojaat qiling", "mas'ul xodimi", "adminstrator", "ofisiga"];
-      const showAdmin = kws.some(kw => d.answer.toLowerCase().includes(kw));
+      const showAdmin = isReqAdmin || kws.some(kw => d.answer.toLowerCase().includes(kw));
       
       setMsgs(p => [...p, { 
         text: d.answer || 'Xatolik yuz berdi.', 
