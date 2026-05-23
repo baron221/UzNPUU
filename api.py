@@ -133,7 +133,11 @@ async def ask(request: Request):
     if not is_allowed:
         minutes = wait_time // 60
         seconds = wait_time % 60
-        return {"answer": f"⏳ Siz qisqa vaqt ichida ko'p savol berdingiz. Iltimos {minutes} daqiqa va {seconds} soniya kuting."}
+        return {
+            "answer": f"⏳ Siz qisqa vaqt ichida ko'p savol berdingiz. Iltimos {minutes} daqiqa va {seconds} soniya kuting.",
+            "rate_limited": True,
+            "wait_time": wait_time
+        }
     
     # Try to load student context from DB if tg_id is known
     student = db.get_student(student_tg_id)

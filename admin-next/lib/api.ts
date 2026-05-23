@@ -117,7 +117,9 @@ export const askQuestion = (question: string, metadata: any = {}) =>
     answer: string; 
     options?: string[]; 
     lang?: string; 
-    category?: string 
+    category?: string;
+    rate_limited?: boolean;
+    wait_time?: number;
   }>;
 
 export const askAdmin = (question: string, metadata: any = {}) =>

@@ -22,7 +22,18 @@ export default function StudentPage() {
   const [loadingCards, setLoadingCards] = useState(false);
   const [faqs, setFaqs] = useState<{ cat: string, items: { q: string, a: string }[] }[]>([]);
   const [files, setFiles] = useState<{ name: string; url: string }[]>([]);
+  const [lockoutTime, setLockoutTime] = useState(0);
   const msgsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let timer: any;
+    if (lockoutTime > 0) {
+      timer = setInterval(() => {
+        setLockoutTime(prev => prev > 0 ? prev - 1 : 0);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [lockoutTime]);
 
   useEffect(() => {
     const saved = localStorage.getItem('student-theme');
@@ -164,6 +175,14 @@ export default function StudentPage() {
     setTyping(true);
     try {
       const d = await askQuestion(q, meta);
+      
+      if (d.rate_limited && d.wait_time) {
+        setLockoutTime(d.wait_time);
+        setMsgs(p => [...p, { text: d.answer, type: 'bot' }]);
+        setTyping(false);
+        return;
+      }
+
       const kws = ["topilmadi", "not found", "murojaat qiling", "mas'ul xodimi", "adminstrator", "ofisiga"];
       const showAdmin = kws.some(kw => d.answer.toLowerCase().includes(kw));
       
@@ -343,13 +362,22 @@ export default function StudentPage() {
             <div className="chat-input-row">
               <textarea
                 className="chat-input"
-                placeholder="Savolingizni yozing..."
+                placeholder={lockoutTime > 0 ? `Iltimos ${lockoutTime} soniya kuting...` : "Savolingizni yozing..."}
                 value={input}
+                disabled={lockoutTime > 0}
                 onChange={e => { setInput(e.target.value); const el = e.target; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 88) + 'px'; }}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
                 rows={1}
+                style={lockoutTime > 0 ? { opacity: 0.6, cursor: 'not-allowed', background: 'var(--bg)' } : {}}
               />
-              <button className="send-btn" onClick={() => send()} disabled={!input.trim() || typing}>➤</button>
+              <button 
+                className="send-btn" 
+                onClick={() => send()} 
+                disabled={!input.trim() || typing || lockoutTime > 0}
+                style={lockoutTime > 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+              >
+                {lockoutTime > 0 ? lockoutTime : '➤'}
+              </button>
             </div>
           </>
         )}
