@@ -45,6 +45,7 @@ async def forward_to_admin(user_full_name, question, answer, sid, fid=None):
             
     except Exception as e:
         logging.error(f"⚠️ Forward error: {str(e)}")
+        return None, None
 
 async def notify_admin_manual(user_full_name, question, sid, fid=None):
     """
@@ -78,3 +79,4 @@ async def notify_admin_manual(user_full_name, question, sid, fid=None):
         return None, None
     except Exception as e:
         logging.error(f"⚠️ Manual notify error: {str(e)}")
+        return None, None
