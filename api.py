@@ -301,7 +301,8 @@ async def get_admin_faculties(current_user: dict = Depends(get_current_admin)):
 async def create_faculty(request: Request, current_user: dict = Depends(get_current_admin)):
     data = await request.json()
     ok, msg = db.create_faculty(data.get('name',''), data.get('description',''),
-                                data.get('group_id',''), data.get('group_name',''))
+                                data.get('telegram_group_id','') or data.get('group_id',''), 
+                                data.get('telegram_group_name','') or data.get('group_name',''))
     return {"ok": ok, "error": msg if not ok else None}
 
 @app.put("/api/admin/faculties/{fid}")
@@ -311,10 +312,12 @@ async def update_faculty(fid: int, request: Request, current_user: dict = Depend
         faculty = db.get_faculty(fid)
         if faculty:
             db.update_faculty(fid, faculty['name'], faculty.get('description',''),
-                             data.get('group_id',''), data.get('group_name',''))
+                             data.get('telegram_group_id','') or data.get('group_id',''), 
+                             data.get('telegram_group_name','') or data.get('group_name',''))
     else:
         db.update_faculty(fid, data.get('name',''), data.get('description',''),
-                         data.get('group_id',''), data.get('group_name',''))
+                         data.get('telegram_group_id','') or data.get('group_id',''), 
+                         data.get('telegram_group_name','') or data.get('group_name',''))
     return {"ok": True}
 
 @app.delete("/api/admin/faculties/{fid}")
