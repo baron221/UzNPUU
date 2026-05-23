@@ -272,6 +272,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text(f"🤖 AI Yordamchi:\n\n{answer}", reply_markup=InlineKeyboardMarkup(kb) if kb else None)
 
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    is_working, offline_msg = db.is_within_working_hours()
+    if not is_working:
+        await update.message.reply_text(offline_msg)
+        return
+
     import tempfile
     
     # 1. Yuklab olish
@@ -310,6 +315,11 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
+        is_working, offline_msg = db.is_within_working_hours()
+        if not is_working:
+            await update.message.reply_text(offline_msg)
+            return
+
         question = update.message.text
         user = update.message.from_user
         

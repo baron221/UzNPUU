@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { askQuestion, getCards, askAdmin, getStudentHistory, type ServiceCard, type HistoryItem } from '@/lib/api';
+import { askQuestion, getCards, askAdmin, getStudentHistory, getPublicFAQ, getPublicFiles, type ServiceCard, type HistoryItem } from '@/lib/api';
 
 type Msg = { text: string; type: 'user' | 'bot'; options?: string[]; showAdmin?: boolean; isHistory?: boolean; isPending?: boolean };
 type Tab = 'home' | 'chat' | 'faq' | 'profile';
@@ -37,6 +37,8 @@ export default function StudentPage() {
   const [openFAQ, setOpenFAQ] = useState<string | null>(null);
   const [lastQuestion, setLastQuestion] = useState('');
   const [loadingCards, setLoadingCards] = useState(false);
+  const [faqs, setFaqs] = useState<{ cat: string, items: { q: string, a: string }[] }[]>(FAQS);
+  const [files, setFiles] = useState<{ name: string; url: string }[]>([]);
   const msgsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -75,6 +77,22 @@ export default function StudentPage() {
     }).finally(() => {
       setLoadingCards(false);
     });
+
+    getPublicFAQ(fid || undefined).then(d => {
+      if (d?.items && d.items.length > 0) {
+        const grouped: Record<string, { q: string, a: string }[]> = {};
+        d.items.forEach(item => {
+          const cat = item.faculty_name ? `📚 ${item.faculty_name}` : '📚 Umumiy savollar';
+          if (!grouped[cat]) grouped[cat] = [];
+          grouped[cat].push({ q: item.question, a: item.answer });
+        });
+        setFaqs(Object.entries(grouped).map(([cat, items]) => ({ cat, items })));
+      }
+    }).catch(() => {});
+
+    getPublicFiles().then(d => {
+      if (d?.files) setFiles(d.files);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -186,12 +204,14 @@ export default function StudentPage() {
     setTyping(false);
   }
 
-  const filteredFAQ = FAQS.map(cat => ({
+  const filteredFAQ = faqs.map(cat => ({
     ...cat,
     items: cat.items.filter(it =>
       !faqQ || it.q.toLowerCase().includes(faqQ.toLowerCase()) || it.a.toLowerCase().includes(faqQ.toLowerCase())
     ),
   })).filter(cat => cat.items.length > 0);
+
+  const filteredFiles = files.filter(f => !faqQ || f.name.toLowerCase().includes(faqQ.toLowerCase()));
 
   return (
     <div className={`student-wrap${darkMode ? ' dark' : ''}`}>
@@ -364,7 +384,25 @@ export default function StudentPage() {
                 ))}
               </div>
             ))}
-            {filteredFAQ.length === 0 && <div style={{ textAlign:'center', color:'var(--muted)', padding:40, fontSize:13 }}>Hech narsa topilmadi</div>}
+
+            {filteredFiles.length > 0 && (
+              <div style={{ marginTop: 20 }}>
+                <div className="faq-cat" style={{ color: 'var(--indigo)' }}>📂 Bilimlar bazasi (Yuklangan hujjatlar)</div>
+                {filteredFiles.map(f => (
+                  <div key={f.name} className="faq-item" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, overflow: 'hidden' }}>
+                      <div style={{ fontSize: 24 }}>📄</div>
+                      <div style={{ fontWeight: 500, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.name}</div>
+                    </div>
+                    <a href={f.url} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm" style={{ padding: '6px 12px', fontSize: 12, textDecoration: 'none' }}>
+                      Ochish
+                    </a>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {filteredFAQ.length === 0 && filteredFiles.length === 0 && <div style={{ textAlign:'center', color:'var(--muted)', padding:40, fontSize:13 }}>Hech narsa topilmadi</div>}
           </div>
         )}
 

@@ -117,6 +117,11 @@ async def ask(request: Request):
     if not q:
         return {"answer": "Savol bo'sh!"}
     
+    # Check working hours
+    is_working, offline_msg = db.is_within_working_hours()
+    if not is_working:
+        return {"answer": offline_msg}
+    
     # Metadata for database persistence
     student_tg_id = data.get('student_telegram_id') or data.get('student_tg_id', 'WEB')
     
@@ -151,6 +156,11 @@ async def ask(request: Request):
 @app.post("/api/ask_admin")
 async def ask_admin(request: Request):
     data = await request.json()
+    
+    is_working, offline_msg = db.is_within_working_hours()
+    if not is_working:
+        return {"ok": False, "message": offline_msg}
+        
     q = data.get('question', '').strip()
     student_tg_id = data.get('student_telegram_id') or data.get('student_tg_id', 'WEB')
     
@@ -192,6 +202,36 @@ async def get_public_cards(faculty_id: Optional[int] = None):
         logger.log_message("SYSTEM", "API", f"Cards Error: {str(e)}", "ERROR", "SYSTEM", "ERROR")
         return JSONResponse(status_code=500, content={"error": str(e)})
 
+@app.get("/api/faq")
+async def get_public_faq(faculty_id: Optional[int] = None):
+    try:
+        return {"items": db.get_faq_items(faculty_id=faculty_id)}
+    except Exception as e:
+        logger.log_message("SYSTEM", "API", f"FAQ Error: {str(e)}", "ERROR", "SYSTEM", "ERROR")
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+@app.get("/api/public/files")
+async def get_public_files():
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    folder = os.path.join(BASE_DIR, "data", "knowledge")
+    if not os.path.exists(folder): return {"files": []}
+    files = []
+    for f in os.listdir(folder):
+        if os.path.isfile(os.path.join(folder, f)):
+            files.append({"name": f, "url": f"/api/public/files/{f}"})
+    return {"files": files}
+
+@app.get("/api/public/files/{filename:path}")
+async def download_public_file(filename: str):
+    import urllib.parse
+    from fastapi.responses import FileResponse
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    safe_filename = os.path.basename(urllib.parse.unquote(filename))
+    path = os.path.join(BASE_DIR, "data", "knowledge", safe_filename)
+    if os.path.exists(path):
+        return FileResponse(path, filename=safe_filename)
+    raise HTTPException(status_code=404, detail="File not found")
+
 # ── Admin Auth ────────────────────────────────────────────────────────────────
 @app.post("/api/admin/auth")
 async def admin_auth(request: Request):
@@ -208,6 +248,23 @@ async def admin_auth(request: Request):
 @app.get("/api/admin/stats")
 async def get_admin_stats(current_user: dict = Depends(get_current_admin)):
     return db.get_stats_db()
+
+@app.get("/api/admin/settings")
+async def get_admin_settings(current_user: dict = Depends(get_current_admin)):
+    return {
+        "bot_start_time": db.get_setting("bot_start_time", "09:00"),
+        "bot_end_time": db.get_setting("bot_end_time", "18:00"),
+        "bot_work_days": db.get_setting("bot_work_days", "0,1,2,3,4"),
+        "bot_offline_message": db.get_setting("bot_offline_message", "Bot hozirda dam olish rejimida. Iltimos, ish vaqtida murojaat qiling.")
+    }
+
+@app.post("/api/admin/settings")
+async def update_admin_settings(request: Request, current_user: dict = Depends(get_current_admin)):
+    data = await request.json()
+    for key in ["bot_start_time", "bot_end_time", "bot_work_days", "bot_offline_message"]:
+        if key in data:
+            db.set_setting(key, str(data[key]))
+    return {"ok": True}
 
 @app.get("/api/admin/faculties")
 async def get_admin_faculties(current_user: dict = Depends(get_current_admin)):

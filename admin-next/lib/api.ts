@@ -26,6 +26,11 @@ export const login = (username: string, password: string) =>
     method: 'POST', body: JSON.stringify({ username, password }),
   });
 
+// ── Settings ──────────────────────────────────────────────────────────────────
+export const getSettings = () => req<Settings>('/api/admin/settings');
+export const updateSettings = (data: Partial<Settings>) =>
+  req<{ ok: boolean }>('/api/admin/settings', { method: 'POST', body: JSON.stringify(data) });
+
 // ── Stats ─────────────────────────────────────────────────────────────────────
 export const getStats = () => req<Record<string, number>>('/api/admin/stats');
 
@@ -66,9 +71,15 @@ export const createFAQ = (data: Partial<FAQItem>) =>
 export const deleteFAQ = (id: number) =>
   req<{ ok: boolean }>(`/api/admin/faq/${id}`, { method: 'DELETE' });
 
+export const getPublicFAQ = (faculty_id?: number) => {
+  const qs = faculty_id ? `?faculty_id=${faculty_id}` : '';
+  return fetch(`/api/faq${qs}`).then(r => r.json()) as Promise<{ items: FAQItem[] }>;
+};
+
 export const getFiles = () => req<{ files: KBFile[] }>('/api/admin/files');
 export const deleteFile = (filename: string) => req<{ ok: boolean; error?: string }>(`/api/admin/files/${filename}`, { method: 'DELETE' });
 
+export const getPublicFiles = () => fetch('/api/public/files').then(r => r.json()) as Promise<{ files: { name: string; url: string }[] }>;
 
 // ── Service Cards ─────────────────────────────────────────────────────────────
 export const getCards = (faculty_id?: number) => {
@@ -196,5 +207,12 @@ export interface ServiceCard {
   start_date?: string | null;
   end_date?: string | null;
   created_at?: string;
+}
+
+export interface Settings {
+  bot_start_time: string;
+  bot_end_time: string;
+  bot_work_days: string;
+  bot_offline_message: string;
 }
 

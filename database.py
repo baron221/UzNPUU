@@ -171,6 +171,13 @@ def init_db():
         FOREIGN KEY (faculty_id) REFERENCES faculties(id)
     )''')
 
+    # Settings table
+    c.execute('''CREATE TABLE IF NOT EXISTS settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        key TEXT NOT NULL UNIQUE,
+        value TEXT
+    )''')
+
     conn.commit()
 
     # Create default super admin if not exists
@@ -590,7 +597,49 @@ def update_question_answer_tg(qid, answer, tg_id, tg_name):
     conn.commit()
     conn.close()
 
+# ── SETTINGS & WORKING HOURS ──────────────────────────────────────────────────
+def get_setting(key, default_value=None):
+    conn = get_conn()
+    row = conn.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+    conn.close()
+    if row and row['value'] is not None:
+        return row['value']
+    return default_value
 
+def set_setting(key, value):
+    conn = get_conn()
+    conn.execute(
+        "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        (key, value)
+    )
+    conn.commit()
+    conn.close()
+
+def is_within_working_hours():
+    """
+    Checks if the current time is within configured working hours.
+    Returns: (bool is_working, str offline_message)
+    """
+    now_utc = datetime.utcnow()
+    now_uz = now_utc + timedelta(hours=5)
+    
+    start_time = get_setting('bot_start_time', '09:00')
+    end_time = get_setting('bot_end_time', '18:00')
+    # 0=Monday, 6=Sunday. "1,2,3,4,5" means Mon-Fri
+    work_days_str = get_setting('bot_work_days', '0,1,2,3,4')
+    work_days = [int(d) for d in work_days_str.split(',') if d.strip().isdigit()]
+    
+    offline_msg = get_setting('bot_offline_message', f"Bot hozirda dam olish rejimida. Iltimos, ish vaqtida ({start_time} - {end_time}) murojaat qiling.")
+    
+    # Check weekday
+    if now_uz.weekday() not in work_days:
+        return False, offline_msg
+        
+    current_time_str = now_uz.strftime("%H:%M")
+    if current_time_str < start_time or current_time_str >= end_time:
+        return False, offline_msg
+        
+    return True, ""
 
 
 if __name__ == "__main__":
