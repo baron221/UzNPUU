@@ -30,18 +30,9 @@ def initialize():
     print("Initializing University Bot...")
     db.init_db()
 
-    # Sync git knowledge files to persistent storage
-    import shutil
-    git_kb = os.path.join(BASE_DIR, "knowledge")
+    # Ensure data/knowledge directory exists for user uploads
     data_kb = os.path.join(BASE_DIR, "data", "knowledge")
     os.makedirs(data_kb, exist_ok=True)
-    if os.path.exists(git_kb):
-        for f in os.listdir(git_kb):
-            src = os.path.join(git_kb, f)
-            dst = os.path.join(data_kb, f)
-            if os.path.isfile(src):
-                shutil.copy2(src, dst)
-                print(f"Synced/Updated {f} in persistent storage")
 
     print("Loading knowledge base...")
     state.knowledge_base = load_knowledge_base(data_kb)
