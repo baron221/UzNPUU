@@ -74,14 +74,12 @@ def clear_vector_db():
     """
     Clears the collection to allow full re-indexing.
     """
-    global _client, _collection
-    if _client:
-        try:
-            _client.delete_collection("university_kb")
-            logging.info("Vector DB collection cleared.")
-        except:
-            pass
-    _client = None
-    _collection = None
-    # Re-init
-    get_vector_client()
+    collection = get_vector_client()
+    try:
+        data = collection.get()
+        if data and data.get('ids'):
+            # Delete in chunks if there are many items, but for now simple delete is fine
+            collection.delete(ids=data['ids'])
+            logging.info(f"Vector DB cleared. Deleted {len(data['ids'])} items.")
+    except Exception as e:
+        logging.error(f"Error clearing vector DB: {e}")
