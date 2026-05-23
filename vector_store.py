@@ -74,12 +74,14 @@ def clear_vector_db():
     """
     Clears the collection to allow full re-indexing.
     """
-    global _client
+    global _client, _collection
     if _client:
         try:
             _client.delete_collection("university_kb")
             logging.info("Vector DB collection cleared.")
         except:
             pass
+    _client = None
+    _collection = None
     # Re-init
     get_vector_client()
