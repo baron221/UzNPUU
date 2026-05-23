@@ -68,24 +68,52 @@ def find_relevant_chunks(question: str, chunks: list, client, top_n: int = 5) ->
     except:
         return "\n\n".join(chunks[:top_n])
 
+def naive_uz_stem(text: str) -> list:
+    import re
+    words = []
+    for w in text.split():
+        w_clean = re.sub(r'[^\w]', '', w.lower())
+        if len(w_clean) > 4:
+            words.append(w_clean[:4])
+        elif len(w_clean) > 2:
+            words.append(w_clean)
+    return list(set(words))
+
 def find_relevant_pairs(question: str, pairs: list, client, top_n: int = 5) -> str:
     import vector_store
     
     # 1. Semantic Search using Vector Store (ChromaDB)
-    # We fetch more than top_n to allow for AI re-ranking
     semantic_context = vector_store.search_vector_db(question, n_results=10)
     
-    if not semantic_context:
+    # 2. Keyword Search over 'pairs' (Crucial for UZ text and DB items)
+    q_words = naive_uz_stem(question)
+    scored_pairs = []
+    for p in pairs:
+        score = 0
+        p_text = (p['question'] + " " + p['answer']).lower()
+        for w in q_words:
+            if w in p_text:
+                score += 1
+        if score > 0:
+            scored_pairs.append((score, p))
+            
+    scored_pairs.sort(key=lambda x: x[0], reverse=True)
+    keyword_context = "\n\n---\n\n".join(
+        f"Savol: {p['question']}\nJavob: {p['answer']}" 
+        for score, p in scored_pairs[:5]
+    )
+    
+    combined_context = f"{semantic_context}\n\n---\n\n{keyword_context}"
+    
+    if not combined_context.strip().replace("---", "").strip():
         return ""
 
-    # 2. AI Re-ranking (Groq)
-    # Give the retrieved chunks to Groq to pick the most relevant ones
-    # This ensures the final context is highly precise
+    # 3. AI Re-ranking (Groq)
     try:
         check = safe_completion(
             client,
             messages=[
-                {"role": "system", "content": f"You are a search assistant. Below are several document chunks. Return ONLY the {top_n} most relevant chunks as a single concatenated string. If a chunk is not relevant to the user question, ignore it.\n\nCHUNKS:\n{semantic_context}"},
+                {"role": "system", "content": f"You are a search assistant. Below are several document chunks. Return ONLY the {top_n} most relevant chunks as a single concatenated string. If a chunk is not relevant to the user question, ignore it.\n\nCHUNKS:\n{combined_context}"},
                 {"role": "user", "content": f"Student question: {question}"}
             ],
             max_tokens=1024,
@@ -93,8 +121,7 @@ def find_relevant_pairs(question: str, pairs: list, client, top_n: int = 5) -> s
         return check.choices[0].message.content.strip()
     except Exception as e:
         logging.error(f"Reranking failed: {e}")
-        # Fallback: just return the raw semantic search results
-        return semantic_context
+        return combined_context
 
 
 def safe_completion(client, **kwargs):
@@ -166,9 +193,7 @@ def clean_label(text: str) -> str:
     return text.strip()
 
 def generate_options(question: str, pairs: list) -> list:
-    q_lower = question.lower().strip()
-    import re
-    q_words = [re.sub(r'[^\w]', '', w) for w in q_lower.split() if len(w) > 2]
+    q_words = naive_uz_stem(question)
     
     if not q_words:
         return []
