@@ -457,7 +457,6 @@ async def handle_admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await context.bot.send_message(chat_id=student_tg_id, text=relay_msg, parse_mode='Markdown')
         # 4. Update DB
         db.update_question_answer_tg(question_data['id'], answer, admin_user.id, admin_user.full_name)
-        await update.message.reply_text("✅ Javobingiz talabaga yuborildi.")
     except Exception as e:
         logging.error(f"❌ Error relaying admin reply: {str(e)}")
         await update.message.reply_text("⚠️ Xatolik: Javobni talabaga yuborib bo'lmadi. (Balki talaba botni bloklagandur)")
