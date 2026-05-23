@@ -36,8 +36,8 @@ def setup_bot_handlers(app):
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("faculty", change_faculty))
     app.add_handler(CallbackQueryHandler(handle_callback))
-    app.add_handler(MessageHandler(filters.VOICE, handle_voice))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.VOICE, handle_voice))
+    app.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(MessageHandler(filters.REPLY & (filters.ChatType.GROUPS | filters.ChatType.SUPERGROUP), handle_admin_reply))
     app.add_handler(MessageHandler(filters.COMMAND, unknown))
 
