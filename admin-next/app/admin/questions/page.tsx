@@ -17,7 +17,10 @@ export default function QuestionsPage() {
     if (showSkeleton) setLoading(true);
     try {
       const qd = await getQuestions();
-      setAll(qd.questions);
+      setAll(qd?.questions || []);
+    } catch (err) {
+      console.error('Failed to load questions:', err);
+      setAll([]);
     } finally {
       if (showSkeleton) setLoading(false);
     }
@@ -36,6 +39,8 @@ export default function QuestionsPage() {
   const grouped = useMemo(() => {
     const map = new Map<string, { id: string, name: string, username: string, faculty: string, questions: Question[], latest: string, unread: number }>();
     
+    if (!Array.isArray(all)) return [];
+
     all.forEach(q => {
       const uid = q.student_telegram_id || q.student_username || String(q.student_id) || `anonymous-${q.id}`;
       if (!map.has(uid)) {

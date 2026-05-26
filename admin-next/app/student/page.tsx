@@ -73,7 +73,7 @@ export default function StudentPage() {
     });
 
     getPublicFAQ(fid || undefined).then(d => {
-      if (d?.items && d.items.length > 0) {
+      if (d?.items && Array.isArray(d.items) && d.items.length > 0) {
         const mergedFaqs: any[] = [];
         
         d.items.forEach(item => {
@@ -132,19 +132,21 @@ export default function StudentPage() {
     getStudentHistory(tgId)
       .then(({ history }) => {
         const histMsgs: Msg[] = [];
-        history.forEach((item: HistoryItem) => {
-          // Student question
-          histMsgs.push({ text: item.question, type: 'user', isHistory: true });
-          // Bot/admin answer
-          const answerText = item.answer && item.answer !== 'Admin javobini kuting...'
-            ? item.answer
-            : null;
-          if (answerText) {
-            histMsgs.push({ text: answerText, type: 'bot', isHistory: true });
-          } else {
-            histMsgs.push({ text: '⏳ Admin javobini kutilmoqda...', type: 'bot', isHistory: true, isPending: true });
-          }
-        });
+        if (Array.isArray(history)) {
+          history.forEach((item: HistoryItem) => {
+            // Student question
+            histMsgs.push({ text: item.question, type: 'user', isHistory: true });
+            // Bot/admin answer
+            const answerText = item.answer && item.answer !== 'Admin javobini kuting...'
+              ? item.answer
+              : null;
+            if (answerText) {
+              histMsgs.push({ text: answerText, type: 'bot', isHistory: true });
+            } else {
+              histMsgs.push({ text: '⏳ Admin javobini kutilmoqda...', type: 'bot', isHistory: true, isPending: true });
+            }
+          });
+        }
         // Build final message list
         const welcomeMsg: Msg = { text: '👋 Salom! Men NPUU botiman. Savolingizni yozing — yordam beraman!', type: 'bot' };
         if (histMsgs.length > 0) {
