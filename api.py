@@ -14,7 +14,7 @@ import auth
 import notifier
 from file_loader import load_knowledge_base
 
-app = FastAPI(title="UzNPUU Bot API")
+app = FastAPI(title="NPUU Bot API")
 
 def reload_kb():
     import state
@@ -67,7 +67,7 @@ def get_current_admin(token: str = Depends(oauth2_scheme)):
 async def index():
     return {
         "status": "online",
-        "message": "UzNPUU Bot API is running",
+        "message": "NPUU Bot API is running",
         "mini_app": "https://uz-npuu.vercel.app/student"
     }
 
@@ -75,11 +75,11 @@ async def index():
 async def admin():
     return """
     <html>
-        <head><title>UzNPUU Admin</title></head>
+        <head><title>NPUU Admin</title></head>
         <body style="font-family: sans-serif; text-align: center; padding: 50px;">
-            <h1>UzNPUU Admin Panel</h1>
+            <h1>NPUU Admin Panel</h1>
             <p>Eski admin panel o'chirildi. Iltimos, yangi <b>Next.js</b> panelidan foydalaning.</p>
-            <a href="https://uznpuu-production.up.railway.app" style="color: blue;">Panelni ochish</a>
+            <a href="https://npuu-production.up.railway.app" style="color: blue;">Panelni ochish</a>
         </body>
     </html>
     """

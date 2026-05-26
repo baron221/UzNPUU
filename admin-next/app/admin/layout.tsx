@@ -60,7 +60,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className="sidebar">
         <div className="sidebar-top">
           <div className="sidebar-logo">🎓</div>
-          <div className="sidebar-title">UzNPUU Admin</div>
+          <div className="sidebar-title">NPUU Admin</div>
           <div className="sidebar-sub">Boshqaruv tizimi</div>
         </div>
 

@@ -66,7 +66,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         kb = [[InlineKeyboardButton("🔄 Boshqa ID bilan kirish", callback_data="reset_id")]]
         await update.message.reply_text(
-            f"Assalomu alaykum! UzNPUU botiga qayta xush kelibsiz! 🎓\n\n"
+            f"Assalomu alaykum! NPUU botiga qayta xush kelibsiz! 🎓\n\n"
             f"Sizning ID: {student['student_id']}\n"
             f"Fakultet: {context.user_data.get('faculty_name', 'Umumiy')}\n\n"
             "Savolingizni yozishingiz mumkin ✍️",
@@ -94,7 +94,7 @@ async def start_reset_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return REGISTER_ID
 
     await update.message.reply_text(
-        "Assalomu alaykum! UzNPUU botiga xush kelibsiz! 🎓\n\n"
+        "Assalomu alaykum! NPUU botiga xush kelibsiz! 🎓\n\n"
         "Botdan foydalanish uchun ro'yxatdan o'tishingiz kerak.\n"
         "Iltimos, **6 xonali talaba ID raqamingizni** kiriting (masalan: 123456):",
         parse_mode='Markdown'

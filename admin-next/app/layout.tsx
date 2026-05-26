@@ -3,8 +3,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'UzNPUU',
-  description: 'UzNPUU Bot boshqaruv tizimi',
+  title: 'NPUU',
+  description: 'NPUU Bot boshqaruv tizimi',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

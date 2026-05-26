@@ -397,7 +397,7 @@ textarea.form-inp { resize: vertical; min-height: 120px; }
 .student-header.mini .student-badge {
   display: none;
 }
-.student-header.mini .student-title-uznpuu {
+.student-header.mini .student-title-npuu {
   font-size: 20px;
 }
 .student-header.mini .student-title-yordamchi {
@@ -437,8 +437,8 @@ textarea.form-inp { resize: vertical; min-height: 120px; }
   border-color: rgba(129, 140, 248, 0.2);
 }
 .student-title-container { display: flex; flex-direction: column; gap: 4px; }
-.student-title-uznpuu { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 840; color: #1e293b; letter-spacing: -0.03em; line-height: 1; }
-.student-wrap.dark .student-title-uznpuu { color: #f8fafc; }
+.student-title-npuu { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 840; color: #1e293b; letter-spacing: -0.03em; line-height: 1; }
+.student-wrap.dark .student-title-npuu { color: #f8fafc; }
 .student-title-yordamchi { font-family: 'Playfair Display', serif; font-size: 36px; font-weight: 400; color: #4f46e5; font-style: italic; line-height: 1; margin-top: -4px; opacity: 0.9; }
 .student-wrap.dark .student-title-yordamchi { color: #818cf8; }
 .student-nav { 

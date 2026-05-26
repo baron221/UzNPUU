@@ -317,7 +317,7 @@ def get_answer(question: str, knowledge_base: str, clients: dict, faculty_id: Op
             completion = safe_completion(
                 client,
                 messages=[
-                    {"role": "system", "content": f"""You are the UzNPUU University Assistant.
+                    {"role": "system", "content": f"""You are the NPUU University Assistant.
 The user is asking a general or conversational question (not a specific academic one).
 Reply politely, concisely, and in the student's language ({lang}).
 If they want to speak to an admin, tell them you can help with most info from documents, but an admin will reply soon in this chat if needed."""},
@@ -362,7 +362,7 @@ If they want to speak to an admin, tell them you can help with most info from do
             completion = safe_completion(
                 client,
                 messages=[
-                    {"role": "system", "content": f"""You are a strict document-based university assistant for UzNPUU.
+                    {"role": "system", "content": f"""You are a strict document-based university assistant for NPUU.
 RULES:
 1. Answer ONLY using the facts from the DOCUMENTS below. Do NOT use outside knowledge.
 2. If the answer is not clearly found in the DOCUMENTS, you MUST reply EXACTLY with: NOT_FOUND

@@ -117,14 +117,14 @@ export default function StudentPage() {
     const metaStr = localStorage.getItem('tg_user');
     if (!metaStr) {
       // No TG identity yet — show default welcome and mark done
-      setMsgs([{ text: '👋 Salom! Men UzNPUU botiman. Savolingizni yozing — yordam beraman!', type: 'bot' }]);
+      setMsgs([{ text: '👋 Salom! Men NPUU botiman. Savolingizni yozing — yordam beraman!', type: 'bot' }]);
       setHistoryLoaded(true);
       return;
     }
     const meta = JSON.parse(metaStr);
     const tgId: string = meta.student_telegram_id || '';
     if (!tgId || tgId === 'WEB') {
-      setMsgs([{ text: '👋 Salom! Men UzNPUU botiman. Savolingizni yozing — yordam beraman!', type: 'bot' }]);
+      setMsgs([{ text: '👋 Salom! Men NPUU botiman. Savolingizni yozing — yordam beraman!', type: 'bot' }]);
       setHistoryLoaded(true);
       return;
     }
@@ -146,7 +146,7 @@ export default function StudentPage() {
           }
         });
         // Build final message list
-        const welcomeMsg: Msg = { text: '👋 Salom! Men UzNPUU botiman. Savolingizni yozing — yordam beraman!', type: 'bot' };
+        const welcomeMsg: Msg = { text: '👋 Salom! Men NPUU botiman. Savolingizni yozing — yordam beraman!', type: 'bot' };
         if (histMsgs.length > 0) {
           setMsgs([welcomeMsg, ...histMsgs]);
         } else {
@@ -154,7 +154,7 @@ export default function StudentPage() {
         }
       })
       .catch(() => {
-        setMsgs([{ text: '👋 Salom! Men UzNPUU botiman. Savolingizni yozing — yordam beraman!', type: 'bot' }]);
+        setMsgs([{ text: '👋 Salom! Men NPUU botiman. Savolingizni yozing — yordam beraman!', type: 'bot' }]);
       })
       .finally(() => {
         setHistoryLoaded(true);
@@ -229,7 +229,7 @@ export default function StudentPage() {
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div className="student-badge">RASMIY BOT</div>
           <div className="student-title-container">
-            <div className="student-title-uznpuu">UzNPUU</div>
+            <div className="student-title-npuu">NPUU</div>
             <div className="student-title-yordamchi">Yordamchi</div>
           </div>
           <div className="student-sub" style={{ marginTop: 20, fontSize: 13, lineHeight: 1.6, maxWidth: '85%', opacity: 0.8, fontWeight: 500 }}>Nizomiy nomidagi O&#39;zbekiston Milliy pedagogika universiteti</div>

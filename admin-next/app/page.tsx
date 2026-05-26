@@ -31,7 +31,7 @@ export default function LoginPage() {
     <div className="login-wrap mesh-bg">
       <div className="login-card" style={{ backdropFilter: 'blur(20px)', background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.3)' }}>
         <div className="login-logo">🎓</div>
-        <h1 className="login-title" style={{ fontWeight: 900, fontSize: 32, letterSpacing: -1 }}>UzNPUU Admin</h1>
+        <h1 className="login-title" style={{ fontWeight: 900, fontSize: 32, letterSpacing: -1 }}>NPUU Admin</h1>
         <p className="login-sub" style={{ fontSize: 14, fontWeight: 500 }}>Boshqaruv tizimiga xush kelibsiz</p>
 
         <div style={{ textAlign: 'left', marginTop: 20 }}>
