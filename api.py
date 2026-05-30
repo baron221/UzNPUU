@@ -565,3 +565,7 @@ async def reorder_card(cid: int, request: Request, current_user: dict = Depends(
 async def delete_card(cid: int, current_user: dict = Depends(get_current_admin)):
     db.delete_service_card(cid)
     return {"ok": True}
+
+@app.get("/api/admin/analytics")
+async def get_analytics(current_user: dict = Depends(get_current_admin)):
+    return db.get_analytics_stats()

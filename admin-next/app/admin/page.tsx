@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { getStats } from '@/lib/api';
+import { getStats, getAnalytics } from '@/lib/api';
 
 /* ── SVG Icons ──────────────────────────────────────────────────────────── */
 const ICONS: Record<string, React.ReactNode> = {
@@ -31,15 +31,16 @@ export default function OverviewPage() {
   const langRef = useRef<HTMLCanvasElement>(null);
   const actChart = useRef<unknown>(null);
   const langChart = useRef<unknown>(null);
+  const trendChart = useRef<unknown>(null);
 
   useEffect(() => {
-    getStats().then(s => {
-      setStats(s);
-      renderCharts(s);
+    Promise.all([getStats(), getAnalytics()]).then(([s, a]) => {
+      setStats({ ...s, ...a });
+      renderCharts(s, a);
     });
   }, []);
 
-  function renderCharts(s: Record<string, number>) {
+  function renderCharts(s: Record<string, number>, a: any) {
     if (typeof window === 'undefined') return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const Chart = (window as any).Chart;
@@ -66,6 +67,29 @@ export default function OverviewPage() {
       data: { labels: Object.keys(langs), datasets: [{ data: Object.values(langs), backgroundColor: Object.keys(langs).map(k => lc[k] ?? '#6366f1'), borderWidth: 0, hoverOffset: 6 }] },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#6b7280', font: { size: 11 }, padding: 12 } } } },
     });
+
+    // Trend chart
+    const trendCanvas = document.getElementById('trendChart') as HTMLCanvasElement;
+    if (trendCanvas && a && a.trends) {
+      if (trendChart.current) (trendChart.current as { destroy(): void }).destroy();
+      trendChart.current = new Chart(trendCanvas, {
+        type: 'bar',
+        data: {
+          labels: a.trends.map((t: any) => t.name),
+          datasets: [{
+            label: "Trend Savollar",
+            data: a.trends.map((t: any) => t.count),
+            backgroundColor: 'rgba(245, 158, 11, 0.2)',
+            borderColor: '#f59e0b',
+            borderWidth: 2,
+            borderRadius: 6
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+          scales: { x: { grid: { color: '#f1f2f9' }, ticks: { color: '#9ca3af', font: { size: 11 } } },
+                    y: { grid: { color: '#f1f2f9' }, ticks: { color: '#9ca3af', font: { size: 11 } }, beginAtZero: true } } },
+      });
+    }
   }
 
   return (
@@ -76,7 +100,7 @@ export default function OverviewPage() {
           <div className="page-title">Umumiy ko&#39;rinish</div>
           <div className="page-sub">Barcha statistikalar va faollik</div>
         </div>
-        <button className="btn btn-primary" onClick={() => getStats().then(s => { setStats(s); renderCharts(s); })}>↻ Yangilash</button>
+        <button className="btn btn-primary" onClick={() => Promise.all([getStats(), getAnalytics()]).then(([s, a]) => { setStats({...s, ...a}); renderCharts(s, a); })}>↻ Yangilash</button>
       </div>
 
       {/* Stats */}
@@ -102,6 +126,22 @@ export default function OverviewPage() {
         }
       </div>
 
+      {stats && (
+        <div style={{ marginTop: 24, padding: 24, background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)', borderRadius: 16, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 10px 25px rgba(79, 70, 229, 0.3)' }}>
+          <div>
+            <div style={{ fontSize: 14, opacity: 0.9, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>AI Qoniqish Darajasi</div>
+            <div style={{ fontSize: 32, fontWeight: 800, marginTop: 4 }}>{(stats as any).satisfaction_rate ?? 100}% 👍</div>
+            <div style={{ fontSize: 14, opacity: 0.8, marginTop: 4 }}>
+              Jami baholar: {(stats as any).total_feedback ?? 0} ({(stats as any).likes ?? 0} yordam berdi, {(stats as any).dislikes ?? 0} yordam bermadi)
+            </div>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.2)', padding: '16px 24px', borderRadius: 12, textAlign: 'center', backdropFilter: 'blur(10px)' }}>
+            <div style={{ fontSize: 24, fontWeight: 700 }}>{(stats as any).total ?? 0}</div>
+            <div style={{ fontSize: 13, opacity: 0.9 }}>Jami savollar</div>
+          </div>
+        </div>
+      )}
+
       {/* Charts */}
       <div className="charts-grid">
         <div className="chart-card">
@@ -111,6 +151,10 @@ export default function OverviewPage() {
         <div className="chart-card">
           <div className="chart-title">Til taqsimoti</div>
           <div className="chart-wrap"><canvas ref={langRef} /></div>
+        </div>
+        <div className="chart-card">
+          <div className="chart-title">Trend Savollar (Top 5) 📈</div>
+          <div className="chart-wrap"><canvas id="trendChart" /></div>
         </div>
       </div>
     </>

@@ -33,6 +33,7 @@ export const updateSettings = (data: Partial<Settings>) =>
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
 export const getStats = () => req<Record<string, number>>('/api/admin/stats');
+export const getAnalytics = () => req<any>('/api/admin/analytics');
 
 // ── Questions ─────────────────────────────────────────────────────────────────
 export const getQuestions = (params?: { faculty_id?: number; status?: string }) => {

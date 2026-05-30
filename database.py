@@ -81,6 +81,8 @@ def init_db():
         "ALTER TABLE questions ADD COLUMN admin_message_id TEXT",
         "ALTER TABLE questions ADD COLUMN admin_chat_id TEXT",
         "ALTER TABLE questions ADD COLUMN answered_by_name TEXT",
+        "ALTER TABLE questions ADD COLUMN feedback INTEGER DEFAULT 0",
+        "ALTER TABLE questions ADD COLUMN topic TEXT",
     ]:
         try:
             c.execute(col_sql)
@@ -642,5 +644,68 @@ def is_within_working_hours():
     return True, ""
 
 
+# ── ANALYTICS & FEEDBACK ──────────────────────────────────────────────────────
+def update_question_feedback(question_id: int, feedback: int):
+    """Sets feedback value: 1 (like) or -1 (dislike)"""
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("UPDATE questions SET feedback = ? WHERE id = ?", (feedback, question_id))
+    conn.commit()
+    conn.close()
+
+def update_question_topic(question_id: int, topic: str):
+    """Sets the AI-generated topic for a question"""
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("UPDATE questions SET topic = ? WHERE id = ?", (topic, question_id))
+    conn.commit()
+    conn.close()
+
+def get_analytics_stats():
+    """Returns total feedback stats and top 5 topics from the last 7 days."""
+    conn = get_conn()
+    c = conn.cursor()
+    
+    # Satisfaction (likes vs dislikes)
+    c.execute('''
+        SELECT 
+            SUM(CASE WHEN feedback = 1 THEN 1 ELSE 0 END) as likes,
+            SUM(CASE WHEN feedback = -1 THEN 1 ELSE 0 END) as dislikes,
+            COUNT(*) as total
+        FROM questions
+        WHERE feedback != 0 AND feedback IS NOT NULL
+    ''')
+    row = c.fetchone()
+    likes = row['likes'] or 0
+    dislikes = row['dislikes'] or 0
+    total_feedback = row['total'] or 0
+    satisfaction = int((likes / total_feedback) * 100) if total_feedback > 0 else 100
+
+    # Trend topics (last 7 days)
+    seven_days_ago = (datetime.utcnow() + timedelta(hours=5) - timedelta(days=7)).strftime("%Y-%m-%d %H:%M:%S")
+    c.execute('''
+        SELECT topic, COUNT(*) as count 
+        FROM questions 
+        WHERE topic IS NOT NULL AND topic != '' AND created_at >= ?
+        GROUP BY topic 
+        ORDER BY count DESC 
+        LIMIT 5
+    ''', (seven_days_ago,))
+    
+    trends = []
+    for r in c.fetchall():
+        if r['topic'] and r['topic'].strip():
+            trends.append({"name": r['topic'].strip(), "count": r['count']})
+
+    conn.close()
+    return {
+        "satisfaction_rate": satisfaction,
+        "likes": likes,
+        "dislikes": dislikes,
+        "total_feedback": total_feedback,
+        "trends": trends
+    }
+
 if __name__ == "__main__":
     init_db()
+    print("Database ready.")

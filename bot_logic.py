@@ -198,6 +198,21 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         else:
             await query.message.reply_text("❌ Xatolik: avval /start orqali ID kiriting.")
+    elif data.startswith("fb_"):
+        parts = data.split('_')
+        if len(parts) >= 3:
+            val = int(parts[1])
+            qid = int(parts[2])
+            feedback_val = 1 if val == 1 else -1
+            db.update_question_feedback(qid, feedback_val)
+            try:
+                await query.message.edit_reply_markup(reply_markup=None)
+                if val == 1:
+                    await query.message.reply_text("Rahmat, bahoingiz qabul qilindi! ✅", disable_notification=True)
+                else:
+                    await query.message.reply_text("Rahmat! Javob sifatini yaxshilashga yordam berganingiz uchun tashakkur. 🔄", disable_notification=True)
+            except:
+                pass
 
     elif data.startswith("fac_"):
         raw_fid = data.replace("fac_", "")
@@ -234,8 +249,6 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             original_q = context.user_data.get('last_question', 'Noma\'lum savol')
             qid = db.save_question(str(user.id), sid, username, user.full_name or username, fid, original_q, "Admin javobini kuting...", "uz", "MANUAL")
             await query.message.reply_text("📩 Savolingiz adminstratorga yuborildi. Tez orada javob olasiz!")
-            
-            # Non-blocking forward and link
             asyncio.create_task(forward_and_link(qid, user.full_name or username, original_q, None, sid, fid, is_manual=True))
             return
 
@@ -249,27 +262,29 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             selected = data.replace("opt_", "")
             
-        # Display the full selected question clearly
-        clean_q = ai_responder.clean_label(selected)
-        await query.message.reply_text(f"🔍 Tanlandi: {clean_q}")
-        
-        answer, options, lang, category = ai_responder.get_answer(selected, state.knowledge_base, state.clients, faculty_id=fid)
-        db.save_question(str(user.id), sid, username, user.full_name or username, fid, selected, answer, lang, category)
+        await query.message.edit_text("Hujjatlarimizdan qidirilmoqda... 🔍")
+        import state
+        answer, options, lang, category, topic = ai_responder.get_answer(selected, state.knowledge_base, state.clients, faculty_id=fid)
+        qid = db.save_question(str(user.id), sid, username, user.full_name or username, fid, selected, answer, lang, category)
+        if topic and topic != "Boshqa":
+            db.update_question_topic(qid, topic)
         logger.log_message(str(user.id), username, selected, answer, lang, category)
-        
-        # Check if we should show Admin button (not found or refers to staff)
-        referral_kws = ["topilmadi", "not found", "murojaat qiling", "mas'ul xodimi", "adminstrator", "ofisiga"]
-        show_admin_btn = (category == "UNANSWERED") or any(kw in answer.lower() for kw in referral_kws)
         
         kb = []
         if options:
             context.user_data['temp_options'] = options
             kb = [[InlineKeyboardButton(o[:57] + "..." if len(o) > 60 else o, callback_data=f"opt_idx_{i}")] for i, o in enumerate(options)]
-        if show_admin_btn:
+        
+        if category == "UNANSWERED" or "topilmadi" in answer.lower():
             kb.append([InlineKeyboardButton("👤 Adminstratorga yuborish", callback_data="ask_admin")])
             context.user_data['last_question'] = selected
+        elif category != "VAGUE":
+            kb.append([
+                InlineKeyboardButton("👍 Yordam berdi", callback_data=f"fb_1_{qid}"),
+                InlineKeyboardButton("👎 Yordam bermadi", callback_data=f"fb_0_{qid}")
+            ])
             
-        await query.message.reply_text(f"🤖 AI Yordamchi:\n\n{answer}", reply_markup=InlineKeyboardMarkup(kb) if kb else None)
+        await query.message.edit_text(f"🤖 AI Yordamchi:\n\n{answer}", reply_markup=InlineKeyboardMarkup(kb) if kb else None)
 
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     is_working, offline_msg = db.is_within_working_hours()
@@ -348,17 +363,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Auto-register/load student
         student = db.get_student(user.id)
         if not student:
-            # Maybe they didn't finish the flow? Check if they have an ID in context
             sid = context.user_data.get('student_id') or context.user_data.get('temp_student_id')
             if not sid:
-                # NEW: Auto-register as Guest to ensure the question is saved
                 sid = f"GUEST_{user.id}"
                 db.register_student(user.id, sid, None)
                 student = {"student_id": sid, "faculty_id": None}
-                # Also notify them they can register for a better experience later
-                # but don't block the AI answer now
             else:
-                # They have a temp ID but weren't in DB yet
                 db.register_student(user.id, sid, None)
                 student = {"student_id": sid, "faculty_id": None}
 
@@ -368,22 +378,22 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         import state
         
-        # Verify AI state
         if not state.clients:
             logging.error("❌ AI clients not initialized in handle_message")
             await update.message.reply_text("⚠️ Kechirasiz, AI xizmat hozirda ishlamayapti. Tez orada tuzatiladi.")
             return
         if not state.knowledge_base:
             logging.warning("⚠️ Knowledge base is empty — answering with AI only (no documents)")
-            # Don't block — let it answer from FAQ DB items even without file KB
 
         await update.message.chat.send_action("typing")
         
         # 1. Get Answer
-        answer, options, lang, category = ai_responder.get_answer(question, state.knowledge_base, state.clients, faculty_id=fid)
+        answer, options, lang, category, topic = ai_responder.get_answer(question, state.knowledge_base, state.clients, faculty_id=fid)
 
         # 2. Save Question
         qid = db.save_question(str(user.id), sid, username, user.full_name or username, fid, question, answer, lang, category)
+        if topic and topic != "Boshqa":
+            db.update_question_topic(qid, topic)
         logger.log_message(str(user.id), username, question, answer, lang, category)
 
         # 3. Respond to Student FIRST
@@ -398,9 +408,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if options:
             context.user_data['temp_options'] = options
             kb = [[InlineKeyboardButton(o[:57] + "..." if len(o) > 60 else o, callback_data=f"opt_idx_{i}")] for i, o in enumerate(options)]
+        
         if show_admin_btn:
             kb.append([InlineKeyboardButton("👤 Adminstratorga yuborish", callback_data="ask_admin")])
             context.user_data['last_question'] = question
+        elif category != "VAGUE" and category != "GENERAL" and category != "ERROR":
+            # Add Feedback buttons
+            kb.append([
+                InlineKeyboardButton("👍 Yordam berdi", callback_data=f"fb_1_{qid}"),
+                InlineKeyboardButton("👎 Yordam bermadi", callback_data=f"fb_0_{qid}")
+            ])
             
         await update.message.reply_text(f"🤖 AI Yordamchi:\n\n{answer}", reply_markup=InlineKeyboardMarkup(kb) if kb else None)
 

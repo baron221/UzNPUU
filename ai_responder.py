@@ -155,26 +155,28 @@ def transcribe_audio(file_path: str, client) -> str:
         )
         return transcription.text
 
-def classify_question(question: str, client) -> str:
+def classify_question(question: str, client) -> tuple:
     try:
         check = safe_completion(
             client,
             messages=[
                 {"role": "system", "content": """Classify into: GENERAL, VAGUE, or UNIVERSITY.
-GENERAL: greetings, thanks, bye, casual chat, bot questions
-VAGUE: single keyword about university (to'lov, imtihon, jadval, stipendiya, HEMIS, оплата, расписание, payment, schedule)
-UNIVERSITY: complete question about university
-Reply ONE word only."""},
+Also provide a 1-word topic for the question (e.g. Imtihon, Kredit, Tolov, Yotoqxona, Boshqa).
+Format: CATEGORY|Topic"""},
                 {"role": "user", "content": question}
             ],
-            max_tokens=5,
+            max_tokens=20,
         )
-        result = check.choices[0].message.content.strip().upper()
-        if "GENERAL" in result: return "GENERAL"
-        if "VAGUE" in result: return "VAGUE"
+        result = check.choices[0].message.content.strip()
+        parts = result.split('|')
+        cat = parts[0].strip().upper()
+        topic = parts[1].strip().capitalize() if len(parts) > 1 else "Boshqa"
+        
+        if "GENERAL" in cat: return "GENERAL", topic
+        if "VAGUE" in cat: return "VAGUE", topic
+        return "UNIVERSITY", topic
     except:
-        pass
-    return "UNIVERSITY"
+        return "UNIVERSITY", "Boshqa"
 
 def clean_label(text: str) -> str:
     """Removes 'Savol:', 'Question:', 'Вопрос:', leading numbers, and dots."""
@@ -221,7 +223,7 @@ def generate_options(question: str, pairs: list) -> list:
 _cached_pairs = None
 
 def get_answer(question: str, knowledge_base: str, clients: dict, faculty_id: Optional[int] = None) -> tuple:
-    """Returns (answer_text, options_list, lang, category)"""
+    """Returns (answer_text, options_list, lang, category, topic)"""
     global _cached_pairs
     client = clients["groq"]
 
@@ -270,7 +272,7 @@ def get_answer(question: str, knowledge_base: str, clients: dict, faculty_id: Op
         # Compare against the cleaned label to match the generated options
         if clean_q_exact == clean_label(pair['question']).strip().lower():
             logging.info(f"[EXACT-MATCH][{lang}] {question[:50]}")
-            return pair['answer'], [], lang, "UNIVERSITY"
+            return pair['answer'], [], lang, "UNIVERSITY", "Boshqa"
 
     # ── SHORT QUESTION PRE-CHECK (bypass Groq for speed + accuracy) ─────────────
     # If ≤3 words or matches known university keywords → treat as VAGUE first.
@@ -298,21 +300,21 @@ def get_answer(question: str, knowledge_base: str, clients: dict, faculty_id: Op
         options = generate_options(search_query, all_pairs)
         if options:
             logging.info(f"[VAGUE-FAST][{lang}] '{question[:40]}' → {len(options)} options")
-            return get_response("clarify", lang), options, lang, "VAGUE"
+            return get_response("clarify", lang), options, lang, "VAGUE", "Boshqa"
         # No options found → fall through to full Groq classification
 
-    category = classify_question(question, client)
-    logging.info(f"[{category}][{lang}][FID:{faculty_id}] {question[:50]}")
+    category, topic = classify_question(question, client)
+    logging.info(f"[{category}][{lang}][FID:{faculty_id}] {question[:50]} (Topic: {topic})")
 
     # ── GENERAL / CONVERSATIONAL ──────────────────────────────────────────────
     if category == "GENERAL":
         q = question.lower().strip()
         if any(w in q for w in ["assalomu","salom","hello","hi","hey","привет","здравствуйте"]):
-            return get_response("greeting", lang), [], lang, "GENERAL"
+            return get_response("greeting", lang), [], lang, "GENERAL", topic
         if any(w in q for w in ["rahmat","tashakkur","спасибо","thanks","thank"]):
-            return get_response("thanks", lang), [], lang, "GENERAL"
+            return get_response("thanks", lang), [], lang, "GENERAL", topic
         if any(w in q for w in ["xayr","bye","goodbye","пока"]):
-            return get_response("bye", lang), [], lang, "GENERAL"
+            return get_response("bye", lang), [], lang, "GENERAL", topic
         try:
             completion = safe_completion(
                 client,
@@ -325,15 +327,15 @@ If they want to speak to an admin, tell them you can help with most info from do
                 ],
                 max_tokens=256,
             )
-            return completion.choices[0].message.content.strip(), [], lang, "GENERAL"
+            return completion.choices[0].message.content.strip(), [], lang, "GENERAL", topic
         except:
-            return get_response("error", lang), [], lang, "ERROR"
+            return get_response("error", lang), [], lang, "ERROR", "Boshqa"
 
     # ── VAGUE (Groq-classified) ───────────────────────────────────────────────
     elif category == "VAGUE":
         options = generate_options(search_query, all_pairs)
         if options:
-            return get_response("clarify", lang), options, lang, "VAGUE"
+            return get_response("clarify", lang), options, lang, "VAGUE", topic
         category = "UNIVERSITY"
 
 
@@ -343,14 +345,14 @@ If they want to speak to an admin, tell them you can help with most info from do
         context = find_relevant_pairs(search_query, all_pairs, client)
         if not context:
             logging.warning(f"[NO-CONTEXT] {question[:50]}")
-            return "Hujjatda bunday ma'lumot topilmadi", [], lang, "UNIVERSITY"
+            return "Hujjatda bunday ma'lumot topilmadi", [], lang, "UNIVERSITY", topic
 
         logging.info(f"[AI-SEARCH] Context found for: {question[:50]}")
         relevant_context = context
 
         if not relevant_context.strip():
             # Use standardized polite response when no documents are matched
-            return get_response("not_found", lang), [], lang, "UNANSWERED"
+            return get_response("not_found", lang), [], lang, "UNANSWERED", topic
 
         lang_instruction = {
             "uz": "Javobni O'ZBEK tilida bering.",
@@ -380,10 +382,10 @@ RULES:
             
             # Strict fallback check
             if "NOT_FOUND" in ans.upper() or len(ans) < 5:
-                return get_response("not_found", lang), [], lang, "UNANSWERED"
+                return get_response("not_found", lang), [], lang, "UNANSWERED", topic
                 
-            return ans, [], lang, "UNIVERSITY"
+            return ans, [], lang, "UNIVERSITY", topic
         except:
-            return get_response("error", lang), [], lang, "ERROR"
+            return get_response("error", lang), [], lang, "ERROR", "Boshqa"
 
-    return get_response("error", lang), [], lang, "ERROR"
+    return get_response("error", lang), [], lang, "ERROR", "Boshqa"
