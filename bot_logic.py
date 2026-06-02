@@ -53,7 +53,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not student['faculty_id']:
             faculties = [f for f in db.get_all_faculties() if f['is_active']]
             keyboard = [[InlineKeyboardButton(f['name'], callback_data=f"reg_fac_{f['id']}")] for f in faculties]
-            keyboard.append([InlineKeyboardButton("👤 Adminstrator (Umumiy)", callback_data="reg_fac_none")])
             await update.message.reply_text(
                 f"Assalomu alaykum! 🎓 Sizning ID: {student['student_id']}\n\n"
                 "Fakultetingiz hali tanlanmagan. Iltimos, fakultetingizni tanlang:",
@@ -111,7 +110,6 @@ async def receive_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     faculties = [f for f in db.get_all_faculties() if f['is_active']]
     
     keyboard = [[InlineKeyboardButton(f['name'], callback_data=f"reg_fac_{f['id']}")] for f in faculties]
-    keyboard.append([InlineKeyboardButton("👤 Adminstrator (Umumiy)", callback_data="reg_fac_none")])
     
     await update.message.reply_text(
         f"✅ ID qabul qilindi: {text}\n\nEndi, fakultetingizni tanlang:",
@@ -153,7 +151,6 @@ async def change_faculty(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     faculties = [f for f in db.get_all_faculties() if f['is_active']]
     keyboard = [[InlineKeyboardButton(f['name'], callback_data=f"fac_{f['id']}")] for f in faculties]
-    keyboard.append([InlineKeyboardButton("👤 Adminstrator (Umumiy)", callback_data="fac_none")])
     
     await update.message.reply_text("Fakultetni o'zgartiring:", reply_markup=InlineKeyboardMarkup(keyboard))
 
