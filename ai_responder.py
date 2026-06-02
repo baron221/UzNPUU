@@ -354,11 +354,17 @@ If they want to speak to an admin, tell them you can help with most info from do
             # Use standardized polite response when no documents are matched
             return get_response("not_found", lang), [], lang, "UNANSWERED", topic
 
-        lang_instruction = {
-            "uz": "Javobni O'ZBEK tilida bering.",
-            "ru": "Отвечайте на РУССКОМ языке.",
-            "en": "Answer in ENGLISH."
-        }.get(lang, "Answer in Uzbek.")
+        # Check if user asked in Cyrillic Uzbek specifically
+        has_uz_cyrillic = lang == 'uz' and any('\u0400' <= c <= '\u04ff' for c in question)
+        
+        if has_uz_cyrillic:
+            lang_instruction = "Javobni O'ZBEK tilida, lekin albatta KIRIEL (КИРИЛЛ) alifbosida bering (masalan: лотин эмас, кирилл ҳарфлари билан)."
+        else:
+            lang_instruction = {
+                "uz": "Javobni O'ZBEK tilida bering.",
+                "ru": "Отвечайте на РУССКОМ языке.",
+                "en": "Answer in ENGLISH."
+            }.get(lang, "Answer in Uzbek.")
 
         try:
             completion = safe_completion(

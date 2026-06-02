@@ -3,7 +3,11 @@ lang_detector.py — Detects language of student message.
 Supports: Uzbek (uz), Russian (ru), English (en)
 """
 
-UZ_WORDS = ["qanday","qachon","nima","kim","necha","qayerda","uchun","bilan","yoki","ham","va","lekin","salom","assalomu","rahmat","xayr","talaba","imtihon","jadval","stipendiya","grant","kredit","hemis","dars","kontrakt","tolov","fakultet"]
+UZ_WORDS = [
+    "qanday","qachon","nima","kim","necha","qayerda","uchun","bilan","yoki","ham","va","lekin","salom","assalomu","rahmat","xayr","talaba","imtihon","jadval","stipendiya","grant","kredit","hemis","dars","kontrakt","tolov","fakultet",
+    # Uzbek Cyrillic equivalents
+    "кандай","қачон","нима","ким","неча","қаерда","учун","билан","ёки","ҳам","ва","лекин","салом","ассалому","раҳмат","хайр","талаба","имтиҳон","жадвал","стипендия","грант","кредит","ҳемис","дарс","контракт","тўлов","факультет"
+]
 RU_WORDS = ["как","когда","что","кто","сколько","где","для","привет","спасибо","пока","студент","экзамен","расписание","стипендия","грант","кредит","договор","оплата","факультет","здравствуйте","можно","нужно","хочу"]
 EN_WORDS = ["how","when","what","who","where","why","hello","hi","thanks","bye","student","exam","schedule","stipend","grant","credit","contract","payment","faculty","please","need","want","can"]
 
@@ -15,16 +19,21 @@ def detect_lang(text: str) -> str:
     ru_score = sum(1 for w in words if w in RU_WORDS)
     en_score = sum(1 for w in words if w in EN_WORDS)
 
-    # Check Cyrillic script → likely Russian
+    # Check Cyrillic script
     cyrillic = sum(1 for c in text if '\u0400' <= c <= '\u04ff')
-    # Check Latin script → likely Uzbek or English
+    # Check Latin script
     latin = sum(1 for c in text if c.isalpha() and c.isascii())
 
     if ru_score > uz_score and ru_score > en_score:
         return "ru"
     if en_score > uz_score and en_score > ru_score:
         return "en"
+    if uz_score > ru_score:
+        return "uz"
     if cyrillic > latin * 0.5:
+        # If Cyrillic but we have Uzbek Cyrillic words, it's Uzbek
+        if uz_score >= 1:
+            return "uz"
         return "ru"
     return "uz"  # default to Uzbek
 

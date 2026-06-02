@@ -74,6 +74,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return ConversationHandler.END
 
+    await update.message.reply_text(
+        "Assalomu alaykum! NPUU botiga xush kelibsiz! 🎓\n\n"
+        "Botdan foydalanish uchun ro'yxatdan o'tishingiz kerak.\n"
+        "Iltimos, **6 xonali talaba ID raqamingizni** kiriting (masalan: 123456):",
+        parse_mode='Markdown'
+    )
+    return REGISTER_ID
+
 async def start_reset_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -89,14 +97,6 @@ async def start_reset_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.message.reply_text(
         "Eski ma'lumotlaringiz tizimdan o'chirildi.\n\n"
         "Iltimos, yangi **6 xonali talaba ID raqamingizni** kiriting (masalan: 123456):",
-        parse_mode='Markdown'
-    )
-    return REGISTER_ID
-
-    await update.message.reply_text(
-        "Assalomu alaykum! NPUU botiga xush kelibsiz! 🎓\n\n"
-        "Botdan foydalanish uchun ro'yxatdan o'tishingiz kerak.\n"
-        "Iltimos, **6 xonali talaba ID raqamingizni** kiriting (masalan: 123456):",
         parse_mode='Markdown'
     )
     return REGISTER_ID
