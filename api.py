@@ -148,7 +148,7 @@ async def ask(request: Request):
     
     import state
     import asyncio
-    answer, options, lang, category = ai_responder.get_answer(q, state.knowledge_base, state.clients, faculty_id=faculty_id)
+    answer, options, lang, category, topic = ai_responder.get_answer(q, state.knowledge_base, state.clients, faculty_id=faculty_id)
     
     # Save to database
     db.save_question(
@@ -344,6 +344,10 @@ async def delete_user(uid: int, current_user: dict = Depends(get_current_admin))
 
 @app.get("/api/admin/questions")
 async def get_admin_questions(faculty_id: Optional[int] = None, status: Optional[str] = None, limit: int = 50, current_user: dict = Depends(get_current_admin)):
+    if current_user.get('role') == 'superadmin':
+        faculty_id = None
+    elif current_user.get('faculty_id'):
+        faculty_id = current_user.get('faculty_id')
     questions = db.get_questions(faculty_id=faculty_id, status=status, limit=limit)
     return {"questions": questions}
 
@@ -427,6 +431,10 @@ async def answer_question(qid: int, request: Request, current_user: dict = Depen
 
 @app.get("/api/admin/faq")
 async def get_admin_faq(faculty_id: Optional[int] = None, current_user: dict = Depends(get_current_admin)):
+    if current_user.get('role') == 'superadmin':
+        faculty_id = None
+    elif current_user.get('faculty_id'):
+        faculty_id = current_user.get('faculty_id')
     return {"items": db.get_faq_items(faculty_id=faculty_id)}
 
 @app.post("/api/admin/faq")
