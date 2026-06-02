@@ -1,3 +1,11 @@
+import sys
+# Patch sqlite3 with pysqlite3 for ChromaDB on systems with older sqlite3 version (like Oracle Linux 9)
+try:
+    __import__('pysqlite3')
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+except ImportError:
+    pass
+
 import os
 import threading
 import uvicorn
