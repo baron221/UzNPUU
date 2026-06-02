@@ -1,0 +1,50 @@
+Jun 02 07:11:09 instance-20260601-1234 python[90245]:   File "/home/opc/npuu-bot/vector_store.py", line 2, in <module>
+Jun 02 07:11:09 instance-20260601-1234 python[90245]:     import chromadb
+Jun 02 07:11:09 instance-20260601-1234 python[90245]:   File "/home/opc/npuu-bot/venv/lib64/python3.9/site-packages/chromadb/__init__.py", line 151, in <module>
+Jun 02 07:11:09 instance-20260601-1234 python[90245]:     raise RuntimeError(
+Jun 02 07:11:09 instance-20260601-1234 python[90245]: RuntimeError: Your system has an unsupported version of sqlite3. Chroma                     requires sqlite3 >= 3.35.0.
+Jun 02 07:11:09 instance-20260601-1234 python[90245]: Please visit                     https://docs.trychroma.com/troubleshooting#sqlite to learn how                     to upgrade.
+Jun 02 07:11:10 instance-20260601-1234 systemd[1]: npuu-bot.service: Main process exited, code=exited, status=1/FAILURE
+Jun 02 07:11:10 instance-20260601-1234 systemd[1]: npuu-bot.service: Failed with result 'exit-code'.
+Jun 02 07:11:15 instance-20260601-1234 systemd[1]: npuu-bot.service: Scheduled restart job, restart counter is at 277.
+Jun 02 07:11:15 instance-20260601-1234 systemd[1]: Stopped NPUU Telegram Bot and API Service.
+Jun 02 07:11:15 instance-20260601-1234 systemd[1]: Started NPUU Telegram Bot and API Service.
+Jun 02 07:11:15 instance-20260601-1234 python[90248]: Traceback (most recent call last):
+Jun 02 07:11:15 instance-20260601-1234 python[90248]:   File "/home/opc/npuu-bot/main.py", line 14, in <module>
+Jun 02 07:11:15 instance-20260601-1234 python[90248]:     import vector_store
+Jun 02 07:11:15 instance-20260601-1234 python[90248]:   File "/home/opc/npuu-bot/vector_store.py", line 2, in <module>
+Jun 02 07:11:15 instance-20260601-1234 python[90248]:     import chromadb
+Jun 02 07:11:15 instance-20260601-1234 python[90248]:   File "/home/opc/npuu-bot/venv/lib64/python3.9/site-packages/chromadb/__init__.py", line 151, in <module>
+Jun 02 07:11:15 instance-20260601-1234 python[90248]:     raise RuntimeError(
+Jun 02 07:11:15 instance-20260601-1234 python[90248]: RuntimeError: Your system has an unsupported version of sqlite3. Chroma                     requires sqlite3 >= 3.35.0.
+Jun 02 07:11:15 instance-20260601-1234 python[90248]: Please visit                     https://docs.trychroma.com/troubleshooting#sqlite to learn how                     to upgrade.
+Jun 02 07:11:15 instance-20260601-1234 systemd[1]: npuu-bot.service: Main process exited, code=exited, status=1/FAILURE
+Jun 02 07:11:15 instance-20260601-1234 systemd[1]: npuu-bot.service: Failed with result 'exit-code'.
+Jun 02 07:11:20 instance-20260601-1234 systemd[1]: npuu-bot.service: Scheduled restart job, restart counter is at 278.
+Jun 02 07:11:20 instance-20260601-1234 systemd[1]: Stopped NPUU Telegram Bot and API Service.
+Jun 02 07:11:20 instance-20260601-1234 systemd[1]: Started NPUU Telegram Bot and API Service.
+Jun 02 07:11:21 instance-20260601-1234 python[90251]: Traceback (most recent call last):
+Jun 02 07:11:21 instance-20260601-1234 python[90251]:   File "/home/opc/npuu-bot/main.py", line 14, in <module>
+Jun 02 07:11:21 instance-20260601-1234 python[90251]:     import vector_store
+Jun 02 07:11:21 instance-20260601-1234 python[90251]:   File "/home/opc/npuu-bot/vector_store.py", line 2, in <module>
+Jun 02 07:11:21 instance-20260601-1234 python[90251]:     import chromadb
+Jun 02 07:11:21 instance-20260601-1234 python[90251]:   File "/home/opc/npuu-bot/venv/lib64/python3.9/site-packages/chromadb/__init__.py", line 151, in <module>
+Jun 02 07:11:21 instance-20260601-1234 python[90251]:     raise RuntimeError(
+Jun 02 07:11:21 instance-20260601-1234 python[90251]: RuntimeError: Your system has an unsupported version of sqlite3. Chroma                     requires sqlite3 >= 3.35.0.
+Jun 02 07:11:21 instance-20260601-1234 python[90251]: Please visit                     https://docs.trychroma.com/troubleshooting#sqlite to learn how                     to upgrade.
+Jun 02 07:11:21 instance-20260601-1234 systemd[1]: npuu-bot.service: Main process exited, code=exited, status=1/FAILURE
+Jun 02 07:11:21 instance-20260601-1234 systemd[1]: npuu-bot.service: Failed with result 'exit-code'.
+Jun 02 07:11:26 instance-20260601-1234 systemd[1]: npuu-bot.service: Scheduled restart job, restart counter is at 279.
+Jun 02 07:11:26 instance-20260601-1234 systemd[1]: Stopped NPUU Telegram Bot and API Service.
+Jun 02 07:11:26 instance-20260601-1234 systemd[1]: Started NPUU Telegram Bot and API Service.
+Jun 02 07:11:27 instance-20260601-1234 python[90255]: Traceback (most recent call last):
+Jun 02 07:11:27 instance-20260601-1234 python[90255]:   File "/home/opc/npuu-bot/main.py", line 14, in <module>
+Jun 02 07:11:27 instance-20260601-1234 python[90255]:     import vector_store
+Jun 02 07:11:27 instance-20260601-1234 python[90255]:   File "/home/opc/npuu-bot/vector_store.py", line 2, in <module>
+Jun 02 07:11:27 instance-20260601-1234 python[90255]:     import chromadb
+Jun 02 07:11:27 instance-20260601-1234 python[90255]:   File "/home/opc/npuu-bot/venv/lib64/python3.9/site-packages/chromadb/__init__.py", line 151, in <module>
+Jun 02 07:11:27 instance-20260601-1234 python[90255]:     raise RuntimeError(
+Jun 02 07:11:27 instance-20260601-1234 python[90255]: RuntimeError: Your system has an unsupported version of sqlite3. Chroma                     requires sqlite3 >= 3.35.0.
+Jun 02 07:11:27 instance-20260601-1234 python[90255]: Please visit                     https://docs.trychroma.com/troubleshooting#sqlite to learn how                     to upgrade.
+Jun 02 07:11:27 instance-20260601-1234 systemd[1]: npuu-bot.service: Main process exited, code=exited, status=1/FAILURE
+Jun 02 07:11:27 instance-20260601-1234 systemd[1]: npuu-bot.service: Failed with result 'exit-code'.
