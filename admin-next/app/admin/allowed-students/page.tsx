@@ -48,65 +48,62 @@ export default function AllowedStudentsPage() {
   }
 
   return (
-    <div className="p-8 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">Talabalar Bazasi</h1>
-        <p className="text-slate-500">Botdan ro'yxatdan o'ta oladigan talabalar ro'yxatini Excel (.xlsx) orqali yuklang.</p>
+    <>
+      <div className="page-header">
+        <div>
+          <div className="page-title">Talabalar Bazasi</div>
+          <div className="page-sub">Botdan ro'yxatdan o'ta oladigan talabalar ro'yxatini Excel (.xlsx) orqali yuklang.</div>
+        </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-8 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-800 mb-4">Yangi ro'yxat yuklash (.xlsx)</h2>
-        <div className="flex items-center gap-4">
+      <div className="table-card" style={{ padding: '24px', marginBottom: '24px' }}>
+        <h2 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)', marginBottom: '16px' }}>Yangi ro'yxat yuklash (.xlsx)</h2>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
           <input 
             type="file" 
             accept=".xlsx"
             onChange={e => setFile(e.target.files?.[0] || null)}
-            className="block w-full text-sm text-slate-500
-              file:mr-4 file:py-2.5 file:px-4
-              file:rounded-xl file:border-0
-              file:text-sm file:font-semibold
-              file:bg-indigo-50 file:text-indigo-700
-              hover:file:bg-indigo-100 transition-colors"
+            style={{ fontSize: '14px', cursor: 'pointer' }}
           />
           <button 
-            className="btn btn-primary whitespace-nowrap" 
+            className="btn btn-primary" 
             onClick={handleUpload}
             disabled={!file || uploading}
           >
             {uploading ? 'Yuklanmoqda...' : 'Yuklash'}
           </button>
         </div>
-        {status && <div className="mt-4 text-sm font-medium">{status}</div>}
-        <p className="text-xs text-slate-400 mt-4">
+        {status && <div style={{ marginTop: '16px', fontSize: '14px', fontWeight: 500 }}>{status}</div>}
+        <p style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '16px', lineHeight: 1.5 }}>
           * Excel faylning birinchi qatori sarlavha bo'lishi kerak. ID ustuni "ID" yoki "PINFL", ism ustuni "Name" yoki "F.I.O" so'zlarini o'z ichiga olishi kerak. (Yoki avtomatik 1-ustun ID, 2-ustun ism deb qabul qilinadi).
           <br/>* Diqqat: Yangi fayl yuklash orqali avvalgi barcha ro'yxat tozalanib, faqat yangi fayldagi talabalar qoladi.
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-          <h2 className="font-semibold text-slate-800">Joriy bazadagi talabalar</h2>
-          <span className="badge badge-blue">{students.length} ta talaba</span>
+      <div className="table-card">
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f2f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ fontSize: '15px', fontWeight: 600 }}>Joriy bazadagi talabalar</h2>
+          <span className="badge badge-purple">{students.length} ta talaba</span>
         </div>
         
         {loading ? (
-          <div className="p-8 text-center text-slate-400">Yuklanmoqda...</div>
+          <div style={{ padding: '32px', textAlign: 'center', color: 'var(--muted)' }}>Yuklanmoqda...</div>
         ) : students.length === 0 ? (
-          <div className="p-8 text-center text-slate-400">Hozircha hech qanday talaba ro'yxatga olinmagan.</div>
+          <div style={{ padding: '32px', textAlign: 'center', color: 'var(--muted)' }}>Hozircha hech qanday talaba ro'yxatga olinmagan.</div>
         ) : (
-          <div className="max-h-[500px] overflow-y-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0">
+          <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
+            <table>
+              <thead style={{ position: 'sticky', top: 0, background: 'var(--card)', zIndex: 1 }}>
                 <tr>
-                  <th className="px-6 py-3 font-semibold">Talaba ID</th>
-                  <th className="px-6 py-3 font-semibold">F.I.O</th>
+                  <th>Talaba ID</th>
+                  <th>F.I.O</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {students.map((s, i) => (
-                  <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-3 font-medium text-slate-900">{s.student_id}</td>
-                    <td className="px-6 py-3 text-slate-600">{s.full_name || '-'}</td>
+                  <tr key={i}>
+                    <td style={{ fontWeight: 500 }}>{s.student_id}</td>
+                    <td style={{ color: 'var(--muted)' }}>{s.full_name || '-'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -114,6 +111,6 @@ export default function AllowedStudentsPage() {
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }
