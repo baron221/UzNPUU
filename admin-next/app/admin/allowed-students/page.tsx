@@ -135,15 +135,18 @@ export default function AllowedStudentsPage() {
         {/* List column */}
         <section>
           <div className="section-title">Joriy bazadagi talabalar ({students.length})</div>
-          <div className="table-card" style={{ margin: 0, minHeight: 400 }}>
+          <div className="table-card" style={{ margin: 0, display: 'flex', flexDirection: 'column', maxHeight: 520 }}>
             <table style={{ minWidth: '100%' }}>
-              <thead>
+              <thead style={{ position: 'sticky', top: 0, background: 'var(--card)', zIndex: 1 }}>
                 <tr>
                   <th style={{ width: 50 }}>#</th>
                   <th>Talaba ID</th>
                   <th>F.I.O</th>
                 </tr>
               </thead>
+            </table>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+            <table style={{ minWidth: '100%' }}>
               <tbody>
                 {loading ? (
                   Array(5).fill(0).map((_, i) => (
@@ -168,6 +171,7 @@ export default function AllowedStudentsPage() {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         </section>
 
