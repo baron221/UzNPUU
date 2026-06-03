@@ -482,12 +482,17 @@ async def handle_admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE)
     admin_user = update.effective_user
     
     # 3. Relay to student
+    import html
     student_tg_id = question_data['student_telegram_id']
     admin_name = admin_user.full_name or "Adminstrator"
-    relay_msg = f"✨ **Sizning savolingizga javob keldi:**\n\n❓ {question_data['question']}\n\n✅ 👤 **{admin_name} javobi:**\n{answer}"
+    relay_msg = (
+        f"✨ <b>Sizning savolingizga javob keldi:</b>\n\n"
+        f"❓ {html.escape(question_data['question'])}\n\n"
+        f"✅ 👤 <b>{html.escape(admin_name)} javobi:</b>\n{html.escape(answer)}"
+    )
     
     try:
-        await context.bot.send_message(chat_id=student_tg_id, text=relay_msg, parse_mode='Markdown')
+        await context.bot.send_message(chat_id=student_tg_id, text=relay_msg, parse_mode='HTML')
         # 4. Update DB
         db.update_question_answer_tg(question_data['id'], answer, admin_user.id, admin_user.full_name)
     except Exception as e:
