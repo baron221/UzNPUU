@@ -7,9 +7,9 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from auth import get_password_hash, verify_password
 
-load_dotenv()
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, '.env'))
+
 # Data directory should be persistent (e.g. Railway Volume)
 DATA_DIR = os.path.join(BASE_DIR, "data")
 DB_PATH = os.getenv("DB_PATH") or os.path.join(DATA_DIR, "university.db")
