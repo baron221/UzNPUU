@@ -686,15 +686,20 @@ async def api_upload_allowed_students(file: UploadFile = File(...), current_user
         name_col = -1
         
         for i, h in enumerate(headers):
-            if 'id' in h or 'pinfl' in h or 'passport' in h:
+            if 'id' in h or 'pinfl' in h or 'passport' in h or 'raqam' in h:
                 id_col = i
-            elif 'name' in h or 'ism' in h or 'f.i.o' in h or 'fio' in h:
+            elif any(w in h for w in ['name', 'ism', 'f.i.o', 'fio', 'fish', 'familiya', 'sharif']):
                 name_col = i
                 
         if id_col == -1:
             # Fallback: assume column 0 is ID and column 1 is Name
             id_col = 0
             name_col = 1
+            
+        if name_col == -1 and len(headers) > 1:
+            # If we found ID but couldn't find Name, just pick the other column if there's only 2, 
+            # or default to column 1 if ID is column 0
+            name_col = 1 if id_col == 0 else 0
             
         students_list = []
         for row in sheet.iter_rows(min_row=2, values_only=True):
