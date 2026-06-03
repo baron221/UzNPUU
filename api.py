@@ -337,8 +337,6 @@ async def update_admin_settings(request: Request, current_user: dict = Depends(g
 
 @app.get("/api/admin/faculties")
 async def get_admin_faculties(current_user: dict = Depends(get_current_admin)):
-    if current_user.get('role') != 'admin':
-        raise HTTPException(status_code=403, detail="Ushbu amalni bajarish uchun sizda yetarli huquqlar yo'q.")
     return {"faculties": db.get_all_faculties()}
 
 @app.post("/api/admin/faculties")
