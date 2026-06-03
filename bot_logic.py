@@ -207,9 +207,15 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if val == 1:
                     await query.message.reply_text("Rahmat, bahoingiz qabul qilindi! ✅", disable_notification=True)
                 else:
-                    await query.message.reply_text("Rahmat! Javob sifatini yaxshilashga yordam berganingiz uchun tashakkur. 🔄", disable_notification=True)
-            except:
-                pass
+                    kb = [[InlineKeyboardButton("👤 Adminstratorga yuborish", callback_data="ask_admin")]]
+                    await query.message.reply_text(
+                        "Rahmat! Javob sifatini yaxshilashga yordam berganingiz uchun tashakkur. 🔄\n\n"
+                        "Savolingizni administratorga yuborishni xohlaysizmi?",
+                        reply_markup=InlineKeyboardMarkup(kb),
+                        disable_notification=True
+                    )
+            except Exception as e:
+                logging.error(f"Feedback callback error: {e}")
 
     elif data.startswith("fac_"):
         raw_fid = data.replace("fac_", "")
@@ -280,6 +286,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 InlineKeyboardButton("👍 Yordam berdi", callback_data=f"fb_1_{qid}"),
                 InlineKeyboardButton("👎 Yordam bermadi", callback_data=f"fb_0_{qid}")
             ])
+            context.user_data['last_question'] = selected
             
         await query.message.edit_text(f"🤖 AI Yordamchi:\n\n{answer}", reply_markup=InlineKeyboardMarkup(kb) if kb else None)
 
@@ -415,6 +422,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 InlineKeyboardButton("👍 Yordam berdi", callback_data=f"fb_1_{qid}"),
                 InlineKeyboardButton("👎 Yordam bermadi", callback_data=f"fb_0_{qid}")
             ])
+            context.user_data['last_question'] = question
             
         await update.message.reply_text(f"🤖 AI Yordamchi:\n\n{answer}", reply_markup=InlineKeyboardMarkup(kb) if kb else None)
 
