@@ -4,13 +4,15 @@ database.py — SQLite database for users, faculties, and questions
 import sqlite3
 import os
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 from auth import get_password_hash, verify_password
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv()
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Data directory should be persistent (e.g. Railway Volume)
 DATA_DIR = os.path.join(BASE_DIR, "data")
-DB_PATH = os.path.join(DATA_DIR, "university.db")
+DB_PATH = os.getenv("DB_PATH") or os.path.join(DATA_DIR, "university.db")
 
 
 # ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -21,8 +23,9 @@ def get_now_uz():
     return now_uz.strftime("%Y-%m-%d %H:%M:%S")
 
 def get_conn():
-    if not os.path.exists(DATA_DIR):
-        os.makedirs(DATA_DIR, exist_ok=True)
+    db_dir = os.path.dirname(DB_PATH)
+    if db_dir and not os.path.exists(db_dir):
+        os.makedirs(db_dir, exist_ok=True)
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
