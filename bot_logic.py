@@ -371,20 +371,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         question = update.message.text
         user = update.message.from_user
         
-        # Auto-register/load student
+        # Ensure student is fully registered
         student = db.get_student(user.id)
-        if not student:
-            sid = context.user_data.get('student_id') or context.user_data.get('temp_student_id')
-            if not sid:
-                sid = f"GUEST_{user.id}"
-                db.register_student(user.id, sid, None)
-                student = {"student_id": sid, "faculty_id": None}
-            else:
-                db.register_student(user.id, sid, None)
-                student = {"student_id": sid, "faculty_id": None}
-
-        sid = student.get('student_id')
-        fid = context.user_data.get('faculty_id') or student.get('faculty_id')
+        sid = student.get('student_id') if student else None
+        fid = (context.user_data.get('faculty_id') or student.get('faculty_id')) if student else None
+        
+        if not student or not fid or str(sid).startswith('GUEST_'):
+            await update.message.reply_text(
+                "Iltimos, botdan foydalanish uchun avval ro'yxatdan o'ting va fakultetingizni tanlang:\n👉 /start"
+            )
+            return
         username = user.username or user.first_name or "Talaba"
 
         import state
