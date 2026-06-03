@@ -42,17 +42,6 @@ def initialize():
     data_kb = os.path.join(BASE_DIR, "data", "knowledge")
     os.makedirs(data_kb, exist_ok=True)
 
-    # Copy default files from root 'knowledge' directory to 'data/knowledge'
-    root_kb = os.path.join(BASE_DIR, "knowledge")
-    if os.path.exists(root_kb):
-        import shutil
-        for item in os.listdir(root_kb):
-            src = os.path.join(root_kb, item)
-            dst = os.path.join(data_kb, item)
-            if os.path.isfile(src) and not os.path.exists(dst):
-                shutil.copy2(src, dst)
-                print(f"Copied default knowledge file: {item}")
-
     print("Loading knowledge base...")
     state.knowledge_base = load_knowledge_base(data_kb)
     state.clients = setup_ai()
