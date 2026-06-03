@@ -274,14 +274,14 @@ def get_answer(question: str, knowledge_base: str, clients: dict, faculty_id: Op
     cleaned_question = strip_greeting(question)
     if not cleaned_question:
         # It's a pure greeting
-        return get_response("greeting", lang), [], lang, "GENERAL", "Boshqa"
+        return get_response("greeting", lang), [], lang, "GREETING", "Boshqa"
 
     # 2. Check if it's conversational thanks/bye
     q_lower = cleaned_question.lower()
     if any(w in q_lower for w in ["rahmat","tashakkur","спасибо","thanks","thank"]):
-        return get_response("thanks", lang), [], lang, "GENERAL", "Boshqa"
+        return get_response("thanks", lang), [], lang, "THANKS", "Boshqa"
     if any(w in q_lower for w in ["xayr","bye","goodbye","пока"]):
-        return get_response("bye", lang), [], lang, "GENERAL", "Boshqa"
+        return get_response("bye", lang), [], lang, "BYE", "Boshqa"
 
     if _cached_pairs is None:
         _cached_pairs = parse_qa_pairs(knowledge_base)

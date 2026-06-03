@@ -283,12 +283,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "adminstrator", "administrator", "admin", "operator", "ofisiga",
             "bog'lan", "boglan", "aloqa", "muloqot", "chat"
         ]
-        show_admin_btn_opt = (category == "UNANSWERED") or (category == "ERROR") or any(kw in answer.lower() for kw in referral_kws)
+        show_admin_btn_opt = (category == "UNANSWERED") or (category == "ERROR") or (category == "GENERAL") or any(kw in answer.lower() for kw in referral_kws)
         
         if show_admin_btn_opt:
             kb.append([InlineKeyboardButton("👤 Adminstratorga yuborish", callback_data="ask_admin")])
             context.user_data['last_question'] = selected
-        elif category != "VAGUE":
+        elif category not in ["VAGUE", "GENERAL", "ERROR", "GREETING", "THANKS", "BYE"]:
             kb.append([
                 InlineKeyboardButton("👍 Yordam berdi", callback_data=f"fb_1_{qid}"),
                 InlineKeyboardButton("👎 Yordam bermadi", callback_data=f"fb_0_{qid}")
@@ -417,7 +417,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "adminstrator", "administrator", "admin", "operator", "ofisiga",
             "bog'lan", "boglan", "aloqa", "muloqot", "chat"
         ]
-        show_admin_btn = (category == "UNANSWERED") or (category == "VAGUE") or (category == "ERROR") or is_req_admin or any(kw in answer.lower() for kw in referral_kws)
+        show_admin_btn = (category == "UNANSWERED") or (category == "VAGUE") or (category == "ERROR") or (category == "GENERAL") or is_req_admin or any(kw in answer.lower() for kw in referral_kws)
         
         kb = []
         if options:
@@ -427,7 +427,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if show_admin_btn:
             kb.append([InlineKeyboardButton("👤 Adminstratorga yuborish", callback_data="ask_admin")])
             context.user_data['last_question'] = question
-        elif category != "VAGUE" and category != "GENERAL" and category != "ERROR":
+        elif category not in ["VAGUE", "GENERAL", "ERROR", "GREETING", "THANKS", "BYE"]:
             # Add Feedback buttons
             kb.append([
                 InlineKeyboardButton("👍 Yordam berdi", callback_data=f"fb_1_{qid}"),
