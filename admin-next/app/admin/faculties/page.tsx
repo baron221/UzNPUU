@@ -52,9 +52,9 @@ export default function FacultiesPage() {
                     <td style={{ color:'var(--muted)' }}>{f.description || '—'}</td>
                     <td style={{ fontSize:12, color:'#4f46e5' }}>{f.telegram_group_name || f.telegram_group_id || '—'}</td>
                     <td><span className={`badge ${f.is_active ? 'badge-green' : 'badge-red'}`}>{f.is_active ? 'Faol' : 'Nofaol'}</span></td>
-                    <td style={{ display:'flex', gap:6 }}>
-                      <button className="btn btn-sm btn-blue" onClick={() => openEdit(f)}>Tahrir</button>
-                      <button className="btn btn-sm btn-red"  onClick={() => del(f.id)}>O&#39;chir</button>
+                    <td style={{ display:'flex', gap:8 }}>
+                      <button className="btn btn-sm btn-blue" onClick={() => openEdit(f)}>Tahrirlash</button>
+                      <button className="btn btn-sm btn-red"  onClick={() => del(f.id)}>O&#39;chirish</button>
                     </td>
                   </tr>
                 ))}

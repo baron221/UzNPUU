@@ -63,7 +63,7 @@ export default function UsersPage() {
                       </div>
                     </td>
                     <td><span className={`badge ${u.is_active ? 'badge-green' : 'badge-red'}`}>{u.is_active ? 'Faol' : 'Nofaol'}</span></td>
-                    <td><button className="btn btn-sm btn-red" onClick={async () => { if (confirm("O'chirasizmi?")) { await deleteUser(u.id); load(); } }}>O&#39;chir</button></td>
+                    <td><button className="btn btn-sm btn-red" onClick={async () => { if (confirm("O'chirasizmi?")) { await deleteUser(u.id); load(); } }}>O&#39;chirish</button></td>
                   </tr>
                 ))}
             </tbody>

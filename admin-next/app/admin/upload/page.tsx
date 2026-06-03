@@ -82,7 +82,7 @@ export default function UploadPage() {
         </div>
       </div>
 
-      <div className="grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, alignItems: 'stretch' }}>
         
         {/* Upload Column */}
         <section>
