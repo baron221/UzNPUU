@@ -192,20 +192,22 @@ def init_db():
         conn.commit()
         print("Default super admin created: admin / admin123")
 
-    # Create default faculties
-    default_faculties = [
-        ("Pedagogika fakulteti", "Pedagogika va psixologiya yo'nalishlari"),
-        ("Tabiiy fanlar fakulteti", "Matematika, fizika, kimyo yo'nalishlari"),
-        ("Ijtimoiy fanlar fakulteti", "Tarix, falsafa, huquq yo'nalishlari"),
-        ("Til va adabiyot fakulteti", "O'zbek, rus, ingliz tili yo'nalishlari"),
-        ("Axborot texnologiyalari", "Informatika va dasturlash yo'nalishlari"),
-    ]
-    for name, desc in default_faculties:
-        try:
-            c.execute("INSERT INTO faculties (name, description) VALUES (?, ?)", (name, desc))
-        except:
-            pass
-    conn.commit()
+    # Create default faculties only if the table is currently empty
+    c.execute("SELECT COUNT(*) FROM faculties")
+    if c.fetchone()[0] == 0:
+        default_faculties = [
+            ("Pedagogika fakulteti", "Pedagogika va psixologiya yo'nalishlari"),
+            ("Tabiiy fanlar fakulteti", "Matematika, fizika, kimyo yo'nalishlari"),
+            ("Ijtimoiy fanlar fakulteti", "Tarix, falsafa, huquq yo'nalishlari"),
+            ("Til va adabiyot fakulteti", "O'zbek, rus, ingliz tili yo'nalishlari"),
+            ("Axborot texnologiyalari", "Informatika va dasturlash yo'nalishlari"),
+        ]
+        for name, desc in default_faculties:
+            try:
+                c.execute("INSERT INTO faculties (name, description) VALUES (?, ?)", (name, desc))
+            except:
+                pass
+        conn.commit()
     conn.close()
     print("Database initialized!")
 
