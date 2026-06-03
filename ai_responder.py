@@ -155,29 +155,59 @@ def transcribe_audio(file_path: str, client) -> str:
         )
         return transcription.text
 
-def classify_question(question: str, client) -> tuple:
+def strip_greeting(text: str) -> str:
+    # Patterns for greetings at the beginning of the text
+    patterns = [
+        r'^(?:assalomu\s+alaykum(?:\s+va\s+rahmatullohi\s+va\s+barakatuh)?|assalomualaykum|assalom\s+alaykum|assalomalekum|assalom|salom|salam)\b[,\s!.]*',
+        r'^(?:va\s+alaykum\s+assalom|valaykum\s+assalom|vaalaykum\s+assalom|valaykumassalom)\b[,\s!.]*',
+        r'^(?:hello|hi|hey|привет|здравствуйте|добрый\s+день|доброе\s+утро|добрый\s+вечер)\b[,\s!.]*'
+    ]
+    cleaned = text.strip()
+    for pattern in patterns:
+        cleaned = re.sub(pattern, '', cleaned, flags=re.IGNORECASE)
+    return cleaned.strip()
+
+def analyze_user_query(question: str, client) -> dict:
     try:
         check = safe_completion(
             client,
             messages=[
-                {"role": "system", "content": """Classify into: GENERAL (chit-chat, greeting, general thanks, hello), VAGUE (unclear short words about university, e.g. 'contract', 'exam', 'schedule'), or UNIVERSITY (specific academic/university questions).
-Any questions mentioning university schedules, dars jadvali, imtihonlar, to'lovlar, stipendiya, dekanat, yotoqxona should be classified as UNIVERSITY or VAGUE (never GENERAL).
-Also provide a 1-word topic for the question (e.g. Imtihon, Kredit, Tolov, Yotoqxona, Boshqa).
-Format: CATEGORY|Topic"""},
+                {"role": "system", "content": """You are an advanced query analysis assistant for a Uzbek university bot.
+Analyze the user's message and output a JSON object with:
+1. "category": GENERAL (chit-chat, greeting, general thanks), VAGUE (unclear short words about university, e.g. 'contract', 'exam'), or UNIVERSITY (specific academic/university questions).
+2. "topic": A 1-word topic (e.g. Imtihon, Kredit, Tolov, Yotoqxona, Boshqa).
+3. "search_query": The core academic search query in UZBEK, removing conversational fluff, greetings, personal intros ("men 1-kursman", etc.). If it's already a simple search term, keep it.
+
+Example 1: "Assalomu alaykum, men 1-kurs talabasiman, dars jadvalini qayerdan topsam bo'ladi?"
+Output: {"category": "UNIVERSITY", "topic": "Jadval", "search_query": "dars jadvali"}
+
+Example 2: "kontrakt"
+Output: {"category": "VAGUE", "topic": "Tolov", "search_query": "kontrakt"}
+
+Example 3: "rahmat kattakon"
+Output: {"category": "GENERAL", "topic": "Boshqa", "search_query": "rahmat"}
+
+Respond ONLY with the JSON object."""},
                 {"role": "user", "content": question}
             ],
-            max_tokens=20,
+            max_tokens=150,
+            response_format={"type": "json_object"}
         )
-        result = check.choices[0].message.content.strip()
-        parts = result.split('|')
-        cat = parts[0].strip().upper()
-        topic = parts[1].strip().capitalize() if len(parts) > 1 else "Boshqa"
-        
-        if "GENERAL" in cat: return "GENERAL", topic
-        if "VAGUE" in cat: return "VAGUE", topic
-        return "UNIVERSITY", topic
-    except:
-        return "UNIVERSITY", "Boshqa"
+        import json
+        res = json.loads(check.choices[0].message.content.strip())
+        return {
+            "category": res.get("category", "UNIVERSITY").strip().upper(),
+            "topic": res.get("topic", "Boshqa").strip().capitalize(),
+            "search_query": res.get("search_query", question).strip()
+        }
+    except Exception as e:
+        logging.error(f"Error in analyze_user_query: {e}")
+        # Fallback
+        return {
+            "category": "UNIVERSITY",
+            "topic": "Boshqa",
+            "search_query": question
+        }
 
 def clean_label(text: str) -> str:
     """Removes 'Savol:', 'Question:', 'Вопрос:', leading numbers, and dots."""
@@ -231,54 +261,40 @@ def get_answer(question: str, knowledge_base: str, clients: dict, faculty_id: Op
     # Detect language
     lang = detect_lang(question)
 
-    # NEW: Cross-lingual search support
-    # If the question is not in Uzbek, create an internal Uzbek translation for search purposes
-    search_query = question
-    if lang != 'uz' and len(question.split()) > 1:
-        try:
-            translation = safe_completion(
-                client,
-                messages=[
-                    {"role": "system", "content": "Translate the user question to UZBEK for internal university database search. Return ONLY the translation, no extra text."},
-                    {"role": "user", "content": question}
-                ],
-                max_tokens=256
-            )
-            search_query = translation.choices[0].message.content.strip()
-            logging.info(f"[CROSS-LINGUAL] Translated '{question[:30]}' to '{search_query[:30]}'")
-        except Exception as e:
-            logging.error(f"[CROSS-LINGUAL-ERR] {e}")
-            pass
+    # 1. Clean greeting prefixes from the question
+    cleaned_question = strip_greeting(question)
+    if not cleaned_question:
+        # It's a pure greeting
+        return get_response("greeting", lang), [], lang, "GENERAL", "Boshqa"
+
+    # 2. Check if it's conversational thanks/bye
+    q_lower = cleaned_question.lower()
+    if any(w in q_lower for w in ["rahmat","tashakkur","спасибо","thanks","thank"]):
+        return get_response("thanks", lang), [], lang, "GENERAL", "Boshqa"
+    if any(w in q_lower for w in ["xayr","bye","goodbye","пока"]):
+        return get_response("bye", lang), [], lang, "GENERAL", "Boshqa"
 
     if _cached_pairs is None:
         _cached_pairs = parse_qa_pairs(knowledge_base)
 
     # Fetch DB FAQ items for CURRENT faculty (plus general if needed)
     db_items = db.get_faq_items(faculty_id)
-    # If student is in a specific faculty, also get general FAQ items (where faculty_id is NULL)
     if faculty_id:
         general_items = db.get_faq_items(None)
-        # Filter general_items to only those with faculty_id IS NULL 
-        # (db.get_faq_items(None) currently returns all active FAQ items, let's refine this if needed)
-        # For now, let's just use what we get.
         db_items.extend([i for i in general_items if i.get('faculty_id') is None])
 
     # Combine document pairs with dynamic DB pairs
     all_pairs = _cached_pairs + [{"question": i['question'], "answer": i['answer']} for i in db_items]
 
     # ── EXACT MATCH PRE-CHECK (Option button tapped) ──────────────────────────
-    # 1. Exact Match Check (to break infinite option loops)
     clean_q_exact = question.strip().lower()
     for pair in all_pairs:
-        # Compare against the cleaned label to match the generated options
         if clean_q_exact == clean_label(pair['question']).strip().lower():
             logging.info(f"[EXACT-MATCH][{lang}] {question[:50]}")
             return pair['answer'], [], lang, "UNIVERSITY", "Boshqa"
 
     # ── SHORT QUESTION PRE-CHECK (bypass Groq for speed + accuracy) ─────────────
-    # If ≤3 words or matches known university keywords → treat as VAGUE first.
-    # This prevents Groq from mis-classifying Uzbek/Russian single keywords.
-    q_words = question.strip().split()
+    q_words = cleaned_question.strip().split()
     VAGUE_KEYWORDS = {
         # Uzbek
         "to'lov", "tolov", "imtihon", "jadval", "stipendiya", "grant", "hemis",
@@ -296,30 +312,28 @@ def get_answer(question: str, knowledge_base: str, clients: dict, faculty_id: Op
     for kw in VAGUE_KEYWORDS:
         vague_stems.update(naive_uz_stem(kw))
     
-    q_stems = set(naive_uz_stem(question))
+    q_stems = set(naive_uz_stem(cleaned_question))
     is_short = len(q_words) <= 1
     has_vague_kw = bool(q_stems & vague_stems)
 
-    # Only trigger options if it's a single word OR a 2-word vague phrase
+    search_query = cleaned_question
+
     if is_short or (len(q_words) <= 2 and has_vague_kw):
         options = generate_options(search_query, all_pairs)
         if options:
             logging.info(f"[VAGUE-FAST][{lang}] '{question[:40]}' → {len(options)} options")
             return get_response("clarify", lang), options, lang, "VAGUE", "Boshqa"
-        # No options found → fall through to full Groq classification
 
-    category, topic = classify_question(question, client)
-    logging.info(f"[{category}][{lang}][FID:{faculty_id}] {question[:50]} (Topic: {topic})")
+    # ── LLM QUERY ANALYSIS (For longer/conversational queries) ──────────────────
+    analysis = analyze_user_query(cleaned_question, client)
+    category = analysis["category"]
+    topic = analysis["topic"]
+    search_query = analysis["search_query"]
+
+    logging.info(f"[QUERY-ANALYSIS] Original: '{question[:40]}' | Cleaned: '{cleaned_question[:40]}' -> Category: {category}, Topic: {topic}, Search Query: '{search_query[:40]}'")
 
     # ── GENERAL / CONVERSATIONAL ──────────────────────────────────────────────
     if category == "GENERAL":
-        q = question.lower().strip()
-        if any(w in q for w in ["assalomu","salom","hello","hi","hey","привет","здравствуйте"]):
-            return get_response("greeting", lang), [], lang, "GENERAL", topic
-        if any(w in q for w in ["rahmat","tashakkur","спасибо","thanks","thank"]):
-            return get_response("thanks", lang), [], lang, "GENERAL", topic
-        if any(w in q for w in ["xayr","bye","goodbye","пока"]):
-            return get_response("bye", lang), [], lang, "GENERAL", topic
         try:
             completion = safe_completion(
                 client,
@@ -343,10 +357,8 @@ If they want to speak to an admin, tell them you can help with most info from do
             return get_response("clarify", lang), options, lang, "VAGUE", topic
         category = "UNIVERSITY"
 
-
     # ── UNIVERSITY ────────────────────────────────────────────────────────────
     if category == "UNIVERSITY":
-        # 3. AI Search with context
         context = find_relevant_pairs(search_query, all_pairs, client)
         if not context:
             logging.warning(f"[NO-CONTEXT] {question[:50]}")
@@ -356,10 +368,8 @@ If they want to speak to an admin, tell them you can help with most info from do
         relevant_context = context
 
         if not relevant_context.strip():
-            # Use standardized polite response when no documents are matched
             return get_response("not_found", lang), [], lang, "UNANSWERED", topic
 
-        # Check if user asked in Cyrillic Uzbek specifically
         has_uz_cyrillic = lang == 'uz' and any('\u0400' <= c <= '\u04ff' for c in question)
         
         if has_uz_cyrillic:
@@ -391,12 +401,13 @@ RULES:
             
             ans = completion.choices[0].message.content.strip()
             
-            # Strict fallback check
             if "NOT_FOUND" in ans.upper() or len(ans) < 5:
                 return get_response("not_found", lang), [], lang, "UNANSWERED", topic
                 
             return ans, [], lang, "UNIVERSITY", topic
-        except:
+        except Exception as e:
+            import traceback
+            logging.error(f"Error in UNIVERSITY answer generation: {e}\n{traceback.format_exc()}")
             return get_response("error", lang), [], lang, "ERROR", "Boshqa"
 
     return get_response("error", lang), [], lang, "ERROR", "Boshqa"
