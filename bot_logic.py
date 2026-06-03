@@ -355,11 +355,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         question = update.message.text
-        if question.strip().lower() in ["admin", "adminga yozish", "operator"]:
-            kb = [[InlineKeyboardButton("?? Adminstratorga yuborish", callback_data="ask_admin")]]
-            context.user_data["last_question"] = "Adminstrator bilan bog'lanish so'rovi"
-            await update.message.reply_text("Siz bevosita tizim ma'muriga (adminga) xabar yuborishingiz mumkin. Buning uchun quyidagi tugmani bosing va xabaringizni yozing:", reply_markup=InlineKeyboardMarkup(kb))
-            return
         user = update.message.from_user
         
         # Auto-register/load student
@@ -404,7 +399,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         is_req_admin = any(kw in question_lower for kw in admin_req_kws)
 
         referral_kws = ["topilmadi", "not found", "murojaat qiling", "mas'ul xodimi", "adminstrator", "ofisiga"]
-        show_admin_btn = (category == "UNANSWERED") or is_req_admin or any(kw in answer.lower() for kw in referral_kws)
+        show_admin_btn = (category == "UNANSWERED") or (category == "VAGUE") or is_req_admin or any(kw in answer.lower() for kw in referral_kws)
         
         kb = []
         if options:
