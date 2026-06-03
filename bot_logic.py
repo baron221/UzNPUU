@@ -278,7 +278,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data['temp_options'] = options
             kb = [[InlineKeyboardButton(o[:57] + "..." if len(o) > 60 else o, callback_data=f"opt_idx_{i}")] for i, o in enumerate(options)]
         
-        if category == "UNANSWERED" or "topilmadi" in answer.lower():
+        if category == "UNANSWERED" or category == "ERROR" or "topilmadi" in answer.lower():
             kb.append([InlineKeyboardButton("👤 Adminstratorga yuborish", callback_data="ask_admin")])
             context.user_data['last_question'] = selected
         elif category != "VAGUE":
@@ -406,7 +406,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         is_req_admin = any(kw in question_lower for kw in admin_req_kws)
 
         referral_kws = ["topilmadi", "not found", "murojaat qiling", "mas'ul xodimi", "adminstrator", "ofisiga"]
-        show_admin_btn = (category == "UNANSWERED") or (category == "VAGUE") or is_req_admin or any(kw in answer.lower() for kw in referral_kws)
+        show_admin_btn = (category == "UNANSWERED") or (category == "VAGUE") or (category == "ERROR") or is_req_admin or any(kw in answer.lower() for kw in referral_kws)
         
         kb = []
         if options:

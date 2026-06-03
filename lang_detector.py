@@ -81,9 +81,9 @@ RESPONSES = {
         "en": "I'm doing great, thanks! 😊 How can I help you?"
     },
     "error": {
-        "uz": "Xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring.",
-        "ru": "Произошла ошибка. Пожалуйста, попробуйте снова.",
-        "en": "An error occurred. Please try again."
+        "uz": "Kechirasiz, tizimda vaqtinchalik texnik cheklov yuz berdi. Savolingizni administratorga yuborishingiz mumkin:",
+        "ru": "Извините, произошел временный технический сбой. Вы можете отправить свой вопрос администратору:",
+        "en": "Sorry, a temporary technical limitation occurred. You can forward your question to the administrator:"
     }
 }
 
