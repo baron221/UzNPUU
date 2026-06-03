@@ -12,14 +12,6 @@ export default function QuestionsPage() {
   const [loading, setLoading]   = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-    }
-  }, [ans]);
 
   async function load(showSkeleton = true) {
     if (showSkeleton) setLoading(true);
@@ -283,7 +275,10 @@ export default function QuestionsPage() {
                               ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                               : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4l3 3"></path></svg>
                             }
-                            {(q as any).answered_at ? 'Admin' : 'AI Javobi'}
+                            { (q as any).answered_at 
+                              ? (String((q as any).answered_by || 'Admin').replace('TG:', ''))
+                              : 'AI Javobi'
+                            }
                           </span>
                           &nbsp;&bull; Javob berildi
                         </div>
@@ -296,16 +291,19 @@ export default function QuestionsPage() {
               </div>
 
               <div className="ac-input-area">
-                <textarea 
-                  ref={textareaRef}
-                  className="ac-textarea" 
-                  rows={1}
-                  style={{ minHeight: '52px', maxHeight: '200px', overflowY: 'auto' }}
-                  placeholder="Talabaga javob yozish (Yuborish uchun Enter)..."
-                  value={ans}
-                  onChange={e => setAns(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                />
+                  <textarea 
+                    className="ac-textarea" 
+                    rows={1}
+                    style={{ minHeight: '52px', maxHeight: '200px', overflowY: 'auto', resize: 'none' }}
+                    placeholder="Talabaga javob yozish (Yuborish uchun Enter)..."
+                    value={ans}
+                    onChange={e => {
+                      setAns(e.target.value);
+                      e.target.style.height = 'auto';
+                      e.target.style.height = e.target.scrollHeight + 'px';
+                    }}
+                    onKeyDown={handleKeyDown}
+                  />
                 <div className="ac-input-actions">
                   <span style={{ fontSize: 13, color: '#94a3b8' }}>
                     Javobingiz Telegram orqali yuboriladi.
