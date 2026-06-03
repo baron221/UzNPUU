@@ -22,6 +22,7 @@ const NAV = [
   { href: '/admin/questions',  icon: 'chat',     label: 'Chat' },
   { href: '/admin/faculties',  icon: 'building', label: 'Fakultetlar' },
   { href: '/admin/users',      icon: 'users',    label: 'Xodimlar' },
+  { href: '/admin/allowed-students', icon: 'users', label: 'Talabalar Bazasi' },
   { href: '/admin/faq',        icon: 'help',     label: 'FAQ' },
   { href: '/admin/upload',     icon: 'upload',   label: 'Hujjat Yuklash' },
   { href: '/admin/cards',      icon: 'grid',     label: 'Cards' },

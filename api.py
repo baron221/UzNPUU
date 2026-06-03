@@ -654,3 +654,67 @@ async def delete_card(cid: int, current_user: dict = Depends(get_current_admin))
 @app.get("/api/admin/analytics")
 async def get_analytics(current_user: dict = Depends(get_current_admin)):
     return db.get_analytics_stats()
+
+# ─── ALLOWED STUDENTS API ───────────────────────────────────────────────────────
+import openpyxl
+import io
+
+@app.get("/api/admin/allowed-students")
+async def api_get_allowed_students(current_user: dict = Depends(get_current_admin)):
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Faqat adminlar ruxsat etilgan talabalarni ko'ra oladi")
+    students = db.get_allowed_students()
+    return {"students": students}
+
+@app.post("/api/admin/allowed-students/upload")
+async def api_upload_allowed_students(file: UploadFile = File(...), current_user: dict = Depends(get_current_admin)):
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Faqat adminlar fayl yuklay oladi")
+    
+    if not file.filename.endswith('.xlsx'):
+        raise HTTPException(status_code=400, detail="Faqat .xlsx fayllar qabul qilinadi")
+        
+    try:
+        contents = await file.read()
+        wb = openpyxl.load_workbook(io.BytesIO(contents), data_only=True)
+        sheet = wb.active
+        
+        # Find column indices
+        headers = [str(c.value).strip().lower() if c.value else '' for c in sheet[1]]
+        
+        id_col = -1
+        name_col = -1
+        
+        for i, h in enumerate(headers):
+            if 'id' in h or 'pinfl' in h or 'passport' in h:
+                id_col = i
+            elif 'name' in h or 'ism' in h or 'f.i.o' in h or 'fio' in h:
+                name_col = i
+                
+        if id_col == -1:
+            # Fallback: assume column 0 is ID and column 1 is Name
+            id_col = 0
+            name_col = 1
+            
+        students_list = []
+        for row in sheet.iter_rows(min_row=2, values_only=True):
+            if not row or len(row) <= id_col: continue
+            sid = str(row[id_col]).strip() if row[id_col] else ''
+            if not sid or sid == 'None': continue
+            
+            sname = ''
+            if name_col != -1 and len(row) > name_col:
+                sname = str(row[name_col]).strip() if row[name_col] else ''
+                if sname == 'None': sname = ''
+                
+            students_list.append({'student_id': sid, 'full_name': sname})
+            
+        if not students_list:
+            return {"ok": False, "error": "Fayldan hech qanday talaba topilmadi"}
+            
+        db.clear_and_insert_allowed_students(students_list)
+        return {"ok": True, "count": len(students_list)}
+        
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+

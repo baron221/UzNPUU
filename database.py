@@ -190,6 +190,12 @@ def init_db():
         value TEXT
     )''')
 
+    c.execute('''CREATE TABLE IF NOT EXISTS allowed_students (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        student_id TEXT UNIQUE NOT NULL,
+        full_name TEXT
+    )''')
+
     conn.commit()
 
     # Create default super admin if not exists
@@ -722,3 +728,28 @@ def get_analytics_stats():
 if __name__ == "__main__":
     init_db()
     print("Database ready.")
+
+# ─── ALLOWED STUDENTS ──────────────────────────────────────────────────────────
+def get_allowed_students():
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT id, student_id, full_name FROM allowed_students ORDER BY id DESC")
+    rows = cur.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def clear_and_insert_allowed_students(students_list):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM allowed_students")
+    for s in students_list:
+        cur.execute("INSERT OR REPLACE INTO allowed_students (student_id, full_name) VALUES (?, ?)", (s['student_id'], s['full_name']))
+    conn.commit()
+    conn.close()
+
+def is_student_allowed(student_id):
+    conn = get_conn()
+    cur = conn.cursor()
+    row = cur.execute("SELECT * FROM allowed_students WHERE student_id=?", (student_id,)).fetchone()
+    conn.close()
+    return dict(row) if row else None

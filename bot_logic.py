@@ -102,9 +102,25 @@ async def start_reset_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def receive_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
-    if not re.match(r'^\d{6}$', text):
-        await update.message.reply_text("❌ Xato! Iltimos, aynan **6 ta raqamdan** iborat ID kiriting:")
+    
+    allowed_student = db.is_student_allowed(text)
+    
+    if not allowed_student:
+        if not re.match(r'^\d+$', text):
+            await update.message.reply_text("❌ Xato! Iltimos, faqat raqamlardan iborat ID kiriting:")
+            return REGISTER_ID
+            
+        await update.message.reply_text(
+            "❌ Kechirasiz, sizning ID raqamingiz tizimda topilmadi.\n"
+            "Ruxsat etilgan talabalar ro'yxatida yo'qsiz. Iltimos, ma'muriyatga murojaat qiling."
+        )
         return REGISTER_ID
+    
+    full_name = allowed_student.get('full_name') or ''
+    welcome_text = f"✅ ID qabul qilindi: {text}"
+    if full_name:
+        welcome_text += f"\nSizning ismingiz: {full_name}"
+    welcome_text += "\n\nEndi, fakultetingizni tanlang:"
     
     context.user_data['temp_student_id'] = text
     faculties = [f for f in db.get_all_faculties() if f['is_active']]
@@ -112,7 +128,7 @@ async def receive_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton(f['name'], callback_data=f"reg_fac_{f['id']}")] for f in faculties]
     
     await update.message.reply_text(
-        f"✅ ID qabul qilindi: {text}\n\nEndi, fakultetingizni tanlang:",
+        welcome_text,
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
     return REGISTER_FACULTY
