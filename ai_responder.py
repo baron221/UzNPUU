@@ -278,9 +278,10 @@ def get_answer(question: str, knowledge_base: str, clients: dict, faculty_id: Op
 
     # 2. Check if it's conversational thanks/bye
     q_lower = cleaned_question.lower()
-    if any(w in q_lower for w in ["rahmat","tashakkur","спасибо","thanks","thank"]):
+    words = q_lower.split()
+    if len(words) <= 4 and any(w in q_lower for w in ["rahmat","tashakkur","спасибо","thanks","thank"]):
         return get_response("thanks", lang), [], lang, "THANKS", "Boshqa"
-    if any(w in q_lower for w in ["xayr","bye","goodbye","пока"]):
+    if len(words) <= 4 and any(w in q_lower for w in ["xayr","bye","goodbye","пока"]):
         return get_response("bye", lang), [], lang, "BYE", "Boshqa"
 
     if _cached_pairs is None:
