@@ -11,7 +11,11 @@ function headers(extra: HeadersInit = {}): HeadersInit {
 }
 
 async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, { ...init, headers: headers(init.headers as HeadersInit) });
+  const res = await fetch(`${BASE}${path}`, { 
+    ...init, 
+    cache: 'no-store',
+    headers: headers(init.headers as HeadersInit) 
+  });
   if (res.status === 401) {
     localStorage.removeItem('admin_token');
     window.location.href = '/';
