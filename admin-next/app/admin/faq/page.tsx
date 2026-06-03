@@ -1,11 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { getFAQ, createFAQ, deleteFAQ, getFaculties, type FAQItem, type Faculty } from '@/lib/api';
+import { getFAQ, createFAQ, deleteFAQ, updateFAQ, getFaculties, type FAQItem, type Faculty } from '@/lib/api';
 
 export default function FAQPage() {
   const [items, setItems]       = useState<FAQItem[]>([]);
   const [faculties, setFaculties] = useState<Faculty[]>([]);
   const [modal, setModal]       = useState(false);
+  const [editId, setEditId]     = useState<number | null>(null);
   const [form, setForm]         = useState({ faculty_id: '', question: '', answer: '' });
   const [loading, setLoading]   = useState(true);
 
@@ -18,8 +19,13 @@ export default function FAQPage() {
 
   async function add() {
     if (!form.question || !form.answer) { alert("Savol va javob kiritish shart!"); return; }
-    await createFAQ({ ...form, faculty_id: form.faculty_id ? Number(form.faculty_id) : undefined });
+    if (editId) {
+      await updateFAQ(editId, { ...form, faculty_id: form.faculty_id ? Number(form.faculty_id) : undefined });
+    } else {
+      await createFAQ({ ...form, faculty_id: form.faculty_id ? Number(form.faculty_id) : undefined });
+    }
     setForm({ faculty_id: '', question: '', answer: '' });
+    setEditId(null);
     setModal(false);
     load();
   }
@@ -27,8 +33,8 @@ export default function FAQPage() {
   return (
     <>
       <div className="page-header">
-        <div><div className="page-title">FAQ Boshqaruv</div><div className="page-sub">Savol-javob qo&#39;shish</div></div>
-        <button className="btn btn-primary" onClick={() => setModal(true)}>+ Yangi savol</button>
+        <div><div className="page-title">FAQ Boshqaruv</div><div className="page-sub">Savol-javob qo&#39;shish va tahrirlash</div></div>
+        <button className="btn btn-primary" onClick={() => { setEditId(null); setForm({ faculty_id: '', question: '', answer: '' }); setModal(true); }}>+ Yangi savol</button>
       </div>
 
       {loading ? (
@@ -46,7 +52,10 @@ export default function FAQPage() {
                     <td><span className="badge badge-purple">{f.faculty_name || 'Umumiy'}</span></td>
                     <td style={{ fontWeight:500 }}>{f.question}</td>
                     <td style={{ color:'var(--muted)', maxWidth:260 }}>{f.answer.slice(0, 80)}{f.answer.length > 80 ? '...' : ''}</td>
-                    <td><button className="btn btn-sm btn-red" onClick={async () => { if (confirm("O'chirasizmi?")) { await deleteFAQ(f.id); load(); } }}>O&#39;chir</button></td>
+                    <td>
+                      <button className="btn btn-sm btn-primary" style={{ marginRight: '8px' }} onClick={() => { setEditId(f.id); setForm({ faculty_id: String(f.faculty_id || ''), question: f.question, answer: f.answer }); setModal(true); }}>Tahrirlash</button>
+                      <button className="btn btn-sm btn-red" onClick={async () => { if (confirm("O'chirasizmi?")) { await deleteFAQ(f.id); load(); } }}>O&#39;chir</button>
+                    </td>
                   </tr>
                 ))}
             </tbody>
@@ -57,7 +66,7 @@ export default function FAQPage() {
       {modal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setModal(false)}>
           <div className="modal">
-            <div className="modal-title">Yangi savol-javob qo&#39;shish</div>
+            <div className="modal-title">{editId ? "Savol-javobni tahrirlash" : "Yangi savol-javob qo'shish"}</div>
             <div className="form-row">
               <label className="form-label">Fakultet</label>
               <select className="form-inp" value={form.faculty_id} onChange={e => setForm(p => ({ ...p, faculty_id: e.target.value }))}>

@@ -73,6 +73,8 @@ export const deleteUser = (id: number) =>
 export const getFAQ = () => req<{ items: FAQItem[] }>('/api/admin/faq');
 export const createFAQ = (data: Partial<FAQItem>) =>
   req<{ ok: boolean }>('/api/admin/faq', { method: 'POST', body: JSON.stringify(data) });
+export const updateFAQ = (id: number, data: Partial<FAQItem>) =>
+  req<{ ok: boolean }>(`/api/admin/faq/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteFAQ = (id: number) =>
   req<{ ok: boolean }>(`/api/admin/faq/${id}`, { method: 'DELETE' });
 

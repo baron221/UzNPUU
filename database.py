@@ -492,6 +492,15 @@ def delete_faq_item(item_id):
     conn.commit()
     conn.close()
 
+def update_faq_item(item_id, faculty_id, question, answer):
+    conn = get_conn()
+    conn.execute(
+        "UPDATE faq_items SET faculty_id=?, question=?, answer=? WHERE id=?",
+        (faculty_id, question, answer, item_id)
+    )
+    conn.commit()
+    conn.close()
+
 
 # ── SERVICE CARDS ─────────────────────────────────────────────────────────────
 def get_service_cards(only_active=True, faculty_id=None):

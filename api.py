@@ -517,6 +517,16 @@ async def delete_faq(iid: int, current_user: dict = Depends(get_current_admin)):
     db.delete_faq_item(iid)
     return {"ok": True}
 
+@app.put("/api/admin/faq/{iid}")
+async def update_faq(iid: int, request: Request, current_user: dict = Depends(get_current_admin)):
+    check_permission(current_user, 'faq')
+    data = await request.json()
+    faculty_id = data.get('faculty_id') or None
+    if current_user.get('role') not in ('admin', 'superadmin') and current_user.get('faculty_id'):
+        faculty_id = current_user.get('faculty_id')
+    db.update_faq_item(iid, faculty_id, data.get('question',''), data.get('answer',''))
+    return {"ok": True}
+
 @app.post("/api/upload")
 async def upload_file(file: UploadFile = File(...), current_user: dict = Depends(get_current_admin)):
     check_permission(current_user, 'upload')
