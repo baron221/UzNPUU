@@ -14,3 +14,4 @@ python-multipart
 aiosqlite
 chromadb
 google-generativeai
+pysqlite3-binary

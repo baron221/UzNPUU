@@ -1,6 +1,6 @@
 import re
 
-filepath = "/home/opc/npuu-bot/api.py"
+filepath = "api.py"
 with open(filepath, "r", encoding="utf-8") as f:
     code = f.read()
 

@@ -1,4 +1,4 @@
-filepath = '/home/opc/npuu-bot/database.py'
+filepath = 'database.py'
 with open(filepath, 'r', encoding='utf-8') as f:
     code = f.read()
 
