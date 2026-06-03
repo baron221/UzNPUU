@@ -160,7 +160,8 @@ def classify_question(question: str, client) -> tuple:
         check = safe_completion(
             client,
             messages=[
-                {"role": "system", "content": """Classify into: GENERAL, VAGUE, or UNIVERSITY.
+                {"role": "system", "content": """Classify into: GENERAL (chit-chat, greeting, general thanks, hello), VAGUE (unclear short words about university, e.g. 'contract', 'exam', 'schedule'), or UNIVERSITY (specific academic/university questions).
+Any questions mentioning university schedules, dars jadvali, imtihonlar, to'lovlar, stipendiya, dekanat, yotoqxona should be classified as UNIVERSITY or VAGUE (never GENERAL).
 Also provide a 1-word topic for the question (e.g. Imtihon, Kredit, Tolov, Yotoqxona, Boshqa).
 Format: CATEGORY|Topic"""},
                 {"role": "user", "content": question}
@@ -291,9 +292,13 @@ def get_answer(question: str, knowledge_base: str, clients: dict, faculty_id: Op
         "payment", "schedule", "scholarship", "contract", "diploma", "dormitory",
         "library", "faculty", "exam",
     }
-    q_lower_words = set(w.lower().strip(".,!?:;\"'") for w in q_words)
+    vague_stems = set()
+    for kw in VAGUE_KEYWORDS:
+        vague_stems.update(naive_uz_stem(kw))
+    
+    q_stems = set(naive_uz_stem(question))
     is_short = len(q_words) <= 1
-    has_vague_kw = bool(q_lower_words & VAGUE_KEYWORDS)
+    has_vague_kw = bool(q_stems & vague_stems)
 
     # Only trigger options if it's a single word OR a 2-word vague phrase
     if is_short or (len(q_words) <= 2 and has_vague_kw):
