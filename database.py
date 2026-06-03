@@ -98,6 +98,12 @@ def init_db():
         conn.commit()
     except Exception: pass
 
+    # 5. Add permissions to users
+    try:
+        c.execute("ALTER TABLE users ADD COLUMN permissions TEXT")
+        conn.commit()
+    except Exception: pass
+
     # Users table (staff/faculty members who answer questions)
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -109,6 +115,7 @@ def init_db():
         telegram_id TEXT,
         is_active INTEGER DEFAULT 1,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        permissions TEXT,
         FOREIGN KEY (faculty_id) REFERENCES faculties(id)
     )''')
 
@@ -281,12 +288,12 @@ def get_user(user_id):
     conn.close()
     return dict(row) if row else None
 
-def create_user(phone, password, full_name, faculty_id, role='staff'):
+def create_user(phone, password, full_name, faculty_id, role='staff', permissions=''):
     conn = get_conn()
     try:
         conn.execute(
-            "INSERT INTO users (phone, password_hash, full_name, faculty_id, role) VALUES (?,?,?,?,?)",
-            (phone, get_password_hash(password), full_name, faculty_id, role)
+            "INSERT INTO users (phone, password_hash, full_name, faculty_id, role, permissions) VALUES (?,?,?,?,?,?)",
+            (phone, get_password_hash(password), full_name, faculty_id, role, permissions)
         )
         conn.commit()
         return True, "Foydalanuvchi yaratildi"

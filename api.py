@@ -40,6 +40,14 @@ STATIC_DIR = pathlib.Path(__file__).parent / "static"
 STATIC_DIR.mkdir(exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    from fastapi.responses import FileResponse
+    path = os.path.join(os.path.dirname(__file__), "static", "bot-icon.png")
+    if os.path.exists(path):
+        return FileResponse(path)
+    raise HTTPException(status_code=404)
+
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
@@ -60,6 +68,21 @@ def get_current_admin(token: str = Depends(oauth2_scheme)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     return payload
+
+def check_permission(current_user: dict, required_permission: str):
+    role = current_user.get("role")
+    if role == "admin":
+        return True
+    
+    perms = current_user.get("permissions") or ""
+    perms_list = [p.strip().lower() for p in perms.split(",") if p.strip()]
+    if required_permission.lower() in perms_list:
+        return True
+        
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Sizda ushbu amalni bajarish uchun yetarli huquqlar yo'q."
+    )
 
 # ── Static Pages ──────────────────────────────────────────────────────────────
 
@@ -262,10 +285,25 @@ async def admin_auth(request: Request):
     data = await request.json()
     username = data.get('username', '')
     password = data.get('password', '')
+    
+    # Try Super Admin login
     admin_user = db.verify_admin(username, password)
     if admin_user:
-        access_token = auth.create_access_token(data={"sub": username, "role": "admin"})
+        access_token = auth.create_access_token(data={"sub": username, "role": "admin", "permissions": "all"})
         return {"ok": True, "token": access_token}
+        
+    # Try Staff User login (username input is user's phone)
+    user = db.verify_user(username, password)
+    if user:
+        access_token = auth.create_access_token(data={
+            "sub": user['phone'],
+            "role": user['role'],
+            "faculty_id": user['faculty_id'],
+            "user_id": user['id'],
+            "permissions": user.get('permissions') or ""
+        })
+        return {"ok": True, "token": access_token}
+        
     return {"ok": False, "error": "Invalid credentials"}
 
 # ── Protected Admin API ───────────────────────────────────────────────────────
@@ -275,6 +313,8 @@ async def get_admin_stats(current_user: dict = Depends(get_current_admin)):
 
 @app.get("/api/admin/settings")
 async def get_admin_settings(current_user: dict = Depends(get_current_admin)):
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Ushbu amalni bajarish uchun sizda yetarli huquqlar yo'q.")
     return {
         "bot_start_time": db.get_setting("bot_start_time", "09:00"),
         "bot_end_time": db.get_setting("bot_end_time", "18:00"),
@@ -286,6 +326,8 @@ async def get_admin_settings(current_user: dict = Depends(get_current_admin)):
 
 @app.post("/api/admin/settings")
 async def update_admin_settings(request: Request, current_user: dict = Depends(get_current_admin)):
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Ushbu amalni bajarish uchun sizda yetarli huquqlar yo'q.")
     data = await request.json()
     allowed_keys = ["bot_start_time", "bot_end_time", "bot_work_days", "bot_offline_message", "rate_limit_requests", "rate_limit_window"]
     for key in allowed_keys:
@@ -295,10 +337,14 @@ async def update_admin_settings(request: Request, current_user: dict = Depends(g
 
 @app.get("/api/admin/faculties")
 async def get_admin_faculties(current_user: dict = Depends(get_current_admin)):
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Ushbu amalni bajarish uchun sizda yetarli huquqlar yo'q.")
     return {"faculties": db.get_all_faculties()}
 
 @app.post("/api/admin/faculties")
 async def create_faculty(request: Request, current_user: dict = Depends(get_current_admin)):
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Ushbu amalni bajarish uchun sizda yetarli huquqlar yo'q.")
     data = await request.json()
     ok, msg = db.create_faculty(data.get('name',''), data.get('description',''),
                                 data.get('telegram_group_id','') or data.get('group_id',''), 
@@ -307,6 +353,8 @@ async def create_faculty(request: Request, current_user: dict = Depends(get_curr
 
 @app.put("/api/admin/faculties/{fid}")
 async def update_faculty(fid: int, request: Request, current_user: dict = Depends(get_current_admin)):
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Ushbu amalni bajarish uchun sizda yetarli huquqlar yo'q.")
     data = await request.json()
     if data.get('update_group_only'):
         faculty = db.get_faculty(fid)
@@ -322,30 +370,43 @@ async def update_faculty(fid: int, request: Request, current_user: dict = Depend
 
 @app.delete("/api/admin/faculties/{fid}")
 async def delete_faculty(fid: int, current_user: dict = Depends(get_current_admin)):
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Ushbu amalni bajarish uchun sizda yetarli huquqlar yo'q.")
     db.delete_faculty(fid)
     return {"ok": True}
 
 @app.get("/api/admin/users")
 async def get_admin_users(current_user: dict = Depends(get_current_admin)):
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Ushbu amalni bajarish uchun sizda yetarli huquqlar yo'q.")
     return {"users": db.get_all_users()}
 
 @app.post("/api/admin/users")
 async def create_user(request: Request, current_user: dict = Depends(get_current_admin)):
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Ushbu amalni bajarish uchun sizda yetarli huquqlar yo'q.")
     data = await request.json()
+    permissions = data.get('permissions', '')
+    if isinstance(permissions, list):
+        permissions = ",".join(permissions)
     ok, msg = db.create_user(data.get('phone',''), data.get('password',''),
                              data.get('full_name',''), data.get('faculty_id') or None,
-                             data.get('role','staff'))
+                             data.get('role','staff'), permissions=permissions)
     return {"ok": ok, "error": msg if not ok else None}
 
 @app.delete("/api/admin/users/{uid}")
 async def delete_user(uid: int, current_user: dict = Depends(get_current_admin)):
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Ushbu amalni bajarish uchun sizda yetarli huquqlar yo'q.")
     db.delete_user(uid)
     return {"ok": True}
 
 @app.get("/api/admin/questions")
 async def get_admin_questions(faculty_id: Optional[int] = None, status: Optional[str] = None, limit: int = 50, current_user: dict = Depends(get_current_admin)):
-    if current_user.get('role') == 'superadmin':
-        faculty_id = None
+    check_permission(current_user, 'chat')
+    if current_user.get('role') in ('admin', 'superadmin'):
+        # Admin can view all, keeping any faculty_id filter if passed
+        pass
     elif current_user.get('faculty_id'):
         faculty_id = current_user.get('faculty_id')
     questions = db.get_questions(faculty_id=faculty_id, status=status, limit=limit)
@@ -353,6 +414,7 @@ async def get_admin_questions(faculty_id: Optional[int] = None, status: Optional
 
 @app.post("/api/admin/questions/{qid}/answer")
 async def answer_question(qid: int, request: Request, current_user: dict = Depends(get_current_admin)):
+    check_permission(current_user, 'chat')
     data = await request.json()
     answer = data.get('answer', '').strip()
     if not answer:
@@ -375,6 +437,8 @@ async def answer_question(qid: int, request: Request, current_user: dict = Depen
         try:
             conn = db.get_conn()
             admin_row = conn.execute("SELECT full_name FROM admins WHERE username=?", (current_user.get('sub'),)).fetchone()
+            if not admin_row:
+                admin_row = conn.execute("SELECT full_name FROM users WHERE phone=?", (current_user.get('sub'),)).fetchone()
             conn.close()
             admin_name = admin_row['full_name'] if admin_row and admin_row['full_name'] else current_user.get('sub', 'Adminstrator')
 
@@ -431,25 +495,32 @@ async def answer_question(qid: int, request: Request, current_user: dict = Depen
 
 @app.get("/api/admin/faq")
 async def get_admin_faq(faculty_id: Optional[int] = None, current_user: dict = Depends(get_current_admin)):
-    if current_user.get('role') == 'superadmin':
-        faculty_id = None
+    check_permission(current_user, 'faq')
+    if current_user.get('role') in ('admin', 'superadmin'):
+        pass
     elif current_user.get('faculty_id'):
         faculty_id = current_user.get('faculty_id')
     return {"items": db.get_faq_items(faculty_id=faculty_id)}
 
 @app.post("/api/admin/faq")
 async def create_faq(request: Request, current_user: dict = Depends(get_current_admin)):
+    check_permission(current_user, 'faq')
     data = await request.json()
-    db.add_faq_item(data.get('faculty_id') or None, data.get('question',''), data.get('answer',''))
+    faculty_id = data.get('faculty_id') or None
+    if current_user.get('role') not in ('admin', 'superadmin') and current_user.get('faculty_id'):
+        faculty_id = current_user.get('faculty_id')
+    db.add_faq_item(faculty_id, data.get('question',''), data.get('answer',''))
     return {"ok": True}
 
 @app.delete("/api/admin/faq/{iid}")
 async def delete_faq(iid: int, current_user: dict = Depends(get_current_admin)):
+    check_permission(current_user, 'faq')
     db.delete_faq_item(iid)
     return {"ok": True}
 
 @app.post("/api/upload")
 async def upload_file(file: UploadFile = File(...), current_user: dict = Depends(get_current_admin)):
+    check_permission(current_user, 'upload')
     filename = file.filename
     if not filename.lower().endswith(('.pdf','.docx','.txt','.xlsx','.md')):
         return {"ok": False, "error": "Type not allowed"}
@@ -483,6 +554,7 @@ async def upload_file(file: UploadFile = File(...), current_user: dict = Depends
 
 @app.get("/api/admin/files")
 async def get_admin_files(current_user: dict = Depends(get_current_admin)):
+    check_permission(current_user, 'upload')
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     folder = os.path.join(BASE_DIR, "data", "knowledge")
     if not os.path.exists(folder): return {"files": []}
@@ -510,6 +582,7 @@ async def dummy_status(filename: str):
 
 @app.delete("/api/admin/files/{filename}")
 async def delete_admin_file(filename: str, current_user: dict = Depends(get_current_admin)):
+    check_permission(current_user, 'upload')
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     # Basic protection against directory traversal
     safe_filename = os.path.basename(filename)
@@ -532,10 +605,12 @@ async def get_logs():
 # ── Admin Cards Management ────────────────────────────────────────────────────
 @app.get("/api/admin/cards")
 async def get_admin_cards(current_user: dict = Depends(get_current_admin)):
+    check_permission(current_user, 'cards')
     return {"cards": db.get_service_cards(only_active=False)}
 
 @app.post("/api/admin/cards")
 async def create_card(request: Request, current_user: dict = Depends(get_current_admin)):
+    check_permission(current_user, 'cards')
     data = await request.json()
     db.add_service_card(
         data.get('title',''), data.get('description',''),
@@ -550,6 +625,7 @@ async def create_card(request: Request, current_user: dict = Depends(get_current
 
 @app.put("/api/admin/cards/{cid}")
 async def update_card(cid: int, request: Request, current_user: dict = Depends(get_current_admin)):
+    check_permission(current_user, 'cards')
     data = await request.json()
     db.update_service_card(
         cid, data.get('title',''), data.get('description',''),
@@ -564,6 +640,7 @@ async def update_card(cid: int, request: Request, current_user: dict = Depends(g
 
 @app.post("/api/admin/cards/{cid}/reorder")
 async def reorder_card(cid: int, request: Request, current_user: dict = Depends(get_current_admin)):
+    check_permission(current_user, 'cards')
     data = await request.json()
     direction = data.get('direction', 'up')
     db.reorder_service_card(cid, direction)
@@ -571,6 +648,7 @@ async def reorder_card(cid: int, request: Request, current_user: dict = Depends(
 
 @app.delete("/api/admin/cards/{cid}")
 async def delete_card(cid: int, current_user: dict = Depends(get_current_admin)):
+    check_permission(current_user, 'cards')
     db.delete_service_card(cid)
     return {"ok": True}
 

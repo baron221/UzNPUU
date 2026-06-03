@@ -178,6 +178,7 @@ export interface User {
   faculty_id?: number;
   faculty_name: string;
   is_active: boolean;
+  permissions?: string;
 }
 
 export interface FAQItem {

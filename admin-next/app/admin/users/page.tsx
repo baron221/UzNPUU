@@ -7,6 +7,7 @@ export default function UsersPage() {
   const [faculties, setFaculties] = useState<Faculty[]>([]);
   const [modal, setModal]       = useState(false);
   const [form, setForm]         = useState({ full_name:'', phone:'', password:'', faculty_id:'', role:'staff' });
+  const [selectedPerms, setSelectedPerms] = useState<string[]>([]);
   const [loading, setLoading]   = useState(true);
 
   async function load() {
@@ -18,9 +19,14 @@ export default function UsersPage() {
 
   async function save() {
     if (!form.full_name || !form.phone || !form.password) { alert("Barcha maydonlarni to'ldiring!"); return; }
-    await createUser({ ...form, faculty_id: form.faculty_id ? Number(form.faculty_id) : undefined });
+    await createUser({ 
+      ...form, 
+      faculty_id: form.faculty_id ? Number(form.faculty_id) : undefined,
+      permissions: selectedPerms.join(',')
+    });
     setModal(false);
     setForm({ full_name:'', phone:'', password:'', faculty_id:'', role:'staff' });
+    setSelectedPerms([]);
     load();
   }
 
@@ -40,15 +46,22 @@ export default function UsersPage() {
       ) : (
         <div className="table-card">
           <table>
-            <thead><tr><th>Ism</th><th>Telefon</th><th>Fakultet</th><th>Lavozim</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Ism</th><th>Telefon</th><th>Fakultet</th><th>Lavozim</th><th>Huquqlar</th><th>Status</th><th></th></tr></thead>
             <tbody>
-              {items.length === 0 ? <tr><td colSpan={6} className="empty">Xodimlar yo&#39;q</td></tr>
+              {items.length === 0 ? <tr><td colSpan={7} className="empty">Xodimlar yo&#39;q</td></tr>
                 : items.map(u => (
                   <tr key={u.id}>
                     <td><strong>{u.full_name}</strong></td>
                     <td style={{ fontFamily:'monospace', fontSize:12 }}>{u.phone}</td>
                     <td><span className="badge badge-purple">{u.faculty_name || '—'}</span></td>
                     <td><span className={`badge ${ROLES[u.role] ?? 'badge-blue'}`}>{u.role}</span></td>
+                    <td>
+                      <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
+                        {u.permissions ? u.permissions.split(',').map(p => (
+                          <span key={p} className="badge badge-blue" style={{ fontSize:10, textTransform:'uppercase' }}>{p}</span>
+                        )) : <span style={{ color:'#9ca3af', fontSize:12 }}>—</span>}
+                      </div>
+                    </td>
                     <td><span className={`badge ${u.is_active ? 'badge-green' : 'badge-red'}`}>{u.is_active ? 'Faol' : 'Nofaol'}</span></td>
                     <td><button className="btn btn-sm btn-red" onClick={async () => { if (confirm("O'chirasizmi?")) { await deleteUser(u.id); load(); } }}>O&#39;chir</button></td>
                   </tr>
@@ -88,6 +101,26 @@ export default function UsersPage() {
                 <option value="dean">Dekan</option>
                 <option value="admin">Admin</option>
               </select>
+            </div>
+            <div className="form-row">
+              <label className="form-label">Huquqlar (Ruxsatlar)</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', marginTop: 8 }}>
+                {[
+                  { label: 'FAQ tahrirlash', val: 'faq' },
+                  { label: 'Chat (Muloqot)', val: 'chat' },
+                  { label: 'Hujjat yuklash', val: 'upload' },
+                  { label: 'Cards boshqaruvi', val: 'cards' },
+                ].map(p => (
+                  <label key={p.val} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={selectedPerms.includes(p.val)}
+                      onChange={e => {
+                        if (e.target.checked) setSelectedPerms(prev => [...prev, p.val]);
+                        else setSelectedPerms(prev => prev.filter(x => x !== p.val));
+                      }} />
+                    {p.label}
+                  </label>
+                ))}
+              </div>
             </div>
             <div className="modal-actions">
               <button className="btn btn-red" onClick={() => setModal(false)}>Bekor</button>

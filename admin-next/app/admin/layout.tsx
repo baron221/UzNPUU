@@ -28,15 +28,38 @@ const NAV = [
   { href: '/admin/settings',   icon: 'settings', label: 'Sozlamalar' },
 ];
 
+function parseJwt(token: string) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+}
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname  = usePathname();
   const router    = useRouter();
   const [unansweredCount, setUnansweredCount] = useState(0);
+  const [user, setUser] = useState<{ role: string; permissions: string } | null>(null);
 
   useEffect(() => {
-    if (!localStorage.getItem('admin_token')) {
+    const token = localStorage.getItem('admin_token');
+    if (!token) {
       router.replace('/');
       return;
+    }
+
+    const decoded = parseJwt(token);
+    if (decoded) {
+      setUser({
+        role: decoded.role || 'staff',
+        permissions: decoded.permissions || ''
+      });
     }
 
     // Initial fetch
@@ -55,6 +78,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.replace('/');
   }
 
+  const permissionsList = user?.permissions ? user.permissions.split(',').map(p => p.trim().toLowerCase()) : [];
+  const isAdmin = user?.role === 'admin';
+
+  const hasPerm = (href: string) => {
+    if (isAdmin) return true;
+    if (href === '/admin') return true;
+    if (href === '/admin/questions' && permissionsList.includes('chat')) return true;
+    if (href === '/admin/faq' && permissionsList.includes('faq')) return true;
+    if (href === '/admin/upload' && permissionsList.includes('upload')) return true;
+    if (href === '/admin/cards' && permissionsList.includes('cards')) return true;
+    return false;
+  };
+
   return (
     <div style={{ display: 'flex' }}>
       <aside className="sidebar">
@@ -64,41 +100,47 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="sidebar-sub">Boshqaruv tizimi</div>
         </div>
 
-        <div className="nav-section">Asosiy</div>
-        {NAV.slice(0, 2).map(n => (
-          <Link key={n.href} href={n.href}
-            className={`nav-item${pathname === n.href ? ' active' : ''}`}>
-            <span className="nav-icon">{ICONS[n.icon]}</span>
-            <span>{n.label}</span>
-            {n.href === '/admin/questions' && unansweredCount > 0 && (
-              <span className="nav-badge">{unansweredCount}</span>
-            )}
-          </Link>
-        ))}
+        {NAV.slice(0, 2).some(n => hasPerm(n.href)) && (
+          <>
+            <div className="nav-section">Asosiy</div>
+            {NAV.slice(0, 2).filter(n => hasPerm(n.href)).map(n => (
+              <Link key={n.href} href={n.href}
+                className={`nav-item${pathname === n.href ? ' active' : ''}`}>
+                <span className="nav-icon">{ICONS[n.icon]}</span>
+                <span>{n.label}</span>
+                {n.href === '/admin/questions' && unansweredCount > 0 && (
+                  <span className="nav-badge">{unansweredCount}</span>
+                )}
+              </Link>
+            ))}
+          </>
+        )}
 
-        <div className="nav-section">Boshqaruv</div>
-        {NAV.slice(2, 4).map(n => (
-          <Link key={n.href} href={n.href}
-            className={`nav-item${pathname === n.href ? ' active' : ''}`}>
-            <span className="nav-icon">{ICONS[n.icon]}</span>
-            <span>{n.label}</span>
-            {n.href === '/admin/questions' && unansweredCount > 0 && (
-              <span className="nav-badge">{unansweredCount}</span>
-            )}
-          </Link>
-        ))}
+        {NAV.slice(2, 4).some(n => hasPerm(n.href)) && (
+          <>
+            <div className="nav-section">Boshqaruv</div>
+            {NAV.slice(2, 4).filter(n => hasPerm(n.href)).map(n => (
+              <Link key={n.href} href={n.href}
+                className={`nav-item${pathname === n.href ? ' active' : ''}`}>
+                <span className="nav-icon">{ICONS[n.icon]}</span>
+                <span>{n.label}</span>
+              </Link>
+            ))}
+          </>
+        )}
 
-        <div className="nav-section">Kontent</div>
-        {NAV.slice(4).map(n => (
-          <Link key={n.href} href={n.href}
-            className={`nav-item${pathname === n.href ? ' active' : ''}`}>
-            <span className="nav-icon">{ICONS[n.icon]}</span>
-            <span>{n.label}</span>
-            {n.href === '/admin/questions' && unansweredCount > 0 && (
-              <span className="nav-badge">{unansweredCount}</span>
-            )}
-          </Link>
-        ))}
+        {NAV.slice(4).some(n => hasPerm(n.href)) && (
+          <>
+            <div className="nav-section">Kontent</div>
+            {NAV.slice(4).filter(n => hasPerm(n.href)).map(n => (
+              <Link key={n.href} href={n.href}
+                className={`nav-item${pathname === n.href ? ' active' : ''}`}>
+                <span className="nav-icon">{ICONS[n.icon]}</span>
+                <span>{n.label}</span>
+              </Link>
+            ))}
+          </>
+        )}
 
         <div className="sidebar-footer">
           <button className="logout-btn" onClick={logout}>
