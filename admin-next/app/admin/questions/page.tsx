@@ -12,6 +12,14 @@ export default function QuestionsPage() {
   const [loading, setLoading]   = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [ans]);
 
   async function load(showSkeleton = true) {
     if (showSkeleton) setLoading(true);
@@ -115,15 +123,16 @@ export default function QuestionsPage() {
   function relativeTime(dateStr: string) {
     if (!dateStr) return '';
     try {
-      const msPerMinute = 60 * 1000;
-      const msPerHour = msPerMinute * 60;
-      const msPerDay = msPerHour * 24;
-      const elapsed = Date.now() - new Date(dateStr).getTime();
-      
-      if (elapsed < msPerMinute) return 'Hozirgina';
-      if (elapsed < msPerHour) return Math.round(elapsed/msPerMinute) + ' d. oldin';
-      if (elapsed < msPerDay) return Math.round(elapsed/msPerHour) + ' soat oldin';
-      return Math.round(elapsed/msPerDay) + ' kun oldin';
+      const date = new Date(dateStr);
+      const now = new Date();
+      const isToday = date.getDate() === now.getDate() && 
+                      date.getMonth() === now.getMonth() && 
+                      date.getFullYear() === now.getFullYear();
+      if (isToday) {
+        return date.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+      } else {
+        return date.toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      }
     } catch {
       return dateStr;
     }
@@ -288,8 +297,10 @@ export default function QuestionsPage() {
 
               <div className="ac-input-area">
                 <textarea 
+                  ref={textareaRef}
                   className="ac-textarea" 
-                  rows={3} 
+                  rows={1}
+                  style={{ minHeight: '52px', maxHeight: '200px', overflowY: 'auto' }}
                   placeholder="Talabaga javob yozish (Yuborish uchun Enter)..."
                   value={ans}
                   onChange={e => setAns(e.target.value)}
