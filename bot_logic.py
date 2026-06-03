@@ -484,7 +484,7 @@ async def handle_admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE)
     relay_msg = (
         f"✨ <b>Sizning savolingizga javob keldi:</b>\n\n"
         f"❓ {html.escape(question_data['question'])}\n\n"
-        f"✅ 👤 <b>{html.escape(admin_name)} javobi:</b>\n{html.escape(answer)}"
+        f"✅ <b>Javob:</b>\n{html.escape(answer)}"
     )
     
     try:

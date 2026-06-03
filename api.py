@@ -289,7 +289,7 @@ async def admin_auth(request: Request):
     # Try Super Admin login
     admin_user = db.verify_admin(username, password)
     if admin_user:
-        access_token = auth.create_access_token(data={"sub": username, "role": "admin", "permissions": "all"})
+        access_token = auth.create_access_token(data={"sub": username, "role": "admin", "full_name": admin_user.get("full_name", "Super Admin"), "permissions": "all"})
         return {"ok": True, "token": access_token}
         
     # Try Staff User login (username input is user's phone)
@@ -298,6 +298,7 @@ async def admin_auth(request: Request):
         access_token = auth.create_access_token(data={
             "sub": user['phone'],
             "role": user['role'],
+            "full_name": user.get('full_name', 'Xodim'),
             "faculty_id": user['faculty_id'],
             "user_id": user['id'],
             "permissions": user.get('permissions') or ""
@@ -478,9 +479,9 @@ async def answer_question(qid: int, request: Request, current_user: dict = Depen
                     (str(question['student_telegram_id']),)
                 ).fetchone()
                 if new_q:
-                    db.update_question_answer(new_q['id'], answer, current_user.get('sub', 'admin'))
+                    db.update_question_answer(new_q['id'], answer, current_user.get('full_name') or current_user.get('sub', 'admin'))
             else:
-                db.update_question_answer(qid, answer, current_user.get('sub', 'admin'))
+                db.update_question_answer(qid, answer, current_user.get('full_name') or current_user.get('sub', 'admin'))
 
             return {"ok": True}
         except Exception as e:
