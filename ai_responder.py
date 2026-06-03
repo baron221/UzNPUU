@@ -306,7 +306,7 @@ def get_answer(question: str, knowledge_base: str, clients: dict, faculty_id: Op
     q_words = cleaned_question.strip().split()
     VAGUE_KEYWORDS = {
         # Uzbek
-        "to'lov", "tolov", "imtihon", "jadval", "stipendiya", "grant", "hemis",
+        "to'lov", "tolov", "imtihon", "jadval", "stipendiya", "grant", "hero",
         "kontrakt", "shartnoma", "diplom", "kvitansiya", "gpa", "kredit",
         "dekanat", "rektor", "registrator", "talaba", "kitobxona", "yotoqxona",
         "sport", "kutubxona", "fakultet", "kafedra", "amaliyot", "kurs",

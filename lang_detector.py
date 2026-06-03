@@ -4,9 +4,9 @@ Supports: Uzbek (uz), Russian (ru), English (en)
 """
 
 UZ_WORDS = [
-    "qanday","qachon","nima","kim","necha","qayerda","uchun","bilan","yoki","ham","va","lekin","salom","assalomu","rahmat","xayr","talaba","imtihon","jadval","stipendiya","grant","kredit","hemis","dars","kontrakt","tolov","fakultet",
+    "qanday","qachon","nima","kim","necha","qayerda","uchun","bilan","yoki","ham","va","lekin","salom","assalomu","rahmat","xayr","talaba","imtihon","jadval","stipendiya","grant","kredit","hero","dars","kontrakt","tolov","fakultet",
     # Uzbek Cyrillic equivalents
-    "кандай","қачон","нима","ким","неча","қаерда","учун","билан","ёки","ҳам","ва","лекин","салом","ассалому","раҳмат","хайр","талаба","имтиҳон","жадвал","стипендия","грант","кредит","ҳемис","дарс","контракт","тўлов","факультет"
+    "кандай","қачон","нима","ким","неча","қаерда","учун","билан","ёки","ҳам","ва","лекин","салом","ассалому","раҳмат","хайр","талаба","имтиҳон","жадвал","стипендия","грант","кредит","геро","дарс","контракт","тўлов","факультет"
 ]
 RU_WORDS = ["как","когда","что","кто","сколько","где","для","привет","спасибо","пока","студент","экзамен","расписание","стипендия","грант","кредит","договор","оплата","факультет","здравствуйте","можно","нужно","хочу"]
 EN_WORDS = ["how","when","what","who","where","why","hello","hi","thanks","bye","student","exam","schedule","stipend","grant","credit","contract","payment","faculty","please","need","want","can"]
@@ -71,9 +71,9 @@ RESPONSES = {
         "en": "Goodbye! 👋 Feel free to come back anytime."
     },
     "whoami": {
-        "uz": "Men NPUU rasmiy yordamchi botiman! 🎓\n\n• 📅 Imtihon va dars jadvallari\n• 📚 HEMIS tizimi\n• 📋 Akademik ta'til va ko'chirish\n• 💰 To'lov va stipendiya\n• 🎓 Grant va GPA",
-        "ru": "Я официальный бот-помощник NPUU! 🎓\n\n• 📅 Расписание экзаменов и занятий\n• 📚 Система HEMIS\n• 📋 Академический отпуск и перевод\n• 💰 Оплата и стипендия\n• 🎓 Гранты и GPA",
-        "en": "I'm the official NPUU assistant bot! 🎓\n\n• 📅 Exam and class schedules\n• 📚 HEMIS system\n• 📋 Academic leave and transfers\n• 💰 Payments and scholarships\n• 🎓 Grants and GPA"
+        "uz": "Men NPUU rasmiy yordamchi botiman! 🎓\n\n• 📅 Imtihon va dars jadvallari\n• 📚 Hero platformasi\n• 📋 Akademik ta'til va ko'chirish\n• 💰 To'lov va stipendiya\n• 🎓 Grant va GPA",
+        "ru": "Я официальный бот-помощник NPUU! 🎓\n\n• 📅 Расписание экзаменов и занятий\n• 📚 Платформа Hero\n• 📋 Академический отпуск и перевод\n• 💰 Оплата и стипендия\n• 🎓 Гранты и GPA",
+        "en": "I'm the official NPUU assistant bot! 🎓\n\n• 📅 Exam and class schedules\n• 📚 Hero platform\n• 📋 Academic leave and transfers\n• 💰 Payments and scholarships\n• 🎓 Grants and GPA"
     },
     "howru": {
         "uz": "Yaxshi, rahmat! 😊 Sizga qanday yordam bera olaman?",

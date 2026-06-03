@@ -5,7 +5,7 @@ import { askQuestion, getCards, askAdmin, getStudentHistory, getPublicFAQ, getPu
 type Msg = { text: string; type: 'user' | 'bot'; options?: string[]; showAdmin?: boolean; isHistory?: boolean; isPending?: boolean };
 type Tab = 'home' | 'chat' | 'faq' | 'profile';
 
-const SUGGS = ['Dars jadvali qayerdan ko\'raman?', 'Kontrakt to\'lash', 'HEMIS login', 'Stipendiya shartlari'];
+const SUGGS = ['Dars jadvali qayerdan ko\'raman?', 'Kontrakt to\'lash', 'Hero login', 'Stipendiya shartlari'];
 
 export default function StudentPage() {
   const [darkMode, setDarkMode] = useState(false);
@@ -461,8 +461,8 @@ export default function StudentPage() {
             </div>
 
             <div className="hemis-box">
-              <div className="hemis-text">To'liq akademik ma'lumotlar uchun HEMIS tizimiga kiring:</div>
-              <a href="https://student.tdpu.uz" target="_blank" className="hemis-link">student.tdpu.uz</a>
+              <div className="hemis-text">To'liq akademik ma'lumotlar uchun Hero platformasiga kiring:</div>
+              <a href="https://hero.npuu.uz" target="_blank" className="hemis-link">hero.npuu.uz</a>
             </div>
           </div>
         )}
