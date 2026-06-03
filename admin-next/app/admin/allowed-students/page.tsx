@@ -95,6 +95,7 @@ export default function AllowedStudentsPage() {
             <table>
               <thead style={{ position: 'sticky', top: 0, background: 'var(--card)', zIndex: 1 }}>
                 <tr>
+                  <th style={{ width: '50px' }}>#</th>
                   <th>Talaba ID</th>
                   <th>F.I.O</th>
                 </tr>
@@ -102,6 +103,7 @@ export default function AllowedStudentsPage() {
               <tbody>
                 {students.map((s, i) => (
                   <tr key={i}>
+                    <td style={{ color: 'var(--muted)', fontSize: '13px' }}>{i + 1}</td>
                     <td style={{ fontWeight: 500 }}>{s.student_id}</td>
                     <td style={{ color: 'var(--muted)' }}>{s.full_name || '-'}</td>
                   </tr>
