@@ -313,7 +313,8 @@ def update_user(user_id, full_name, faculty_id, role, is_active):
 
 def delete_user(user_id):
     conn = get_conn()
-    conn.execute("UPDATE users SET is_active=0 WHERE id=?", (user_id,))
+    conn.execute("UPDATE questions SET answered_by=NULL WHERE answered_by=?", (user_id,))
+    conn.execute("DELETE FROM users WHERE id=?", (user_id,))
     conn.commit()
     conn.close()
 
