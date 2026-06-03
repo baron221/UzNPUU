@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { getApiUrl, getToken } from '@/lib/api';
+import { getAllowedStudents, uploadAllowedStudents } from '@/lib/api';
 
 export default function AllowedStudentsPage() {
   const [students, setStudents] = useState<any[]>([]);
@@ -16,13 +16,8 @@ export default function AllowedStudentsPage() {
   async function loadStudents() {
     setLoading(true);
     try {
-      const res = await fetch(`${getApiUrl()}/api/admin/allowed-students`, {
-        headers: { 'Authorization': `Bearer ${getToken()}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setStudents(data.students || []);
-      }
+      const data = await getAllowedStudents();
+      setStudents(data.students || []);
     } catch (e) {
       console.error(e);
     }
@@ -38,13 +33,7 @@ export default function AllowedStudentsPage() {
     formData.append('file', file);
     
     try {
-      const res = await fetch(`${getApiUrl()}/api/admin/allowed-students/upload`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${getToken()}` },
-        body: formData
-      });
-      
-      const data = await res.json();
+      const data = await uploadAllowedStudents(file);
       if (data.ok) {
         setStatus(`✅ Muvaffaqiyatli yuklandi: ${data.count} ta talaba.`);
         setFile(null);

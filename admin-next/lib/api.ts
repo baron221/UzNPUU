@@ -101,6 +101,17 @@ export const deleteCard = (id: number) =>
 export const reorderCard = (id: number, direction: 'up' | 'down') =>
   req<{ ok: boolean }>(`/api/admin/cards/${id}/reorder`, { method: 'POST', body: JSON.stringify({ direction }) });
 
+export const getAllowedStudents = () => req<{ students: any[] }>('/api/admin/allowed-students');
+export const uploadAllowedStudents = (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return fetch('/api/admin/allowed-students/upload', {
+    method: 'POST',
+    headers: { Authorization: \Bearer \\ },
+    body: formData
+  }).then(r => r.json());
+};
+
 export const uploadFile = (file: File) => {
   const fd = new FormData();
   fd.append('file', file);
