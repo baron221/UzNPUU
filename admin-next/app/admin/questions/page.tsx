@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { getQuestions, answerQuestion, type Question } from '@/lib/api';
+import { getQuestions, answerQuestion, markChatAsRead, type Question } from '@/lib/api';
 
 export default function QuestionsPage() {
   const [all, setAll]           = useState<Question[]>([]);
@@ -34,6 +34,21 @@ export default function QuestionsPage() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [selectedId, all]);
+
+  useEffect(() => {
+    if (selectedId) {
+      const chat = grouped.find(g => g.id === selectedId);
+      if (chat && chat.unread > 0) {
+        markChatAsRead(selectedId).then(() => {
+          setAll(prev => prev.map(q => 
+            (q.student_telegram_id === selectedId && q.status !== 'answered') 
+              ? { ...q, status: 'answered' } 
+              : q
+          ));
+        }).catch(console.error);
+      }
+    }
   }, [selectedId, all]);
 
   const grouped = useMemo(() => {

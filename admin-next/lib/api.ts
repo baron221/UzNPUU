@@ -112,6 +112,8 @@ export const uploadAllowedStudents = (file: File) => {
   }).then(r => r.json());
 };
 
+export const markChatAsRead = (tgId: string) => req<{ok: boolean}>(`/api/admin/questions/user/${tgId}/read`, { method: 'POST' });
+
 export const uploadFile = (file: File) => {
   const fd = new FormData();
   fd.append('file', file);

@@ -723,3 +723,12 @@ async def api_upload_allowed_students(file: UploadFile = File(...), current_user
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
+@app.post("/api/admin/questions/user/{tg_id}/read")
+async def mark_user_questions_read(tg_id: str, current_user: dict = Depends(get_current_admin)):
+    import database as db_lib
+    conn = db_lib.get_conn()
+    conn.execute("UPDATE questions SET status='answered' WHERE student_telegram_id=? AND status='unanswered'", (tg_id,))
+    conn.commit()
+    conn.close()
+    return {"ok": True}
+
