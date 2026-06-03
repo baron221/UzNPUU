@@ -45,7 +45,12 @@ def parse_qa_pairs(knowledge_base: str) -> list:
                 pairs.append({"question": question_part, "answer": answer_part})
         else:
             if len(block) > 30:
-                pairs.append({"question": block[:200], "answer": block})
+                if len(block) > 800:
+                    chunks = chunk_knowledge_base(block, chunk_size=500)
+                    for chunk in chunks:
+                        pairs.append({"question": chunk[:200], "answer": chunk})
+                else:
+                    pairs.append({"question": block[:200], "answer": block})
     print(f"Parsed {len(pairs)} Q&A pairs from documents")
     return pairs
 
@@ -83,7 +88,7 @@ def find_relevant_pairs(question: str, pairs: list, client, top_n: int = 5) -> s
     import vector_store
     
     # 1. Semantic Search using Vector Store (ChromaDB)
-    semantic_context = vector_store.search_vector_db(question, n_results=10)
+    semantic_context = vector_store.search_vector_db(question, n_results=3)
     
     # 2. Keyword Search over 'pairs' (Crucial for UZ text and DB items)
     q_words = naive_uz_stem(question)
@@ -100,12 +105,16 @@ def find_relevant_pairs(question: str, pairs: list, client, top_n: int = 5) -> s
     scored_pairs.sort(key=lambda x: x[0], reverse=True)
     keyword_context = "\n\n---\n\n".join(
         f"Savol: {p['question']}\nJavob: {p['answer']}" 
-        for score, p in scored_pairs[:5]
+        for score, p in scored_pairs[:3]
     )
     
     combined_context = f"{semantic_context}\n\n---\n\n{keyword_context}"
     
-    if not combined_context.strip().replace("---", "").strip():
+    # Truncate context if it is extremely large to prevent exceeding Groq TPM limits
+    if len(combined_context) > 6000:
+        combined_context = combined_context[:6000] + "\n... (matn kesib tashlandi)"
+        
+    if not combined_context.strip().replace("---", "").replace("... (matn kesib tashlandi)", "").strip():
         return ""
 
     # 3. AI Re-ranking (Groq)
