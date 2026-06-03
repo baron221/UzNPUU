@@ -107,7 +107,7 @@ export const uploadAllowedStudents = (file: File) => {
   formData.append('file', file);
   return fetch('/api/admin/allowed-students/upload', {
     method: 'POST',
-    headers: { Authorization: \Bearer \\ },
+    headers: { Authorization: `Bearer ${token()}` },
     body: formData
   }).then(r => r.json());
 };
