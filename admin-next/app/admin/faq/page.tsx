@@ -53,8 +53,10 @@ export default function FAQPage() {
                     <td style={{ fontWeight:500 }}>{f.question}</td>
                     <td style={{ color:'var(--muted)', maxWidth:260 }}>{f.answer.slice(0, 80)}{f.answer.length > 80 ? '...' : ''}</td>
                     <td>
-                      <button className="btn btn-sm btn-primary" style={{ marginRight: '8px' }} onClick={() => { setEditId(f.id); setForm({ faculty_id: String(f.faculty_id || ''), question: f.question, answer: f.answer }); setModal(true); }}>Tahrirlash</button>
-                      <button className="btn btn-sm btn-red" onClick={async () => { if (confirm("O'chirasizmi?")) { await deleteFAQ(f.id); load(); } }}>O&#39;chir</button>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button className="btn btn-sm btn-primary" onClick={() => { setEditId(f.id); setForm({ faculty_id: String(f.faculty_id || ''), question: f.question, answer: f.answer }); setModal(true); }}>Tahrirlash</button>
+                        <button className="btn btn-sm btn-red" onClick={async () => { if (confirm("O'chirasizmi?")) { await deleteFAQ(f.id); load(); } }}>O&#39;chirish</button>
+                      </div>
                     </td>
                   </tr>
                 ))}

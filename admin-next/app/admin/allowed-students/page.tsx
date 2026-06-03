@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getAllowedStudents, uploadAllowedStudents } from '@/lib/api';
 
 export default function AllowedStudentsPage() {
@@ -8,30 +8,24 @@ export default function AllowedStudentsPage() {
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState('');
+  const [dragActive, setDragActive] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    loadStudents();
-  }, []);
+  useEffect(() => { loadStudents(); }, []);
 
   async function loadStudents() {
     setLoading(true);
     try {
       const data = await getAllowedStudents();
       setStudents(data.students || []);
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) { console.error(e); }
     setLoading(false);
   }
 
   async function handleUpload() {
     if (!file) return;
     setUploading(true);
-    setStatus('Yuklanmoqda...');
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    
+    setStatus('⏳ Yuklanmoqda...');
     try {
       const data = await uploadAllowedStudents(file);
       if (data.ok) {
@@ -47,6 +41,20 @@ export default function AllowedStudentsPage() {
     setUploading(false);
   }
 
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
+    else if (e.type === 'dragleave') setDragActive(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    setDragActive(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f && f.name.endsWith('.xlsx')) setFile(f);
+    else alert('Faqat .xlsx fayl qabul qilinadi!');
+  };
+
   return (
     <>
       <div className="page-header">
@@ -56,62 +64,113 @@ export default function AllowedStudentsPage() {
         </div>
       </div>
 
-      <div className="table-card" style={{ padding: '24px', marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)', marginBottom: '16px' }}>Yangi ro'yxat yuklash (.xlsx)</h2>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <input 
-            type="file" 
-            accept=".xlsx"
-            onChange={e => setFile(e.target.files?.[0] || null)}
-            style={{ fontSize: '14px', cursor: 'pointer' }}
-          />
-          <button 
-            className="btn btn-primary" 
-            onClick={handleUpload}
-            disabled={!file || uploading}
-          >
-            {uploading ? 'Yuklanmoqda...' : 'Yuklash'}
-          </button>
-        </div>
-        {status && <div style={{ marginTop: '16px', fontSize: '14px', fontWeight: 500 }}>{status}</div>}
-        <p style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '16px', lineHeight: 1.5 }}>
-          * Excel faylning birinchi qatori sarlavha bo'lishi kerak. ID ustuni "ID" yoki "PINFL", ism ustuni "Name" yoki "F.I.O" so'zlarini o'z ichiga olishi kerak. (Yoki avtomatik 1-ustun ID, 2-ustun ism deb qabul qilinadi).
-          <br/>* Diqqat: Yangi fayl yuklash orqali avvalgi barcha ro'yxat tozalanib, faqat yangi fayldagi talabalar qoladi.
-        </p>
-      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, alignItems: 'start' }}>
 
-      <div className="table-card">
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f2f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '15px', fontWeight: 600 }}>Joriy bazadagi talabalar</h2>
-          <span className="badge badge-purple">{students.length} ta talaba</span>
-        </div>
-        
-        {loading ? (
-          <div style={{ padding: '32px', textAlign: 'center', color: 'var(--muted)' }}>Yuklanmoqda...</div>
-        ) : students.length === 0 ? (
-          <div style={{ padding: '32px', textAlign: 'center', color: 'var(--muted)' }}>Hozircha hech qanday talaba ro'yxatga olinmagan.</div>
-        ) : (
-          <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
-            <table>
-              <thead style={{ position: 'sticky', top: 0, background: 'var(--card)', zIndex: 1 }}>
+        {/* Upload column */}
+        <section>
+          <div className="section-title">Yangi ro'yxat yuklash</div>
+          <div className="card">
+            <div
+              className={`dropzone${dragActive ? ' active' : ''}`}
+              onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
+              onClick={() => inputRef.current?.click()}
+            >
+              <div className="dropzone-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10 9 9 9 8 9"/>
+                </svg>
+              </div>
+              <div className="dropzone-text">
+                {file
+                  ? <span style={{ color: 'var(--indigo)', fontWeight: 700 }}>{file.name}</span>
+                  : <span>Excel faylini bu yerga tashlang yoki tanlash uchun bosing</span>
+                }
+              </div>
+              <div className="dropzone-hint">Faqat .xlsx formatidagi fayllar qabul qilinadi</div>
+              <input
+                ref={inputRef}
+                type="file"
+                accept=".xlsx"
+                style={{ display: 'none' }}
+                onChange={e => setFile(e.target.files?.[0] || null)}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <button
+                className="btn btn-primary"
+                style={{ width: '100%', padding: '14px' }}
+                onClick={handleUpload}
+                disabled={!file || uploading}
+              >
+                {uploading ? 'Yuklanmoqda...' : 'Yuklashni boshlash'}
+              </button>
+            </div>
+
+            {status && (
+              <div style={{
+                marginTop: 20, padding: '14px', borderRadius: '12px', fontSize: 13, fontWeight: 500,
+                background: status.startsWith('✅') ? '#ecfdf5' : status.startsWith('⏳') ? '#eff6ff' : '#fff1f2',
+                color: status.startsWith('✅') ? '#065f46' : status.startsWith('⏳') ? '#1e40af' : '#991b1b',
+                border: `1px solid ${status.startsWith('✅') ? '#10b98130' : status.startsWith('⏳') ? '#3b82f630' : '#ef444430'}`
+              }}>
+                {status}
+              </div>
+            )}
+
+            <div style={{ marginTop: 20, padding: '14px', borderRadius: '12px', background: 'var(--bg)', fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
+              <strong style={{ color: 'var(--text)', display: 'block', marginBottom: 6 }}>📋 Qoidalar:</strong>
+              • 1-qator sarlavha bo'lishi kerak<br />
+              • ID ustuni: "ID", "PINFL" so'zlarini o'z ichiga olishi kerak<br />
+              • Ism ustuni: "Name", "F.I.O", "FISH" bo'lishi kerak<br />
+              • Yangi fayl yuklasangiz, eski ro'yxat o'chib ketadi
+            </div>
+          </div>
+        </section>
+
+        {/* List column */}
+        <section>
+          <div className="section-title">Joriy bazadagi talabalar ({students.length})</div>
+          <div className="table-card" style={{ margin: 0, minHeight: 400 }}>
+            <table style={{ minWidth: '100%' }}>
+              <thead>
                 <tr>
-                  <th style={{ width: '50px' }}>#</th>
+                  <th style={{ width: 50 }}>#</th>
                   <th>Talaba ID</th>
                   <th>F.I.O</th>
                 </tr>
               </thead>
               <tbody>
-                {students.map((s, i) => (
-                  <tr key={i}>
-                    <td style={{ color: 'var(--muted)', fontSize: '13px' }}>{i + 1}</td>
-                    <td style={{ fontWeight: 500 }}>{s.student_id}</td>
-                    <td style={{ color: 'var(--muted)' }}>{s.full_name || '-'}</td>
+                {loading ? (
+                  Array(5).fill(0).map((_, i) => (
+                    <tr key={i}>
+                      <td colSpan={3}><div className="skeleton" style={{ height: 20, margin: '10px 0' }} /></td>
+                    </tr>
+                  ))
+                ) : students.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} style={{ textAlign: 'center', padding: '80px 0', color: 'var(--muted2)' }}>
+                      Hali hech qanday talaba yuklanmagan
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  students.map((s, i) => (
+                    <tr key={i}>
+                      <td style={{ color: 'var(--muted)', fontSize: 12 }}>{i + 1}</td>
+                      <td style={{ fontWeight: 600 }}>{s.student_id}</td>
+                      <td style={{ color: 'var(--muted)' }}>{s.full_name || '-'}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-        )}
+        </section>
+
       </div>
     </>
   );
