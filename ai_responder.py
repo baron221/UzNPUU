@@ -95,9 +95,9 @@ def find_relevant_pairs(question: str, pairs: list, client, top_n: int = 5) -> s
     scored_pairs = []
     for p in pairs:
         score = 0
-        p_text = (p['question'] + " " + p['answer']).lower()
+        p_words = naive_uz_stem(p['question'] + " " + p['answer'])
         for w in q_words:
-            if w in p_text:
+            if w in p_words:
                 score += 1
         if score > 0:
             scored_pairs.append((score, p))
@@ -232,6 +232,8 @@ def clean_label(text: str) -> str:
     for p in prefixes:
         text = re.sub(p, '', text, flags=re.IGNORECASE)
     
+    # Normalize apostrophes
+    text = re.sub(r"[‘’`´‘]", "'", text)
     return text.strip()
 
 def generate_options(question: str, pairs: list) -> list:
@@ -242,8 +244,8 @@ def generate_options(question: str, pairs: list) -> list:
 
     scored_matches = []
     for p in pairs:
-        p_q_lower = p['question'].lower()
-        score = sum(1 for w in q_words if w in p_q_lower)
+        p_q_words = naive_uz_stem(p['question'])
+        score = sum(1 for w in q_words if w in p_q_words)
         if score > 0:
             label = clean_label(p['question'])
             scored_matches.append((score, label))
@@ -297,7 +299,7 @@ def get_answer(question: str, knowledge_base: str, clients: dict, faculty_id: Op
     all_pairs = _cached_pairs + [{"question": i['question'], "answer": i['answer']} for i in db_items]
 
     # ── EXACT MATCH PRE-CHECK (Option button tapped) ──────────────────────────
-    clean_q_exact = question.strip().lower()
+    clean_q_exact = re.sub(r"[‘’`´‘]", "'", question.strip().lower())
     for pair in all_pairs:
         if clean_q_exact == clean_label(pair['question']).strip().lower():
             logging.info(f"[EXACT-MATCH][{lang}] {question[:50]}")
