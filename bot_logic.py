@@ -319,7 +319,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             original_q = context.user_data.get('last_question', "Noma'lum savol")
             qid = db.save_question(str(user.id), sid, username, user.full_name or username, fid, original_q, "Admin javobini kuting...", "uz", "MANUAL")
             await query.message.reply_text("📩 Savolingiz administratorga yuborildi. Tez orada javob olasiz!")
-            asyncio.create_task(forward_and_link(qid, user.full_name or username, original_q, None, sid, fid, is_manual=True))
+            asyncio.create_task(forward_and_link(qid, user.full_name or username, original_q, None, sid, fid, is_manual=True, student_tg_id=str(user.id)))
             return
 
         if data.startswith("opt_idx_"):
@@ -529,13 +529,13 @@ async def _process_question(update: Update, context: ContextTypes.DEFAULT_TYPE, 
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Noma'lum buyruq. Savolingizni yozishingiz mumkin! 😊")
 
-async def forward_and_link(qid, name, q, a, sid, fid, is_manual=False):
+async def forward_and_link(qid, name, q, a, sid, fid, is_manual=False, student_tg_id=None):
     try:
         result = None
         if is_manual:
-            result = await notifier.notify_admin_manual(name, q, sid, fid)
+            result = await notifier.notify_admin_manual(name, q, sid, fid, student_tg_id=student_tg_id)
         else:
-            result = await notifier.forward_to_admin(name, q, a, sid, fid)
+            result = await notifier.forward_to_admin(name, q, a, sid, fid, student_tg_id=student_tg_id)
         
         if result and len(result) == 2:
             chat_id, mid = result

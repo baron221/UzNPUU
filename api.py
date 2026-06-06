@@ -221,7 +221,7 @@ async def ask_admin(request: Request):
     db.save_question(str(student_tg_id), student_id, username, fullname, faculty_id, q, "Admin javobini kuting...", "uz", "MANUAL")
     
     import asyncio
-    asyncio.create_task(notifier.notify_admin_manual(fullname, q, student_id, faculty_id))
+    asyncio.create_task(notifier.notify_admin_manual(fullname, q, student_id, faculty_id, student_tg_id=str(student_tg_id)))
     
     return {"ok": True, "message": "Savolingiz administratorga yuborildi."}
 

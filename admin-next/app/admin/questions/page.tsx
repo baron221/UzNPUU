@@ -32,6 +32,24 @@ export default function QuestionsPage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Auto-select chat from URL parameters (e.g. ?tg_id=12345 or ?student_id=250244)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tgId = params.get('tg_id');
+      const studentId = params.get('student_id');
+      if (tgId || studentId) {
+        const found = grouped.find(u => 
+          (tgId && u.id === tgId) || 
+          (studentId && u.questions.some(q => String(q.student_id) === String(studentId)))
+        );
+        if (found && selectedId !== found.id) {
+          setSelectedId(found.id);
+        }
+      }
+    }
+  }, [grouped, selectedId]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [selectedId, all]);

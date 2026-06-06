@@ -9,7 +9,7 @@ def esc(text):
     if not text: return ""
     return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
-async def forward_to_admin(user_full_name, question, answer, sid, fid=None):
+async def forward_to_admin(user_full_name, question, answer, sid, fid=None, student_tg_id=None):
     """
     Forwards a student question to the relevant admin Telegram group.
     """
@@ -36,7 +36,21 @@ async def forward_to_admin(user_full_name, question, answer, sid, fid=None):
                    f"❓ {esc(question)}\n"
                    f"🤖 AI Javobi: {esc(answer[:200])}...")
             
-            sent_msg = await state.bot_app.bot.send_message(chat_id=group_id, text=msg, parse_mode='HTML')
+            reply_markup = None
+            if student_tg_id and str(student_tg_id) != "WEB":
+                from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+                admin_panel_url = os.environ.get("ADMIN_PANEL_URL", "https://uz-npuu.vercel.app")
+                chat_url = f"{admin_panel_url}/admin/questions?tg_id={student_tg_id}"
+                reply_markup = InlineKeyboardMarkup([[
+                    InlineKeyboardButton("💬 Panelda suhbatni ochish", url=chat_url)
+                ]])
+
+            sent_msg = await state.bot_app.bot.send_message(
+                chat_id=group_id,
+                text=msg,
+                parse_mode='HTML',
+                reply_markup=reply_markup
+            )
             logging.info(f"✅ Forwarded question from {sid} to group {group_id}")
             return group_id, sent_msg.message_id
         else:
@@ -47,7 +61,7 @@ async def forward_to_admin(user_full_name, question, answer, sid, fid=None):
         logging.error(f"⚠️ Forward error: {str(e)}")
         return None, None
 
-async def notify_admin_manual(user_full_name, question, sid, fid=None):
+async def notify_admin_manual(user_full_name, question, sid, fid=None, student_tg_id=None):
     """
     Specifically for 'Ask Admin' escalations.
     """
@@ -71,7 +85,22 @@ async def notify_admin_manual(user_full_name, question, sid, fid=None):
                    f"🏫 {esc(faculty_name)}\n"
                    f"❓ {esc(question)}\n"
                    f"⚠️ Talaba admin javobini kutmoqda.")
-            sent_msg = await state.bot_app.bot.send_message(chat_id=group_id, text=msg, parse_mode='HTML')
+
+            reply_markup = None
+            if student_tg_id and str(student_tg_id) != "WEB":
+                from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+                admin_panel_url = os.environ.get("ADMIN_PANEL_URL", "https://uz-npuu.vercel.app")
+                chat_url = f"{admin_panel_url}/admin/questions?tg_id={student_tg_id}"
+                reply_markup = InlineKeyboardMarkup([[
+                    InlineKeyboardButton("💬 Panelda suhbatni ochish", url=chat_url)
+                ]])
+
+            sent_msg = await state.bot_app.bot.send_message(
+                chat_id=group_id,
+                text=msg,
+                parse_mode='HTML',
+                reply_markup=reply_markup
+            )
             logging.info(f"✅ Manual alert sent to group {group_id}")
             return group_id, sent_msg.message_id
         else:
