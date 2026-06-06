@@ -32,41 +32,8 @@ export default function QuestionsPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-select chat from URL parameters (e.g. ?tg_id=12345 or ?student_id=250244)
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const tgId = params.get('tg_id');
-      const studentId = params.get('student_id');
-      if (tgId || studentId) {
-        const found = grouped.find(u => 
-          (tgId && u.id === tgId) || 
-          (studentId && u.questions.some(q => String(q.student_id) === String(studentId)))
-        );
-        if (found && selectedId !== found.id) {
-          setSelectedId(found.id);
-        }
-      }
-    }
-  }, [grouped, selectedId]);
-
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [selectedId, all]);
-
-  useEffect(() => {
-    if (selectedId) {
-      const chat = grouped.find(g => g.id === selectedId);
-      if (chat && chat.unread > 0) {
-        markChatAsRead(selectedId).then(() => {
-          setAll(prev => prev.map(q => 
-            (q.student_telegram_id === selectedId && q.status !== 'answered') 
-              ? { ...q, status: 'answered' } 
-              : q
-          ));
-        }).catch(console.error);
-      }
-    }
   }, [selectedId, all]);
 
   const grouped = useMemo(() => {
@@ -114,6 +81,39 @@ export default function QuestionsPage() {
       })
       .sort((a, b) => new Date(b.latest).getTime() - new Date(a.latest).getTime());
   }, [all, search]);
+
+  // Auto-select chat from URL parameters (e.g. ?tg_id=12345 or ?student_id=250244)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tgId = params.get('tg_id');
+      const studentId = params.get('student_id');
+      if (tgId || studentId) {
+        const found = grouped.find(u => 
+          (tgId && u.id === tgId) || 
+          (studentId && u.questions.some(q => String(q.student_id) === String(studentId)))
+        );
+        if (found && selectedId !== found.id) {
+          setSelectedId(found.id);
+        }
+      }
+    }
+  }, [grouped, selectedId]);
+
+  useEffect(() => {
+    if (selectedId) {
+      const chat = grouped.find(g => g.id === selectedId);
+      if (chat && chat.unread > 0) {
+        markChatAsRead(selectedId).then(() => {
+          setAll(prev => prev.map(q => 
+            (q.student_telegram_id === selectedId && q.status !== 'answered') 
+              ? { ...q, status: 'answered' } 
+              : q
+          ));
+        }).catch(console.error);
+      }
+    }
+  }, [selectedId, all, grouped]);
 
   const activeChat = selectedId ? grouped.find(u => u.id === selectedId) : null;
 
@@ -192,7 +192,7 @@ export default function QuestionsPage() {
         <button className="btn btn-blue" onClick={() => load(true)}>↻ Yangilash</button>
       </div>
 
-      <div className="admin-chat-wrap">
+      <div className={`admin-chat-wrap ${selectedId ? 'active-chat-selected' : ''}`}>
         {/* SIDEBAR */}
         <div className="ac-sidebar">
           <div className="ac-sidebar-header">
@@ -262,6 +262,13 @@ export default function QuestionsPage() {
           {activeChat ? (
             <>
               <div className="ac-main-header">
+                <button className="ac-back-btn" onClick={() => setSelectedId(null)}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6 }}>
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                  </svg>
+                  Orqaga
+                </button>
                 <div>
                   <div className="ac-header-name">
                     {activeChat.name}

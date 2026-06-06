@@ -47,6 +47,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router    = useRouter();
   const [unansweredCount, setUnansweredCount] = useState(0);
   const [user, setUser] = useState<{ role: string; permissions: string } | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -74,6 +75,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => clearInterval(interval);
   }, []);
 
+  // Close sidebar drawer automatically on navigation (path changes)
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
   function logout() {
     localStorage.removeItem('admin_token');
     router.replace('/');
@@ -93,65 +99,82 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   return (
-    <div style={{ display: 'flex' }}>
-      <aside className="sidebar">
-        <div className="sidebar-top">
-          <div className="sidebar-logo">🎓</div>
-          <div className="sidebar-title">NPUU Admin</div>
-          <div className="sidebar-sub">Boshqaruv tizimi</div>
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {/* Mobile Sticky Header */}
+      <header className="mobile-header">
+        <button className="mobile-menu-btn" onClick={() => setSidebarOpen(true)}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 24, height: 24 }}>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <div className="mobile-header-title">NPUU Admin</div>
+      </header>
 
-        {NAV.slice(0, 2).some(n => hasPerm(n.href)) && (
-          <>
-            <div className="nav-section">Asosiy</div>
-            {NAV.slice(0, 2).filter(n => hasPerm(n.href)).map(n => (
-              <Link key={n.href} href={n.href}
-                className={`nav-item${pathname === n.href ? ' active' : ''}`}>
-                <span className="nav-icon">{ICONS[n.icon]}</span>
-                <span>{n.label}</span>
-                {n.href === '/admin/questions' && unansweredCount > 0 && (
-                  <span className="nav-badge">{unansweredCount}</span>
-                )}
-              </Link>
-            ))}
-          </>
-        )}
+      <div style={{ display: 'flex', flex: 1, position: 'relative' }}>
+        {/* Sidebar backdrop overlay (mobile only) */}
+        {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
 
-        {NAV.slice(2, 4).some(n => hasPerm(n.href)) && (
-          <>
-            <div className="nav-section">Boshqaruv</div>
-            {NAV.slice(2, 4).filter(n => hasPerm(n.href)).map(n => (
-              <Link key={n.href} href={n.href}
-                className={`nav-item${pathname === n.href ? ' active' : ''}`}>
-                <span className="nav-icon">{ICONS[n.icon]}</span>
-                <span>{n.label}</span>
-              </Link>
-            ))}
-          </>
-        )}
+        <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+          <div className="sidebar-top">
+            <div className="sidebar-logo">🎓</div>
+            <div className="sidebar-title">NPUU Admin</div>
+            <div className="sidebar-sub">Boshqaruv tizimi</div>
+          </div>
 
-        {NAV.slice(4).some(n => hasPerm(n.href)) && (
-          <>
-            <div className="nav-section">Kontent</div>
-            {NAV.slice(4).filter(n => hasPerm(n.href)).map(n => (
-              <Link key={n.href} href={n.href}
-                className={`nav-item${pathname === n.href ? ' active' : ''}`}>
-                <span className="nav-icon">{ICONS[n.icon]}</span>
-                <span>{n.label}</span>
-              </Link>
-            ))}
-          </>
-        )}
+          {NAV.slice(0, 2).some(n => hasPerm(n.href)) && (
+            <>
+              <div className="nav-section">Asosiy</div>
+              {NAV.slice(0, 2).filter(n => hasPerm(n.href)).map(n => (
+                <Link key={n.href} href={n.href}
+                  className={`nav-item${pathname === n.href ? ' active' : ''}`}>
+                  <span className="nav-icon">{ICONS[n.icon]}</span>
+                  <span>{n.label}</span>
+                  {n.href === '/admin/questions' && unansweredCount > 0 && (
+                    <span className="nav-badge">{unansweredCount}</span>
+                  )}
+                </Link>
+              ))}
+            </>
+          )}
 
-        <div className="sidebar-footer">
-          <button className="logout-btn" onClick={logout}>
-            <span className="nav-icon" style={{ width:18, height:18 }}>{ICONS.logout}</span>
-            <span>Chiqish</span>
-          </button>
-        </div>
-      </aside>
+          {NAV.slice(2, 4).some(n => hasPerm(n.href)) && (
+            <>
+              <div className="nav-section">Boshqaruv</div>
+              {NAV.slice(2, 4).filter(n => hasPerm(n.href)).map(n => (
+                <Link key={n.href} href={n.href}
+                  className={`nav-item${pathname === n.href ? ' active' : ''}`}>
+                  <span className="nav-icon">{ICONS[n.icon]}</span>
+                  <span>{n.label}</span>
+                </Link>
+              ))}
+            </>
+          )}
 
-      <main className="content fade-up mesh-bg" style={{ marginLeft: 260 }}>{children}</main>
+          {NAV.slice(4).some(n => hasPerm(n.href)) && (
+            <>
+              <div className="nav-section">Kontent</div>
+              {NAV.slice(4).filter(n => hasPerm(n.href)).map(n => (
+                <Link key={n.href} href={n.href}
+                  className={`nav-item${pathname === n.href ? ' active' : ''}`}>
+                  <span className="nav-icon">{ICONS[n.icon]}</span>
+                  <span>{n.label}</span>
+                </Link>
+              ))}
+            </>
+          )}
+
+          <div className="sidebar-footer">
+            <button className="logout-btn" onClick={logout}>
+              <span className="nav-icon" style={{ width:18, height:18 }}>{ICONS.logout}</span>
+              <span>Chiqish</span>
+            </button>
+          </div>
+        </aside>
+
+        <main className="content fade-up mesh-bg">{children}</main>
+      </div>
     </div>
   );
 }
