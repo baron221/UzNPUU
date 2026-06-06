@@ -456,6 +456,17 @@ async def answer_question(qid: int, request: Request, current_user: dict = Depen
                 parse_mode='HTML'
             )
 
+            # Also notify the faculty Telegram group
+            import asyncio as _asyncio
+            import notifier
+            _asyncio.create_task(notifier.notify_group_admin_reply(
+                admin_name=admin_name,
+                question_text=question.get('question', ''),
+                answer_text=answer,
+                sid=question.get('student_id') or question.get('student_telegram_id'),
+                fid=question.get('faculty_id')
+            ))
+
             # If already answered, create a NEW row instead of overwriting
             if question['status'] == 'answered':
                 import database as db_lib

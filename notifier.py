@@ -80,3 +80,44 @@ async def notify_admin_manual(user_full_name, question, sid, fid=None):
     except Exception as e:
         logging.error(f"⚠️ Manual notify error: {str(e)}")
         return None, None
+
+async def notify_group_admin_reply(admin_name, question_text, answer_text, sid, fid=None):
+    """
+    Sends admin's web panel reply to the faculty Telegram group so the group can see it.
+    """
+    try:
+        if not state.bot_app:
+            return
+
+        faculty_name = "Umumiy"
+        group_id = os.environ.get("ADMIN_GROUP_ID")
+
+        if fid:
+            faculty = db.get_faculty(fid)
+            if faculty:
+                faculty_name = faculty['name']
+                group_id = faculty.get('telegram_group_id') or group_id
+
+        if not group_id:
+            logging.warning(f"⚠️ notify_group_admin_reply: No group_id for faculty {fid}")
+            return
+
+        group_id = str(group_id).strip()
+
+        # Don't show internal follow-up messages in the group
+        if question_text in ["__ADMIN_FOLLOW_UP__", "Adminstruatordan xabari"]:
+            q_display = "(Admin xabari)"
+        else:
+            q_display = esc(question_text[:200])
+
+        msg = (
+            f"✅ <b>Admin javobi berildi</b>\n"
+            f"🆔 Talaba ID: <code>{esc(sid)}</code>\n"
+            f"🏫 {esc(faculty_name)}\n"
+            f"❓ <b>Savol:</b> {q_display}\n"
+            f"💬 <b>{esc(admin_name)} javobi:</b>\n{esc(answer_text)}"
+        )
+        await state.bot_app.bot.send_message(chat_id=group_id, text=msg, parse_mode='HTML')
+        logging.info(f"✅ Admin reply forwarded to group {group_id}")
+    except Exception as e:
+        logging.error(f"⚠️ notify_group_admin_reply error: {str(e)}")
