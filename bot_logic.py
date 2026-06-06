@@ -305,9 +305,15 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         fid = context.user_data.get('faculty_id')
         sid = context.user_data.get('student_id')
         
-        if not sid:
+        if not sid or not fid:
             s_db = db.get_student(user.id)
-            if s_db: sid = s_db['student_id']
+            if s_db:
+                if not sid:
+                    sid = s_db.get('student_id')
+                    context.user_data['student_id'] = sid
+                if not fid:
+                    fid = s_db.get('faculty_id')
+                    context.user_data['faculty_id'] = fid
 
         if data == "ask_admin":
             original_q = context.user_data.get('last_question', "Noma'lum savol")
@@ -452,6 +458,10 @@ async def _process_question(update: Update, context: ContextTypes.DEFAULT_TYPE, 
         student = db.get_student(user.id)
         sid = student.get('student_id') if student else None
         fid = (context.user_data.get('faculty_id') or student.get('faculty_id')) if student else None
+        
+        if student:
+            context.user_data['student_id'] = sid
+            context.user_data['faculty_id'] = fid
         
         if not student or not fid or str(sid).startswith('GUEST_'):
             await update.message.reply_text(
