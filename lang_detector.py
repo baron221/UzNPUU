@@ -41,9 +41,9 @@ def detect_lang(text: str) -> str:
 # ── Language-specific responses ───────────────────────────────────────────────
 RESPONSES = {
     "not_found": {
-        "uz": "Kechirasiz, bu savol bo'yicha ma'lumot topilmadi. Iltimos, admin javobini kuting... ⏳",
-        "ru": "Извините, информация по этому вопросу не найдена. Пожалуйста, ожидайте ответ администратора... ⏳",
-        "en": "Sorry, I couldn't find information about this. Please wait for the administrator's reply... ⏳"
+        "uz": "Kechirasiz, bu savol bo'yicha ma'lumot topilmadi. Iltimos, adminga yuborish tugmasini bosing.",
+        "ru": "Извините, информация по этому вопросу не найдена. Пожалуйста, нажмите кнопку отправки администратору.",
+        "en": "Sorry, I couldn't find information about this. Please press the button to send to admin."
     },
     "searching": {
         "uz": "🔍 Hujjatlarimizdan qidirilmoqda...",
