@@ -12,9 +12,13 @@ import database as db
 import ai_responder
 import logger
 import notifier
+import state
 
 # Conversation States
 REGISTER_ID, REGISTER_FACULTY = range(2)
+
+# Max voice message duration (seconds)
+MAX_VOICE_DURATION = 120
 
 def setup_bot_handlers(app):
     # Registration Flow
@@ -27,7 +31,11 @@ def setup_bot_handlers(app):
             REGISTER_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_id)],
             REGISTER_FACULTY: [CallbackQueryHandler(receive_faculty, pattern="^reg_fac_")],
         },
-        fallbacks=[CommandHandler("start", start), CommandHandler("faculty", change_faculty)],
+        fallbacks=[
+            CommandHandler("start", start),
+            CommandHandler("cancel", cancel_cmd),
+            CommandHandler("faculty", change_faculty)
+        ],
         name="registration_conv",
         persistent=False
     )
@@ -35,6 +43,7 @@ def setup_bot_handlers(app):
     app.add_handler(conv_handler)
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("faculty", change_faculty))
+    app.add_handler(CommandHandler("cancel", cancel_cmd))
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.VOICE, handle_voice))
     app.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.TEXT & ~filters.COMMAND, handle_message))
@@ -53,6 +62,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not student['faculty_id']:
             faculties = [f for f in db.get_all_faculties() if f['is_active']]
             keyboard = [[InlineKeyboardButton(f['name'], callback_data=f"reg_fac_{f['id']}")] for f in faculties]
+            keyboard.append([InlineKeyboardButton("📚 Umumiy (Fakultetsiz)", callback_data="reg_fac_none")])
             await update.message.reply_text(
                 f"Assalomu alaykum! 🎓 Sizning ID: {student['student_id']}\n\n"
                 "Fakultetingiz hali tanlanmagan. Iltimos, fakultetingizni tanlang:",
@@ -76,26 +86,39 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "Assalomu alaykum! NPUU botiga xush kelibsiz! 🎓\n\n"
         "Botdan foydalanish uchun ro'yxatdan o'tishingiz kerak.\n"
-        "Iltimos, **6 xonali talaba ID raqamingizni** kiriting (masalan: 123456):",
+        "Iltimos, **talaba ID raqamingizni** kiriting:\n\n"
+        "❌ Bekor qilish uchun /cancel yozing.",
         parse_mode='Markdown'
     )
     return REGISTER_ID
+
+async def cancel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data.clear()
+    await update.message.reply_text(
+        "❌ Bekor qilindi. Savolingizni yozing yoki /start orqali qayta ro'yxatdan o'ting."
+    )
+    return ConversationHandler.END
 
 async def start_reset_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
     user_id = query.from_user.id
-    conn = db.get_conn()
-    conn.execute("DELETE FROM students WHERE telegram_id=?", (str(user_id),))
-    conn.commit()
-    conn.close()
+    try:
+        conn = db.get_conn()
+        conn.execute("DELETE FROM students WHERE telegram_id=?", (str(user_id),))
+        conn.commit()
+    except Exception as e:
+        logging.error(f"Error deleting student in reset: {e}")
+    finally:
+        conn.close()
     
     context.user_data.clear()
     
     await query.message.reply_text(
         "Eski ma'lumotlaringiz tizimdan o'chirildi.\n\n"
-        "Iltimos, yangi **6 xonali talaba ID raqamingizni** kiriting (masalan: 123456):",
+        "Iltimos, yangi **talaba ID raqamingizni** kiriting:\n\n"
+        "❌ Bekor qilish uchun /cancel yozing.",
         parse_mode='Markdown'
     )
     return REGISTER_ID
@@ -103,13 +126,14 @@ async def start_reset_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def receive_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
     
+    # Must be digits only
+    if not re.match(r'^\d+$', text):
+        await update.message.reply_text("❌ Xato! Iltimos, faqat raqamlardan iborat ID kiriting:")
+        return REGISTER_ID
+
     allowed_student = db.is_student_allowed(text)
     
     if not allowed_student:
-        if not re.match(r'^\d+$', text):
-            await update.message.reply_text("❌ Xato! Iltimos, faqat raqamlardan iborat ID kiriting:")
-            return REGISTER_ID
-            
         await update.message.reply_text(
             "❌ Kechirasiz, sizning ID raqamingiz tizimda topilmadi.\n"
             "Ruxsat etilgan talabalar ro'yxatida yo'qsiz. Iltimos, ma'muriyatga murojaat qiling."
@@ -126,6 +150,7 @@ async def receive_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     faculties = [f for f in db.get_all_faculties() if f['is_active']]
     
     keyboard = [[InlineKeyboardButton(f['name'], callback_data=f"reg_fac_{f['id']}")] for f in faculties]
+    keyboard.append([InlineKeyboardButton("📚 Umumiy (Fakultetsiz)", callback_data="reg_fac_none")])
     
     await update.message.reply_text(
         welcome_text,
@@ -141,7 +166,12 @@ async def receive_faculty(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = query.from_user.id
     student_id = context.user_data.get('temp_student_id')
     
-    fid = None if data == "none" else int(data)
+    try:
+        fid = None if data == "none" else int(data)
+    except ValueError:
+        await query.message.reply_text("❌ Xatolik yuz berdi. Qaytadan /start bosing.")
+        return ConversationHandler.END
+
     db.register_student(user_id, student_id, fid)
     
     context.user_data['student_id'] = student_id
@@ -167,14 +197,23 @@ async def change_faculty(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     faculties = [f for f in db.get_all_faculties() if f['is_active']]
     keyboard = [[InlineKeyboardButton(f['name'], callback_data=f"fac_{f['id']}")] for f in faculties]
+    keyboard.append([InlineKeyboardButton("📚 Umumiy (Fakultetsiz)", callback_data="fac_none")])
     
     await update.message.reply_text("Fakultetni o'zgartiring:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    sid = context.user_data.get('student_id', 'aniqlanmagan')
-    fname = context.user_data.get('faculty_name', 'tanlanmagan')
+    user_id = update.effective_user.id
+    # Always load fresh from DB to avoid stale context after restart
+    student = db.get_student(user_id)
+    if student:
+        sid = student.get('student_id', 'aniqlanmagan')
+        fac = db.get_faculty(student['faculty_id']) if student.get('faculty_id') else None
+        fname = fac['name'] if fac else 'Tanlanmagan'
+    else:
+        sid = context.user_data.get('student_id', 'aniqlanmagan')
+        fname = context.user_data.get('faculty_name', 'tanlanmagan')
     await update.message.reply_text(
-        f"💡 Yordam:\n\n• Savolingizni yozing\n• /faculty — fakultet o'zgartirish\n• /start — qayta ro'yxatdan o'tish\n\n🆔 ID: {sid}\n🏫 Fakultet: {fname}"
+        f"💡 Yordam:\n\n• Savolingizni yozing\n• /faculty — fakultet o'zgartirish\n• /cancel — bekor qilish\n• /start — qayta ro'yxatdan o'tish\n\n🆔 ID: {sid}\n🏫 Fakultet: {fname}"
     )
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -182,16 +221,15 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     data = query.data
 
-    import state
-
     if data.startswith("reg_fac_"):
-        # Fallback handler: fires when bot restarted mid-registration and
-        # the ConversationHandler lost its REGISTER_FACULTY state.
         raw_fid = data.replace("reg_fac_", "")
-        fid = None if raw_fid == "none" else int(raw_fid)
+        try:
+            fid = None if raw_fid == "none" else int(raw_fid)
+        except ValueError:
+            await query.message.reply_text("❌ Xatolik. /start bosing.")
+            return
         user_id = query.from_user.id
         student_id = context.user_data.get('temp_student_id') or context.user_data.get('student_id')
-        # Try to load from DB if context is empty
         if not student_id:
             s_db = db.get_student(user_id)
             if s_db:
@@ -211,11 +249,15 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         else:
             await query.message.reply_text("❌ Xatolik: avval /start orqali ID kiriting.")
+
     elif data.startswith("fb_"):
         parts = data.split('_')
         if len(parts) >= 3:
-            val = int(parts[1])
-            qid = int(parts[2])
+            try:
+                val = int(parts[1])
+                qid = int(parts[2])
+            except ValueError:
+                return
             feedback_val = 1 if val == 1 else -1
             db.update_question_feedback(qid, feedback_val)
             try:
@@ -223,7 +265,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if val == 1:
                     await query.message.reply_text("Rahmat, bahoingiz qabul qilindi! ✅", disable_notification=True)
                 else:
-                    kb = [[InlineKeyboardButton("👤 Adminstratorga yuborish", callback_data="ask_admin")]]
+                    kb = [[InlineKeyboardButton("👤 Administratorga yuborish", callback_data="ask_admin")]]
                     await query.message.reply_text(
                         "Rahmat! Javob sifatini yaxshilashga yordam berganingiz uchun tashakkur. 🔄\n\n"
                         "Savolingizni administratorga yuborishni xohlaysizmi?",
@@ -235,7 +277,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data.startswith("fac_"):
         raw_fid = data.replace("fac_", "")
-        fid = None if raw_fid == "none" else int(raw_fid)
+        try:
+            fid = None if raw_fid == "none" else int(raw_fid)
+        except ValueError:
+            return
         
         user_id = query.from_user.id
         student_id = context.user_data.get('student_id')
@@ -265,25 +310,29 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if s_db: sid = s_db['student_id']
 
         if data == "ask_admin":
-            original_q = context.user_data.get('last_question', 'Noma\'lum savol')
+            original_q = context.user_data.get('last_question', "Noma'lum savol")
             qid = db.save_question(str(user.id), sid, username, user.full_name or username, fid, original_q, "Admin javobini kuting...", "uz", "MANUAL")
-            await query.message.reply_text("📩 Savolingiz adminstratorga yuborildi. Tez orada javob olasiz!")
+            await query.message.reply_text("📩 Savolingiz administratorga yuborildi. Tez orada javob olasiz!")
             asyncio.create_task(forward_and_link(qid, user.full_name or username, original_q, None, sid, fid, is_manual=True))
             return
 
         if data.startswith("opt_idx_"):
-            idx = int(data.replace("opt_idx_", ""))
+            try:
+                idx = int(data.replace("opt_idx_", ""))
+            except ValueError:
+                return
             temp_options = context.user_data.get('temp_options', [])
-            if idx < len(temp_options):
-                selected = temp_options[idx]
-            else:
-                selected = "Noma'lum savol"
+            selected = temp_options[idx] if idx < len(temp_options) else "Noma'lum savol"
         else:
             selected = data.replace("opt_", "")
             
         await query.message.edit_text("Hujjatlarimizdan qidirilmoqda... 🔍")
-        import state
         answer, options, lang, category, topic = ai_responder.get_answer(selected, state.knowledge_base, state.clients, faculty_id=fid)
+        
+        # Truncate if too long for Telegram
+        if len(answer) > 4000:
+            answer = answer[:4000] + "..."
+        
         qid = db.save_question(str(user.id), sid, username, user.full_name or username, fid, selected, answer, lang, category)
         if topic and topic != "Boshqa":
             db.update_question_topic(qid, topic)
@@ -296,13 +345,13 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         referral_kws = [
             "topilmadi", "not found", "murojaat", "mas'ul xodimi", 
-            "adminstrator", "administrator", "admin", "operator", "ofisiga",
-            "bog'lan", "boglan", "aloqa", "muloqot", "chat"
+            "administrator", "admin", "operator", "ofisiga",
+            "bog'lan", "boglan", "aloqa", "muloqot", "chat", "yuborish tugmasini"
         ]
-        show_admin_btn_opt = (category == "UNANSWERED") or (category == "ERROR") or (category == "GENERAL") or any(kw in answer.lower() for kw in referral_kws)
+        show_admin_btn_opt = (category in ["UNANSWERED", "ERROR", "GENERAL"]) or any(kw in answer.lower() for kw in referral_kws)
         
         if show_admin_btn_opt:
-            kb.append([InlineKeyboardButton("👤 Adminstratorga yuborish", callback_data="ask_admin")])
+            kb.append([InlineKeyboardButton("👤 Administratorga yuborish", callback_data="ask_admin")])
             context.user_data['last_question'] = selected
         elif category not in ["VAGUE", "GENERAL", "ERROR", "GREETING", "THANKS", "BYE"]:
             kb.append([
@@ -319,73 +368,85 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(offline_msg)
         return
 
-    import state
-    max_req = int(db.get_setting("rate_limit_requests", "2"))
-    win_sec = int(db.get_setting("rate_limit_window", "120"))
+    max_req = int(db.get_setting("rate_limit_requests", "5"))
+    win_sec = int(db.get_setting("rate_limit_window", "300"))
     
     is_allowed, wait_time = state.check_rate_limit(str(update.effective_user.id), max_requests=max_req, window_seconds=win_sec)
     if not is_allowed:
         minutes = wait_time // 60
         seconds = wait_time % 60
-        await update.message.reply_text(f"⏳ Siz qisqa vaqt ichida ko'p savol berdingiz. Iltimos {minutes} daqiqa va {seconds} soniya kuting.")
+        if minutes > 0:
+            await update.message.reply_text(f"⏳ Siz qisqa vaqt ichida ko'p savol berdingiz. Iltimos {minutes} daqiqa kuting.")
+        else:
+            await update.message.reply_text(f"⏳ Siz qisqa vaqt ichida ko'p savol berdingiz. Iltimos {seconds} soniya kuting.")
+        return
+
+    # Check voice duration
+    voice = update.message.voice
+    if voice.duration > MAX_VOICE_DURATION:
+        await update.message.reply_text(f"⚠️ Ovozli xabar {MAX_VOICE_DURATION} soniyadan qisqa bo'lishi kerak.")
         return
 
     import tempfile
+    file_path = None
     
-    # 1. Yuklab olish
-    voice = update.message.voice
-    file = await context.bot.get_file(voice.file_id)
-    
-    with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as tf:
-        await file.download_to_drive(custom_path=tf.name)
-        file_path = tf.name
-
-    await update.message.chat.send_action("typing")
-    
-    # 2. Matnga o'girish
-    import state
     try:
+        file = await context.bot.get_file(voice.file_id)
+        with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as tf:
+            await file.download_to_drive(custom_path=tf.name)
+            file_path = tf.name
+
+        await update.message.chat.send_action("typing")
+        
+        # Detect language for better transcription
         text = ai_responder.transcribe_audio(file_path, state.clients['groq'])
     except Exception as e:
         logging.error(f"Voice Transcription Error: {e}")
         await update.message.reply_text("Ovozli xabarni o'qishda xatolik yuz berdi. Iltimos, yozib yuboring.")
         return
     finally:
-        if os.path.exists(file_path):
+        if file_path and os.path.exists(file_path):
             os.remove(file_path)
 
     if not text or len(text.strip()) < 2:
         await update.message.reply_text("Ovozli xabarda nima deyilganini tushunib bo'lmadi.")
         return
 
-    # 3. Foydalanuvchiga matnni ko'rsatish
+    # Show transcribed text
     await update.message.reply_text(f"🎤 Siz: <i>{text}</i>", parse_mode='HTML')
     
-    # 4. Oddiy matn kabi davom ettirish
-    update.message.text = text
-    await handle_message(update, context)
+    # Process as regular text message (create a fake update with text)
+    # Instead of mutating the frozen message, call handle_message logic directly
+    await _process_question(update, context, text)
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    question = update.message.text
+    await _process_question(update, context, question)
+
+
+async def _process_question(update: Update, context: ContextTypes.DEFAULT_TYPE, question: str):
+    """Core question processing logic — used by both text and voice handlers."""
     try:
         is_working, offline_msg = db.is_within_working_hours()
         if not is_working:
             await update.message.reply_text(offline_msg)
             return
 
-        import state
-        max_req = int(db.get_setting("rate_limit_requests", "2"))
-        win_sec = int(db.get_setting("rate_limit_window", "120"))
+        max_req = int(db.get_setting("rate_limit_requests", "5"))
+        win_sec = int(db.get_setting("rate_limit_window", "300"))
         
         is_allowed, wait_time = state.check_rate_limit(str(update.effective_user.id), max_requests=max_req, window_seconds=win_sec)
         if not is_allowed:
             minutes = wait_time // 60
             seconds = wait_time % 60
-            await update.message.reply_text(f"⏳ Siz qisqa vaqt ichida ko'p savol berdingiz. Iltimos {minutes} daqiqa va {seconds} soniya kuting.")
+            if minutes > 0:
+                await update.message.reply_text(f"⏳ Siz qisqa vaqt ichida ko'p savol berdingiz. Iltimos {minutes} daqiqa kuting.")
+            else:
+                await update.message.reply_text(f"⏳ Siz qisqa vaqt ichida ko'p savol berdingiz. Iltimos {seconds} soniya kuting.")
             return
 
-        question = update.message.text
-        user = update.message.from_user
+        user = update.effective_user
         
         # Ensure student is fully registered
         student = db.get_student(user.id)
@@ -399,37 +460,37 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         username = user.username or user.first_name or "Talaba"
 
-        import state
-        
         if not state.clients:
             logging.error("❌ AI clients not initialized in handle_message")
             await update.message.reply_text("⚠️ Kechirasiz, AI xizmat hozirda ishlamayapti. Tez orada tuzatiladi.")
             return
-        if not state.knowledge_base:
-            logging.warning("⚠️ Knowledge base is empty — answering with AI only (no documents)")
 
         await update.message.chat.send_action("typing")
         
         # 1. Get Answer
         answer, options, lang, category, topic = ai_responder.get_answer(question, state.knowledge_base, state.clients, faculty_id=fid)
 
-        # 2. Save Question
+        # 2. Truncate if too long for Telegram (4096 char limit)
+        if len(answer) > 4000:
+            answer = answer[:4000] + "..."
+
+        # 3. Save Question
         qid = db.save_question(str(user.id), sid, username, user.full_name or username, fid, question, answer, lang, category)
         if topic and topic != "Boshqa":
             db.update_question_topic(qid, topic)
         logger.log_message(str(user.id), username, question, answer, lang, category)
 
-        # 3. Respond to Student FIRST
+        # 4. Build keyboard
         question_lower = question.lower()
         admin_req_kws = ["admin", "operator", "bog'la", "boglan", "aloqa"]
         is_req_admin = any(kw in question_lower for kw in admin_req_kws)
 
         referral_kws = [
             "topilmadi", "not found", "murojaat", "mas'ul xodimi", 
-            "adminstrator", "administrator", "admin", "operator", "ofisiga",
-            "bog'lan", "boglan", "aloqa", "muloqot", "chat"
+            "administrator", "admin", "operator", "ofisiga",
+            "bog'lan", "boglan", "aloqa", "muloqot", "chat", "yuborish tugmasini"
         ]
-        show_admin_btn = (category == "UNANSWERED") or (category == "VAGUE") or (category == "ERROR") or (category == "GENERAL") or is_req_admin or any(kw in answer.lower() for kw in referral_kws)
+        show_admin_btn = (category in ["UNANSWERED", "VAGUE", "ERROR", "GENERAL"]) or is_req_admin or any(kw in answer.lower() for kw in referral_kws)
         
         kb = []
         if options:
@@ -437,10 +498,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             kb = [[InlineKeyboardButton(o[:57] + "..." if len(o) > 60 else o, callback_data=f"opt_idx_{i}")] for i, o in enumerate(options)]
         
         if show_admin_btn:
-            kb.append([InlineKeyboardButton("👤 Adminstratorga yuborish", callback_data="ask_admin")])
+            kb.append([InlineKeyboardButton("👤 Administratorga yuborish", callback_data="ask_admin")])
             context.user_data['last_question'] = question
         elif category not in ["VAGUE", "GENERAL", "ERROR", "GREETING", "THANKS", "BYE"]:
-            # Add Feedback buttons
             kb.append([
                 InlineKeyboardButton("👍 Yordam berdi", callback_data=f"fb_1_{qid}"),
                 InlineKeyboardButton("👎 Yordam bermadi", callback_data=f"fb_0_{qid}")
@@ -449,15 +509,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
         await update.message.reply_text(f"🤖 AI Yordamchi:\n\n{answer}", reply_markup=InlineKeyboardMarkup(kb) if kb else None)
 
-        # 4. Forward to Admin (As background task) - Disabled: now only forwards when 'Ask Admin' is clicked
-        # asyncio.create_task(forward_and_link(qid, user.full_name or username, question, answer, sid, fid))
-
     except Exception as e:
         err_msg = str(e)
         st = traceback.format_exc()
         logging.error(f"❌ Handle Message Error: {err_msg}\n{st}")
-        
-        # User-friendly error
         await update.message.reply_text("Uzr, savolingizni tushunishda xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring! 🧐")
 
 
@@ -466,37 +521,36 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def forward_and_link(qid, name, q, a, sid, fid, is_manual=False):
     try:
+        result = None
         if is_manual:
-            chat_id, mid = await notifier.notify_admin_manual(name, q, sid, fid)
+            result = await notifier.notify_admin_manual(name, q, sid, fid)
         else:
-            chat_id, mid = await notifier.forward_to_admin(name, q, a, sid, fid)
+            result = await notifier.forward_to_admin(name, q, a, sid, fid)
         
-        if qid and chat_id and mid:
-            db.link_admin_message(qid, chat_id, mid)
+        if result and len(result) == 2:
+            chat_id, mid = result
+            if qid and chat_id and mid:
+                db.link_admin_message(qid, chat_id, mid)
     except Exception as e:
         logging.error(f"❌ Error in forward_and_link: {str(e)}")
 
 async def handle_admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Only process text replies in groups
     if not update.message or not update.message.reply_to_message or not update.message.text:
         return
     
     chat_id = update.effective_chat.id
     reply_to_mid = update.message.reply_to_message.message_id
     
-    # 1. Find linked question
     question_data = db.get_question_by_admin_message(chat_id, reply_to_mid)
     if not question_data:
-        return # Not a reply to a bot question
+        return
     
-    # 2. Extract answer and admin info
     answer = update.message.text
     admin_user = update.effective_user
     
-    # 3. Relay to student
     import html
     student_tg_id = question_data['student_telegram_id']
-    admin_name = admin_user.full_name or "Adminstrator"
+    admin_name = admin_user.full_name or "Administrator"
     relay_msg = (
         f"✨ <b>Sizning savolingizga javob keldi:</b>\n\n"
         f"❓ {html.escape(question_data['question'])}\n\n"
@@ -505,7 +559,6 @@ async def handle_admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE)
     
     try:
         await context.bot.send_message(chat_id=student_tg_id, text=relay_msg, parse_mode='HTML')
-        # 4. Update DB
         db.update_question_answer_tg(question_data['id'], answer, admin_user.id, admin_user.full_name)
     except Exception as e:
         logging.error(f"❌ Error relaying admin reply: {str(e)}")

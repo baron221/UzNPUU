@@ -18,7 +18,8 @@ DB_PATH = os.getenv("DB_PATH") or os.path.join(DATA_DIR, "university.db")
 # ── HELPERS ───────────────────────────────────────────────────────────────────
 def get_now_uz():
     """Returns current Tashkent time (UTC+5) as YYYY-MM-DD HH:MM:SS"""
-    now_utc = datetime.utcnow()
+    from datetime import timezone
+    now_utc = datetime.now(timezone.utc)
     now_uz = now_utc + timedelta(hours=5)
     return now_uz.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -365,7 +366,7 @@ def register_student(tg_id, student_id, faculty_id=None):
         )
         conn.commit()
         return True
-    except:
+    except Exception:
         return False
     finally:
         conn.close()

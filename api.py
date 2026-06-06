@@ -52,7 +52,7 @@ async def favicon():
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Adjust this in production
-    allow_credentials=True,
+    allow_credentials=False,  # Cannot combine wildcard origin with credentials
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -223,14 +223,12 @@ async def ask_admin(request: Request):
     import asyncio
     asyncio.create_task(notifier.notify_admin_manual(fullname, q, student_id, faculty_id))
     
-    return {"ok": True, "message": "Savolingiz adminstratorga yuborildi."}
+    return {"ok": True, "message": "Savolingiz administratorga yuborildi."}
 
 @app.get("/api/student/history")
-async def get_student_history(student_telegram_id: str, limit: int = 30):
+async def get_student_history(student_telegram_id: str, limit: int = 30, current_user: dict = Depends(get_current_admin)):
     """
-    Public endpoint: returns a student's chat history from both
-    the Telegram bot and the mini app (same questions table).
-    Gated only by knowing your own student_telegram_id.
+    Admin-only endpoint: returns a student's chat history.
     """
     if not student_telegram_id or student_telegram_id in ("WEB", ""):
         return {"history": []}
@@ -473,13 +471,18 @@ async def answer_question(qid: int, request: Request, current_user: dict = Depen
                     "MANUAL"
                 )
 
-                # Immediately mark the NEW manual follow-up as answered so it shows up in CRM
-                new_q = db_lib.get_conn().execute(
-                    "SELECT id FROM questions WHERE student_telegram_id=? AND question='__ADMIN_FOLLOW_UP__' ORDER BY id DESC LIMIT 1",
-                    (str(question['student_telegram_id']),)
-                ).fetchone()
-                if new_q:
-                    db.update_question_answer(new_q['id'], answer, current_user.get('full_name') or current_user.get('sub', 'admin'))
+                # Immediately mark the NEW manual follow-up as answered
+                import database as db_lib
+                _conn = db_lib.get_conn()
+                try:
+                    new_q = _conn.execute(
+                        "SELECT id FROM questions WHERE student_telegram_id=? AND question='__ADMIN_FOLLOW_UP__' ORDER BY id DESC LIMIT 1",
+                        (str(question['student_telegram_id']),)
+                    ).fetchone()
+                    if new_q:
+                        db.update_question_answer(new_q['id'], answer, current_user.get('full_name') or current_user.get('sub', 'admin'))
+                finally:
+                    _conn.close()
             else:
                 db.update_question_answer(qid, answer, current_user.get('full_name') or current_user.get('sub', 'admin'))
 
@@ -539,8 +542,11 @@ async def upload_file(file: UploadFile = File(...), current_user: dict = Depends
     os.makedirs(kb_folder, exist_ok=True)
     save_path = os.path.join(kb_folder, filename)
 
-    # Write binary (works for PDF, DOCX, XLSX, TXT)
+    # File size limit: 10 MB
+    MAX_FILE_SIZE = 10 * 1024 * 1024
     content_bytes = await file.read()
+    if len(content_bytes) > MAX_FILE_SIZE:
+        return {"ok": False, "error": "Fayl hajmi 10 MB dan oshmasligi kerak."}
     with open(save_path, 'wb') as f:
         f.write(content_bytes)
 
@@ -583,7 +589,7 @@ async def get_admin_files(current_user: dict = Depends(get_current_admin)):
     return {"files": sorted(files, key=lambda x: x['created_at'], reverse=True)}
 
 @app.put("/api/admin/files/{filename}/status")
-async def dummy_status(filename: str):
+async def dummy_status(filename: str, current_user: dict = Depends(get_current_admin)):
     # Dummy endpoint to prevent 404s for old front-end code
     return {"ok": True}
 
@@ -604,11 +610,11 @@ async def delete_admin_file(filename: str, current_user: dict = Depends(get_curr
     return {"ok": False, "error": "File not found"}
 
 @app.get("/api/stats")
-async def get_general_stats():
+async def get_general_stats(current_user: dict = Depends(get_current_admin)):
     return logger.get_stats()
 
 @app.get("/api/logs")
-async def get_logs():
+async def get_logs(current_user: dict = Depends(get_current_admin)):
     return {"logs": logger.get_logs()[-50:][::-1]}
 
 # ── Admin Cards Management ────────────────────────────────────────────────────
