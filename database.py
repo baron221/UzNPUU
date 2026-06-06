@@ -420,13 +420,13 @@ def get_question(qid):
     conn.close()
     return dict(row) if row else None
 
-def update_question_answer(qid, answer, answered_by=None):
+def update_question_answer(qid, answer, answered_by=None, answered_by_name=None):
     conn = get_conn()
     conn.execute("""
         UPDATE questions 
-        SET answer=?, status='answered', answered_by=?, answered_at=CURRENT_TIMESTAMP 
+        SET answer=?, status='answered', answered_by=?, answered_by_name=?, answered_at=CURRENT_TIMESTAMP 
         WHERE id=?
-    """, (answer, answered_by, qid))
+    """, (answer, answered_by, answered_by_name, qid))
     conn.commit()
     conn.close()
 

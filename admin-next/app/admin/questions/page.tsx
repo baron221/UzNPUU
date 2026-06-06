@@ -291,7 +291,7 @@ export default function QuestionsPage() {
                               : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4l3 3"></path></svg>
                             }
                             { (q as any).answered_at 
-                              ? (String((q as any).answered_by || 'Admin').replace('TG:', ''))
+                              ? ((q as any).answered_by_name || String((q as any).answered_by || 'Admin').replace('TG:', ''))
                               : 'AI Javobi'
                             }
                           </span>

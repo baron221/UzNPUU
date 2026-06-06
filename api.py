@@ -491,11 +491,11 @@ async def answer_question(qid: int, request: Request, current_user: dict = Depen
                         (str(question['student_telegram_id']),)
                     ).fetchone()
                     if new_q:
-                        db.update_question_answer(new_q['id'], answer, current_user.get('full_name') or current_user.get('sub', 'admin'))
+                        db.update_question_answer(new_q['id'], answer, current_user.get('sub', 'admin'), current_user.get('full_name') or 'Administrator')
                 finally:
                     _conn.close()
             else:
-                db.update_question_answer(qid, answer, current_user.get('full_name') or current_user.get('sub', 'admin'))
+                db.update_question_answer(qid, answer, current_user.get('sub', 'admin'), current_user.get('full_name') or 'Administrator')
 
             return {"ok": True}
         except Exception as e:
