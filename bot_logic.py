@@ -366,7 +366,20 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ])
             context.user_data['last_question'] = selected
             
-        await query.message.edit_text(f"🤖 AI Yordamchi:\n\n{answer}", reply_markup=InlineKeyboardMarkup(kb) if kb else None)
+        import re
+        has_media = re.search(r'\[(?:IMAGE|FILE):\s*(https?://[^\s\]]+)\]', answer, re.IGNORECASE)
+        
+        if has_media:
+            try:
+                await query.message.delete()
+            except Exception as delete_err:
+                logging.warning(f"Could not delete message in callback: {delete_err}")
+            await send_response_to_student(context.bot, query.message.chat_id, f"🤖 AI Yordamchi:\n\n{answer}", reply_markup=InlineKeyboardMarkup(kb) if kb else None)
+        else:
+            try:
+                await query.message.edit_text(f"🤖 AI Yordamchi:\n\n{answer}", reply_markup=InlineKeyboardMarkup(kb) if kb else None)
+            except Exception as edit_err:
+                await send_response_to_student(context.bot, query.message.chat_id, f"🤖 AI Yordamchi:\n\n{answer}", reply_markup=InlineKeyboardMarkup(kb) if kb else None)
 
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     is_working, offline_msg = db.is_within_working_hours()
@@ -517,7 +530,7 @@ async def _process_question(update: Update, context: ContextTypes.DEFAULT_TYPE, 
             ])
             context.user_data['last_question'] = question
             
-        await update.message.reply_text(f"🤖 AI Yordamchi:\n\n{answer}", reply_markup=InlineKeyboardMarkup(kb) if kb else None)
+        await send_response_to_student(context.bot, update.effective_chat.id, f"🤖 AI Yordamchi:\n\n{answer}", reply_markup=InlineKeyboardMarkup(kb) if kb else None)
 
     except Exception as e:
         err_msg = str(e)
@@ -568,8 +581,57 @@ async def handle_admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE)
     )
     
     try:
-        await context.bot.send_message(chat_id=student_tg_id, text=relay_msg, parse_mode='HTML')
+        await send_response_to_student(context.bot, student_tg_id, relay_msg)
         db.update_question_answer_tg(question_data['id'], answer, admin_user.id, admin_user.full_name)
     except Exception as e:
         logging.error(f"❌ Error relaying admin reply: {str(e)}")
         await update.message.reply_text("⚠️ Xatolik: Javobni talabaga yuborib bo'lmadi. (Balki talaba botni bloklagandur)")
+
+async def send_response_to_student(bot, chat_id, text, reply_markup=None):
+    """
+    Sends a response text to the student. Supports [IMAGE: URL] and [FILE: URL] tags.
+    """
+    import re
+    import logging
+    
+    # Parse image tag
+    image_match = re.search(r'\[IMAGE:\s*(https?://[^\s\]]+)\]', text, re.IGNORECASE)
+    file_match = re.search(r'\[FILE:\s*(https?://[^\s\]]+)\]', text, re.IGNORECASE)
+    
+    # Clean tags from the text
+    clean_text = text
+    if image_match:
+        clean_text = clean_text.replace(image_match.group(0), '')
+    if file_match:
+        clean_text = clean_text.replace(file_match.group(0), '')
+        
+    clean_text = clean_text.strip()
+    
+    try:
+        if image_match:
+            image_url = image_match.group(1)
+            # If text is too long for caption (max 1024 chars), send photo first, then text
+            if len(clean_text) > 1000:
+                await bot.send_photo(chat_id=chat_id, photo=image_url)
+                return await bot.send_message(chat_id=chat_id, text=clean_text, reply_markup=reply_markup, parse_mode='HTML')
+            else:
+                return await bot.send_photo(chat_id=chat_id, photo=image_url, caption=clean_text, reply_markup=reply_markup, parse_mode='HTML')
+        elif file_match:
+            file_url = file_match.group(1)
+            if len(clean_text) > 1000:
+                await bot.send_document(chat_id=chat_id, document=file_url)
+                return await bot.send_message(chat_id=chat_id, text=clean_text, reply_markup=reply_markup, parse_mode='HTML')
+            else:
+                return await bot.send_document(chat_id=chat_id, document=file_url, caption=clean_text, reply_markup=reply_markup, parse_mode='HTML')
+        else:
+            try:
+                return await bot.send_message(chat_id=chat_id, text=clean_text, reply_markup=reply_markup, parse_mode='HTML')
+            except Exception as html_err:
+                logging.warning(f"HTML send failed: {html_err}. Retrying as plain text...")
+                return await bot.send_message(chat_id=chat_id, text=clean_text, reply_markup=reply_markup)
+    except Exception as e:
+        logging.error(f"Error sending rich response: {e}")
+        try:
+            return await bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup, parse_mode='HTML')
+        except:
+            return await bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup)
