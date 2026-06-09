@@ -47,6 +47,7 @@ def setup_bot_handlers(app):
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.VOICE, handle_voice))
     app.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_handler(MessageHandler(filters.ChatType.PRIVATE & (filters.PHOTO | filters.Document.ALL | filters.VIDEO), handle_media_message))
     app.add_handler(MessageHandler(filters.REPLY & (filters.ChatType.GROUPS | filters.ChatType.SUPERGROUP), handle_admin_reply))
     app.add_handler(MessageHandler(filters.COMMAND, unknown))
 
@@ -444,6 +445,167 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await _process_question(update, context, question)
 
 
+def clean_question_preview(q):
+    if not q:
+        return ""
+    import re
+    cleaned = re.sub(r'\[(?:IMAGE|FILE):\s*(https?://[^\s\]]+)\]', '', q, flags=re.IGNORECASE)
+    cleaned = cleaned.strip()
+    if not cleaned:
+        if "[IMAGE:" in q:
+            return "(Yuborilgan rasm)"
+        elif "[FILE:" in q:
+            return "(Yuborilgan fayl)"
+        return "(Yuborilgan media)"
+    return cleaned
+
+
+async def handle_media_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        is_working, offline_msg = db.is_within_working_hours()
+        if not is_working:
+            await update.message.reply_text(offline_msg)
+            return
+
+        max_req = int(db.get_setting("rate_limit_requests", "5"))
+        win_sec = int(db.get_setting("rate_limit_window", "300"))
+        
+        is_allowed, wait_time = state.check_rate_limit(str(update.effective_user.id), max_requests=max_req, window_seconds=win_sec)
+        if not is_allowed:
+            minutes = wait_time // 60
+            seconds = wait_time % 60
+            if minutes > 0:
+                await update.message.reply_text(f"⏳ Siz qisqa vaqt ichida ko'p xabar yubordingiz. Iltimos {minutes} daqiqa kuting.")
+            else:
+                await update.message.reply_text(f"⏳ Siz qisqa vaqt ichida ko'p xabar yubordingiz. Iltimos {seconds} soniya kuting.")
+            return
+
+        user = update.effective_user
+        
+        # Ensure student is fully registered
+        student = db.get_student(user.id)
+        sid = student.get('student_id') if student else None
+        fid = (context.user_data.get('faculty_id') or student.get('faculty_id')) if student else None
+        
+        if not student or not fid or str(sid).startswith('GUEST_'):
+            await update.message.reply_text(
+                "Iltimos, botdan foydalanish uchun avval ro'yxatdan o'ting va fakultetingizni tanlang:\n👉 /start"
+            )
+            return
+
+        import time
+        import urllib.parse
+        import html as html_lib
+        
+        file_id = None
+        media_type = None
+        caption = update.message.caption or ""
+        
+        if update.message.photo:
+            file_id = update.message.photo[-1].file_id
+            media_type = "IMAGE"
+        elif update.message.document:
+            file_id = update.message.document.file_id
+            media_type = "FILE"
+        elif update.message.video:
+            file_id = update.message.video.file_id
+            media_type = "FILE"
+            
+        if not file_id:
+            await update.message.reply_text("Kechirasiz, ushbu media turini qo'llab-quvvatlamaymiz.")
+            return
+
+        await update.message.chat.send_action("typing")
+        
+        try:
+            # Download file
+            file = await context.bot.get_file(file_id)
+            ext = os.path.splitext(urllib.parse.urlparse(file.file_path).path)[1] or ".jpg"
+            
+            static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+            uploads_dir = os.path.join(static_dir, "student_uploads")
+            os.makedirs(uploads_dir, exist_ok=True)
+            
+            filename = f"{user.id}_{int(time.time())}{ext}"
+            save_path = os.path.join(uploads_dir, filename)
+            
+            await file.download_to_drive(custom_path=save_path)
+            
+            backend_url = os.environ.get("RAILWAY_URL") or os.environ.get("NEXT_PUBLIC_API_URL", "https://uz-npuu.vercel.app")
+            if not backend_url.startswith("http"):
+                backend_url = f"http://{backend_url}"
+            backend_url = backend_url.rstrip("/")
+            
+            public_url = f"{backend_url}/static/student_uploads/{filename}"
+        except Exception as dl_err:
+            logging.error(f"Error downloading student media: {dl_err}")
+            public_url = "https://placeholder-failed-download"
+
+        # Construct question text
+        if media_type == "IMAGE":
+            question_text = f"[IMAGE: {public_url}] {caption}".strip()
+        else:
+            question_text = f"[FILE: {public_url}] {caption}".strip()
+
+        username = user.username or user.first_name or "Talaba"
+        
+        # Save to DB as manual question
+        qid = db.save_question(
+            str(user.id), sid, username, user.full_name or username, fid,
+            question_text, "Admin javobini kuting...", "uz", "MANUAL"
+        )
+        logger.log_message(str(user.id), username, f"({media_type} message)", "Admin javobini kuting...", "uz", "MANUAL")
+
+        # Get faculty name & group_id
+        faculty_name = "Umumiy"
+        group_id = os.environ.get("ADMIN_GROUP_ID")
+        if fid:
+            faculty = db.get_faculty(fid)
+            if faculty:
+                faculty_name = faculty['name']
+                group_id = faculty.get('telegram_group_id') or group_id
+                
+        esc_name = html_lib.escape(user.full_name or username)
+        esc_fac = html_lib.escape(faculty_name)
+        esc_sid = html_lib.escape(str(sid))
+        
+        caption_meta = (
+            f"🚨 <b>ADMIN KERAK! (Media)</b>\n"
+            f"🆔 ID: <code>{esc_sid}</code>\n"
+            f"👤 <b>{esc_name}</b>\n"
+            f"🏫 {esc_fac}\n"
+        )
+        if caption:
+            caption_meta += f"❓ Izoh: {html_lib.escape(caption)}\n"
+        caption_meta += f"⚠️ Talaba admin javobini kutmoqda."
+
+        # Send to admin group
+        sent_msg = None
+        if group_id:
+            group_id = str(group_id).strip()
+            try:
+                if update.message.photo:
+                    sent_msg = await context.bot.send_photo(chat_id=group_id, photo=file_id, caption=caption_meta, parse_mode='HTML')
+                elif update.message.document:
+                    sent_msg = await context.bot.send_document(chat_id=group_id, document=file_id, caption=caption_meta, parse_mode='HTML')
+                elif update.message.video:
+                    sent_msg = await context.bot.send_video(chat_id=group_id, video=file_id, caption=caption_meta, parse_mode='HTML')
+            except Exception as send_err:
+                logging.error(f"Failed to send native media to admin group: {send_err}")
+                # Fallback to text message with link
+                fallback_text = caption_meta + f"\n🔗 Media havolasi: {public_url}"
+                sent_msg = await context.bot.send_message(chat_id=group_id, text=fallback_text, parse_mode='HTML')
+
+        if sent_msg:
+            db.link_admin_message(qid, group_id, sent_msg.message_id)
+
+        await update.message.reply_text("📩 Xabaringiz administratorga yuborildi. Tez orada javob olasiz!")
+        
+    except Exception as e:
+        logging.error(f"❌ handle_media_message Error: {e}\n{traceback.format_exc()}")
+        await update.message.reply_text("Kechirasiz, xabarni qayta ishlashda xatolik yuz berdi. Iltimos, yozma xabar yuborib ko'ring.")
+
+
 async def _process_question(update: Update, context: ContextTypes.DEFAULT_TYPE, question: str):
     """Core question processing logic — used by both text and voice handlers."""
     try:
@@ -576,7 +738,7 @@ async def handle_admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE)
     admin_name = admin_user.full_name or "Administrator"
     relay_msg = (
         f"✨ <b>Sizning savolingizga javob keldi:</b>\n\n"
-        f"❓ {html.escape(question_data['question'])}\n\n"
+        f"❓ {html.escape(clean_question_preview(question_data['question']))}\n\n"
         f"✅ <b>Javob:</b>\n{html.escape(answer)}"
     )
     

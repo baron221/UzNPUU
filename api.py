@@ -430,6 +430,20 @@ async def answer_question(qid: int, request: Request, current_user: dict = Depen
             return ""
         return html_lib.escape(str(text))
 
+    def clean_question_preview(q):
+        if not q:
+            return ""
+        import re
+        cleaned = re.sub(r'\[(?:IMAGE|FILE):\s*(https?://[^\s\]]+)\]', '', q, flags=re.IGNORECASE)
+        cleaned = cleaned.strip()
+        if not cleaned:
+            if "[IMAGE:" in q:
+                return "(Yuborilgan rasm)"
+            elif "[FILE:" in q:
+                return "(Yuborilgan fayl)"
+            return "(Yuborilgan media)"
+        return cleaned
+
     if state.bot_app:
         try:
             conn = db.get_conn()
@@ -446,7 +460,7 @@ async def answer_question(qid: int, request: Request, current_user: dict = Depen
             else:
                 msg = (
                     f"✨ <b>Sizning savolingizga javob keldi:</b>\n\n"
-                    f"❓ {esc_html(question['question'])}\n\n"
+                    f"❓ {esc_html(clean_question_preview(question['question']))}\n\n"
                     f"✅ 👤 <b>{esc_html(admin_name)} javobi:</b>\n{esc_html(answer)}"
                 )
 

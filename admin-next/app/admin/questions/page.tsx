@@ -182,6 +182,74 @@ export default function QuestionsPage() {
     }
   };
 
+  const renderMessageText = (text: string) => {
+    if (!text) return '';
+    const imgRegex = /\[IMAGE:\s*(https?:\/\/[^\s\]]+)\]/gi;
+    const fileRegex = /\[FILE:\s*(https?:\/\/[^\s\]]+)\]/gi;
+    
+    let match;
+    let imageUrl: string | null = null;
+    let fileUrl: string | null = null;
+    
+    let cleanText = text;
+    
+    // We execute regex and replace matched text
+    const imgMatch = imgRegex.exec(text);
+    if (imgMatch) {
+      imageUrl = imgMatch[1];
+      cleanText = cleanText.replace(imgMatch[0], '');
+    }
+    const fileMatch = fileRegex.exec(text);
+    if (fileMatch) {
+      fileUrl = fileMatch[1];
+      cleanText = cleanText.replace(fileMatch[0], '');
+    }
+    
+    cleanText = cleanText.trim();
+    
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {imageUrl && (
+          <div style={{ margin: '4px 0', maxWidth: '320px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <img 
+              src={imageUrl} 
+              alt="Attached Media" 
+              style={{ maxWidth: '100%', height: 'auto', display: 'block', maxHeight: '240px', objectFit: 'cover' }} 
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
+            />
+          </div>
+        )}
+        {fileUrl && (
+          <div style={{ margin: '4px 0' }}>
+            <a 
+              href={fileUrl} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '8px', 
+                padding: '8px 12px', 
+                background: '#f1f5f9', 
+                border: '1px solid #cbd5e1', 
+                borderRadius: '6px', 
+                fontSize: '13px', 
+                color: '#2563eb', 
+                fontWeight: 600, 
+                textDecoration: 'none' 
+              }}
+            >
+              📎 Hujjatni yuklab olish
+            </a>
+          </div>
+        )}
+        {cleanText && <span style={{ whiteSpace: 'pre-wrap' }}>{cleanText}</span>}
+      </div>
+    );
+  };
+
   return (
     <>
       <div className="page-header">
@@ -294,7 +362,7 @@ export default function QuestionsPage() {
                     {!['__ADMIN_FOLLOW_UP__', 'Adminstruatordan xabari', '(Admin xabari)'].includes(q.question?.trim()) && (
                       <div className="ac-msg-wrap user">
                         <div className="ac-msg-bubble">
-                          {q.question}
+                          {renderMessageText(q.question)}
                           <span className={`badge ${CAT[q.category] ?? 'badge-blue'}`} style={{ marginLeft: 8, fontSize: 10, borderRadius: 6, fontWeight: 700 }}>
                             {CAT_LABEL[q.category] ?? q.category}
                           </span>
@@ -307,7 +375,7 @@ export default function QuestionsPage() {
                     {q.answer && (
                       <div className="ac-msg-wrap admin">
                         <div className="ac-msg-bubble">
-                          {q.answer}
+                          {renderMessageText(q.answer)}
                         </div>
                         <div className="ac-msg-time">
                           <span style={{ display:'inline-flex', alignItems:'center', gap:4 }}>
