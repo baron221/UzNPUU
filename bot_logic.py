@@ -531,12 +531,12 @@ async def handle_media_message(update: Update, context: ContextTypes.DEFAULT_TYP
             
             await file.download_to_drive(custom_path=save_path)
             
-            backend_url = os.environ.get("RAILWAY_URL") or os.environ.get("NEXT_PUBLIC_API_URL", "https://uz-npuu.vercel.app")
-            if not backend_url.startswith("http"):
-                backend_url = f"http://{backend_url}"
-            backend_url = backend_url.rstrip("/")
+            domain = os.environ.get("ADMIN_PANEL_URL") or "https://uz-npuu.vercel.app"
+            if not domain.startswith("http"):
+                domain = f"https://{domain}"
+            domain = domain.rstrip("/")
             
-            public_url = f"{backend_url}/static/student_uploads/{filename}"
+            public_url = f"{domain}/static/student_uploads/{filename}"
         except Exception as dl_err:
             logging.error(f"Error downloading student media: {dl_err}")
             public_url = "https://placeholder-failed-download"
