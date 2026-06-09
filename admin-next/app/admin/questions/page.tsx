@@ -32,9 +32,7 @@ export default function QuestionsPage() {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [selectedId, all]);
+
 
   const grouped = useMemo(() => {
     const map = new Map<string, { id: string, name: string, username: string, faculty: string, questions: Question[], latest: string, unread: number }>();
@@ -123,6 +121,11 @@ export default function QuestionsPage() {
   }, [selectedId, all, grouped]);
 
   const activeChat = selectedId ? grouped.find(u => u.id === selectedId) : null;
+  const activeChatLength = activeChat?.questions.length || 0;
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [selectedId, activeChatLength]);
 
   async function send() {
     if (!ans.trim() || !activeChat) return;
