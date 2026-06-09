@@ -218,14 +218,16 @@ export default function QuestionsPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {imageUrl && (
           <div style={{ margin: '4px 0', maxWidth: '320px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-            <img 
-              src={imageUrl} 
-              alt="Attached Media" 
-              style={{ maxWidth: '100%', height: 'auto', display: 'block', maxHeight: '240px', objectFit: 'cover' }} 
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = 'none';
-              }}
-            />
+            <a href={imageUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block', cursor: 'zoom-in' }}>
+              <img 
+                src={imageUrl} 
+                alt="Attached Media" 
+                style={{ maxWidth: '100%', height: 'auto', display: 'block', maxHeight: '240px', objectFit: 'cover' }} 
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
+              />
+            </a>
           </div>
         )}
         {fileUrl && (
