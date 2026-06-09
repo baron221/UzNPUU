@@ -46,6 +46,24 @@ body {
 /* ── Utilities ──────────────────────────────────────────────────────────── */
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
 
+/* Prevent text selection and text-caret cursors on static layout components */
+.sidebar, 
+.mobile-header,
+.page-header, 
+.stats-grid, 
+.stat-card, 
+.home-card,
+.ac-sidebar,
+.btn, 
+.badge,
+.nav-item,
+th {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
 /* ── Skeleton shimmer ───────────────────────────────────────────────────── */
 @keyframes shimmer {
   0%   { background-position: -600px 0; }
