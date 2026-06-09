@@ -93,8 +93,15 @@ export default function QuestionsPage() {
           (tgId && u.id === tgId) || 
           (studentId && u.questions.some(q => String(q.student_id) === String(studentId)))
         );
-        if (found && selectedId !== found.id) {
-          setSelectedId(found.id);
+        if (found) {
+          if (selectedId !== found.id) {
+            setSelectedId(found.id);
+          }
+          // Clear query parameters from URL to unlock Selection
+          const url = new URL(window.location.href);
+          url.searchParams.delete('tg_id');
+          url.searchParams.delete('student_id');
+          window.history.replaceState(null, '', url.pathname + url.search);
         }
       }
     }
