@@ -44,7 +44,7 @@ export const getQuestions = (params?: { faculty_id?: number; status?: string }) 
   const qs = new URLSearchParams();
   if (params?.faculty_id) qs.set('faculty_id', String(params.faculty_id));
   if (params?.status) qs.set('status', params.status);
-  qs.set('limit', '2000');
+  qs.set('limit', '10000');
   return req<{ questions: Question[] }>(`/api/admin/questions?${qs}`);
 };
 
