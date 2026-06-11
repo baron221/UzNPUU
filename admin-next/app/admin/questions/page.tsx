@@ -62,7 +62,7 @@ export default function QuestionsPage() {
   }, [all]);
 
   const grouped = useMemo(() => {
-    const map = new Map<string, { id: string, name: string, username: string, faculty: string, questions: Question[], latest: string, unread: number }>();
+    const map = new Map<string, { id: string, name: string, username: string, faculty: string, questions: Question[], latest: string, unread: number, studentUniversityId: string }>();
     
     if (!Array.isArray(all)) return [];
 
@@ -76,7 +76,8 @@ export default function QuestionsPage() {
           faculty: q.faculty_name || 'Umumiy',
           questions: [],
           latest: q.created_at,
-          unread: 0
+          unread: 0,
+          studentUniversityId: q.student_id || ''
         });
       }
       
@@ -88,6 +89,7 @@ export default function QuestionsPage() {
         if (q.student_name) u.name = q.student_name;
         if (q.student_username) u.username = q.student_username;
         if (q.faculty_name) u.faculty = q.faculty_name;
+        if (q.student_id) u.studentUniversityId = q.student_id;
       }
       
       if (q.status !== 'answered') {
@@ -349,17 +351,29 @@ export default function QuestionsPage() {
                   <div className={`ac-avatar ${isUnread ? 'orange' : 'indigo'}`}>
                     {u.name.charAt(0).toUpperCase()}
                   </div>
-                  <div className="ac-user-info">
+                  <div className="ac-user-info" style={{ width: '100%', minWidth: 0 }}>
                     <div className="ac-user-name">
                       {u.name}
                       <span className="ac-time">{relativeTime(u.latest)}</span>
                     </div>
-                    <div className="ac-user-id">
-                      {u.username ? `@${u.username}` : `ID: ${u.id}`}
+                    <div className="ac-user-id" style={{ display: 'flex', justifyContent: 'space-between', width: '100%', gap: 8 }}>
+                      <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                        {u.username ? `@${u.username}` : `TG: ${u.id}`}
+                      </span>
+                      {u.studentUniversityId && (
+                        <span style={{ color: 'var(--indigo)', fontWeight: 600, fontSize: '11px', whiteSpace: 'nowrap' }}>
+                          ID: {u.studentUniversityId}
+                        </span>
+                      )}
                     </div>
-                    <div className="ac-user-excerpt" style={{ color: isUnread ? '#334155' : '#94a3b8', fontWeight: isUnread ? 600 : 400 }}>
-                      {excerpt}
-                      {isUnread && <span className="ac-unread-badge">{u.unread} yangi</span>}
+                    <div className="ac-user-excerpt" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: 8, color: isUnread ? '#334155' : '#94a3b8', fontWeight: isUnread ? 600 : 400 }}>
+                      <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', flex: 1 }}>
+                        {excerpt}
+                      </span>
+                      <span style={{ fontSize: '10px', background: '#f1f5f9', padding: '2px 6px', borderRadius: 4, color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                        {u.faculty}
+                      </span>
+                      {isUnread && <span className="ac-unread-badge" style={{ marginLeft: 4, whiteSpace: 'nowrap' }}>{u.unread}</span>}
                     </div>
                   </div>
                 </div>
