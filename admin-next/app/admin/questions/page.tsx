@@ -6,6 +6,7 @@ export default function QuestionsPage() {
   const [all, setAll]           = useState<Question[]>([]);
   const [search, setSearch]     = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [filterUnanswered, setFilterUnanswered] = useState(false);
   
   const [ans, setAns]           = useState('');
   const [sending, setSending]   = useState(false);
@@ -32,7 +33,33 @@ export default function QuestionsPage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Parse status parameter on mount to toggle unanswered filter
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('status') === 'unanswered') {
+        setFilterUnanswered(true);
+        // Clear parameter from URL to allow natural navigation
+        const url = new URL(window.location.href);
+        url.searchParams.delete('status');
+        window.history.replaceState(null, '', url.pathname + url.search);
+      }
+    }
+  }, []);
 
+
+
+  const unansweredChatsCount = useMemo(() => {
+    const map = new Map<string, boolean>();
+    if (!Array.isArray(all)) return 0;
+    all.forEach(q => {
+      if (q.status !== 'answered') {
+        const uid = q.student_telegram_id || q.student_username || String(q.student_id) || `anonymous-${q.id}`;
+        map.set(uid, true);
+      }
+    });
+    return map.size;
+  }, [all]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, { id: string, name: string, username: string, faculty: string, questions: Question[], latest: string, unread: number }>();
@@ -72,13 +99,14 @@ export default function QuestionsPage() {
     
     return Array.from(map.values())
       .filter(u => {
+        if (filterUnanswered && u.unread === 0) return false;
         if (!search) return true;
         return u.name.toLowerCase().includes(lowerSearch) || 
                u.username.toLowerCase().includes(lowerSearch) ||
                u.questions.some(q => q.question.toLowerCase().includes(lowerSearch));
       })
       .sort((a, b) => new Date(b.latest).getTime() - new Date(a.latest).getTime());
-  }, [all, search]);
+  }, [all, search, filterUnanswered]);
 
   // Auto-select chat from URL parameters (e.g. ?tg_id=12345 or ?student_id=250244)
   useEffect(() => {
@@ -287,6 +315,22 @@ export default function QuestionsPage() {
               onChange={e => setSearch(e.target.value)} 
               style={{ padding: '10px 14px', fontSize: 13 }}
             />
+            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+              <button
+                className={`btn btn-sm ${!filterUnanswered ? 'btn-primary' : 'btn-blue'}`}
+                style={{ flex: 1, height: '32px', padding: '0 12px' }}
+                onClick={() => setFilterUnanswered(false)}
+              >
+                Barchasi
+              </button>
+              <button
+                className={`btn btn-sm ${filterUnanswered ? 'btn-primary' : 'btn-red'}`}
+                style={{ flex: 1, height: '32px', padding: '0 12px', whiteSpace: 'nowrap' }}
+                onClick={() => setFilterUnanswered(true)}
+              >
+                🔴 Javobsizlar ({unansweredChatsCount})
+              </button>
+            </div>
           </div>
           
           <div className="ac-user-list">

@@ -3,7 +3,7 @@ database.py — SQLite database for users, faculties, and questions
 """
 import sqlite3
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from auth import get_password_hash, verify_password
 
@@ -18,7 +18,6 @@ DB_PATH = os.getenv("DB_PATH") or os.path.join(DATA_DIR, "university.db")
 # ── HELPERS ───────────────────────────────────────────────────────────────────
 def get_now_uz():
     """Returns current Tashkent time (UTC+5) as YYYY-MM-DD HH:MM:SS"""
-    from datetime import timezone
     now_utc = datetime.now(timezone.utc)
     now_uz = now_utc + timedelta(hours=5)
     return now_uz.strftime("%Y-%m-%d %H:%M:%S")
@@ -651,7 +650,7 @@ def is_within_working_hours():
     Checks if the current time is within configured working hours.
     Returns: (bool is_working, str offline_message)
     """
-    now_utc = datetime.utcnow()
+    now_utc = datetime.now(timezone.utc)
     now_uz = now_utc + timedelta(hours=5)
     
     start_time = get_setting('bot_start_time', '09:00')
@@ -711,7 +710,7 @@ def get_analytics_stats():
     satisfaction = int((likes / total_feedback) * 100) if total_feedback > 0 else 100
 
     # Trend topics (last 7 days)
-    seven_days_ago = (datetime.utcnow() + timedelta(hours=5) - timedelta(days=7)).strftime("%Y-%m-%d %H:%M:%S")
+    seven_days_ago = (datetime.now(timezone.utc) + timedelta(hours=5) - timedelta(days=7)).strftime("%Y-%m-%d %H:%M:%S")
     c.execute('''
         SELECT topic, COUNT(*) as count 
         FROM questions 

@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { getStats, getAnalytics } from '@/lib/api';
 
 /* ── SVG Icons ──────────────────────────────────────────────────────────── */
@@ -26,6 +27,7 @@ const NUM_COLORS: Record<string,string> = {
 };
 
 export default function OverviewPage() {
+  const router = useRouter();
   const [stats, setStats] = useState<Record<string, number> | null>(null);
   const actRef  = useRef<HTMLCanvasElement>(null);
   const langRef = useRef<HTMLCanvasElement>(null);
@@ -107,7 +109,22 @@ export default function OverviewPage() {
       <div className="stats-grid">
         {stats
           ? BARS.map(b => (
-              <div key={b.key} className="stat-card">
+              <div 
+                key={b.key} 
+                className="stat-card"
+                onClick={() => {
+                  const routes: Record<string, string> = {
+                    total: '/admin/questions',
+                    answered: '/admin/questions?status=answered',
+                    unanswered: '/admin/questions?status=unanswered',
+                    users: '/admin/allowed-students',
+                    faculties: '/admin/faculties',
+                    staff: '/admin/users',
+                  };
+                  const r = routes[b.key];
+                  if (r) router.push(r);
+                }}
+              >
                 <div className="stat-icon" style={{ background: `${NUM_COLORS[b.key]}15`, color: NUM_COLORS[b.key] }}>
                   <div style={{ width: 28, height: 28 }}>{ICONS[b.icon]}</div>
                 </div>

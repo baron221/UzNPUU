@@ -255,6 +255,7 @@ th {
   box-shadow: var(--shadow-sm); border: 1px solid var(--border);
   transition: all .4s cubic-bezier(0.17, 0.67, 0.83, 0.67); position: relative; overflow: hidden;
   display: flex; flex-direction: column; justify-content: space-between;
+  cursor: pointer;
 }
 .stat-card:hover { transform: translateY(-8px) scale(1.02); box-shadow: var(--shadow-premium); border-color: var(--indigo); }
 .stat-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 80%, rgba(79,70,229,0.03)); pointer-events: none; }
