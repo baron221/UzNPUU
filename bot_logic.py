@@ -219,6 +219,13 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     data = query.data
 
+    # Block queries and admin referrals during rest hours
+    if data == "ask_admin" or data.startswith("opt_"):
+        is_working, offline_msg = db.is_within_working_hours()
+        if not is_working:
+            await query.message.reply_text(offline_msg)
+            return
+
     if data.startswith("reg_fac_"):
         raw_fid = data.replace("reg_fac_", "")
         try:
