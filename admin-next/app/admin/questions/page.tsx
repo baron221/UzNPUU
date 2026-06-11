@@ -133,20 +133,7 @@ export default function QuestionsPage() {
     }
   }, [grouped, selectedId]);
 
-  useEffect(() => {
-    if (selectedId) {
-      const chat = grouped.find(g => g.id === selectedId);
-      if (chat && chat.unread > 0) {
-        markChatAsRead(selectedId).then(() => {
-          setAll(prev => prev.map(q => 
-            (q.student_telegram_id === selectedId && q.status !== 'answered') 
-              ? { ...q, status: 'answered' } 
-              : q
-          ));
-        }).catch(console.error);
-      }
-    }
-  }, [selectedId, all, grouped]);
+  // Removed automatic mark-as-read on click to prevent unanswered questions from being prematurely closed
 
   const activeChat = selectedId ? grouped.find(u => u.id === selectedId) : null;
   const activeChatLength = activeChat?.questions.length || 0;
@@ -386,28 +373,51 @@ export default function QuestionsPage() {
           {activeChat ? (
             <>
               <div className="ac-main-header">
-                <button className="ac-back-btn" onClick={() => setSelectedId(null)}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6 }}>
-                    <line x1="19" y1="12" x2="5" y2="12"></line>
-                    <polyline points="12 19 5 12 12 5"></polyline>
-                  </svg>
-                  Orqaga
-                </button>
-                <div>
-                  <div className="ac-header-name">
-                    {activeChat.name}
-                    <span style={{ marginLeft: 12, fontSize: 13, background: '#f1f5f9', padding: '2px 8px', borderRadius: 6, color: '#64748b', fontWeight: 600 }}>
-                      ID: {activeChat.questions[0]?.student_id || activeChat.id}
-                    </span>
-                  </div>
-                  <div className="ac-header-meta">
-                    <span>{activeChat.username ? `@${activeChat.username}` : activeChat.id}</span>
-                    &bull;
-                    <span>{activeChat.faculty}</span>
-                    &bull;
-                    <span>{activeChat.questions.length} messages</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <button className="ac-back-btn" onClick={() => setSelectedId(null)}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6 }}>
+                      <line x1="19" y1="12" x2="5" y2="12"></line>
+                      <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    Orqaga
+                  </button>
+                  <div>
+                    <div className="ac-header-name">
+                      {activeChat.name}
+                      <span style={{ marginLeft: 12, fontSize: 13, background: '#f1f5f9', padding: '2px 8px', borderRadius: 6, color: '#64748b', fontWeight: 600 }}>
+                        ID: {activeChat.questions[0]?.student_id || activeChat.id}
+                      </span>
+                    </div>
+                    <div className="ac-header-meta">
+                      <span>{activeChat.username ? `@${activeChat.username}` : activeChat.id}</span>
+                      &bull;
+                      <span>{activeChat.faculty}</span>
+                      &bull;
+                      <span>{activeChat.questions.length} messages</span>
+                    </div>
                   </div>
                 </div>
+
+                {activeChat.unread > 0 && (
+                  <button 
+                    className="btn btn-sm btn-green"
+                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center' }}
+                    onClick={async () => {
+                      try {
+                        await markChatAsRead(activeChat.id);
+                        setAll(prev => prev.map(q => 
+                          (q.student_telegram_id === activeChat.id && q.status !== 'answered') 
+                            ? { ...q, status: 'answered' } 
+                            : q
+                        ));
+                      } catch (err) {
+                        console.error('Failed to mark read:', err);
+                      }
+                    }}
+                  >
+                    ✔️ Javob berildi deb belgilash
+                  </button>
+                )}
               </div>
               
               <div className="ac-messages">
@@ -441,10 +451,10 @@ export default function QuestionsPage() {
                             }
                             { (q as any).answered_at 
                               ? ((q as any).answered_by_name || String((q as any).answered_by || 'Admin').replace('TG:', ''))
-                              : 'AI Javobi'
+                              : (q.status === 'unanswered' ? 'Tizim xabari' : 'AI Javobi')
                             }
                           </span>
-                          &nbsp;&bull; Javob berildi
+                          &nbsp;&bull; {q.status === 'unanswered' ? 'Javob kutilmoqda' : 'Javob berildi'}
                         </div>
                       </div>
                     )}
