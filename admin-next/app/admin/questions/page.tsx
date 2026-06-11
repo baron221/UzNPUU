@@ -150,20 +150,29 @@ export default function QuestionsPage() {
     const sortedQuestions = [...activeChat.questions].sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     const unanswered = sortedQuestions.filter(q => q.status !== 'answered');
     
-    // Attach to oldest pending question, or if all are answered, attach to the latest question
-    const targetQ = unanswered.length > 0 ? unanswered[0] : sortedQuestions[sortedQuestions.length - 1];
+    // Attach to latest pending question, or if all are answered, attach to the latest question
+    const targetQ = unanswered.length > 0 ? unanswered[unanswered.length - 1] : sortedQuestions[sortedQuestions.length - 1];
     if (!targetQ) return;
 
     setSending(true);
-    const d = await answerQuestion(targetQ.id, ans);
-    setSending(false);
-    
-    if (d.ok) { 
-      // Refresh to get the new ID and status from server immediately
-      setAns(''); 
-      await load(false); 
-    } else {
-      alert('Xatolik: ' + d.error);
+    try {
+      const d = await answerQuestion(targetQ.id, ans);
+      if (d.ok) { 
+        // Mark all other questions of this student as read/answered
+        try {
+          await markChatAsRead(activeChat.id);
+        } catch (readErr) {
+          console.error('Failed to mark chat as read:', readErr);
+        }
+        setAns(''); 
+        await load(false); 
+      } else {
+        alert('Xatolik: ' + d.error);
+      }
+    } catch (err) {
+      alert('Xatolik: Serverga ulanishda xato.');
+    } finally {
+      setSending(false);
     }
   }
 
