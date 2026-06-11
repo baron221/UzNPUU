@@ -314,7 +314,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     context.user_data['faculty_id'] = fid
 
         if data == "ask_admin":
-            original_q = context.user_data.get('last_question', "Noma'lum savol")
+            original_q = context.user_data.get('last_question')
+            if not original_q:
+                original_q = db.get_student_last_question(user.id)
+            if not original_q:
+                original_q = "Noma'lum savol"
             qid = db.save_question(str(user.id), sid, username, user.full_name or username, fid, original_q, "Admin javobini kuting...", "uz", "MANUAL")
             await query.message.reply_text("📩 Savolingiz administratorga yuborildi. Tez orada javob olasiz!")
             asyncio.create_task(forward_and_link(qid, user.full_name or username, original_q, None, sid, fid, is_manual=True, student_tg_id=str(user.id)))
@@ -326,7 +330,22 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except ValueError:
                 return
             temp_options = context.user_data.get('temp_options', [])
-            selected = temp_options[idx] if idx < len(temp_options) else "Noma'lum savol"
+            if idx < len(temp_options):
+                selected = temp_options[idx]
+            else:
+                selected = "Noma'lum savol"
+                try:
+                    if query.message and query.message.reply_markup:
+                        for row in query.message.reply_markup.inline_keyboard:
+                            for btn in row:
+                                if btn.callback_data == data:
+                                    btn_text = btn.text.strip()
+                                    if btn_text.endswith("..."):
+                                        btn_text = btn_text[:-3]
+                                    selected = btn_text
+                                    break
+                except Exception as ex:
+                    logging.error(f"Error extracting button text fallback: {ex}")
         else:
             selected = data.replace("opt_", "")
             

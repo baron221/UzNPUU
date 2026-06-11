@@ -419,6 +419,21 @@ def get_question(qid):
     conn.close()
     return dict(row) if row else None
 
+def get_student_last_question(student_tg_id):
+    conn = get_conn()
+    try:
+        row = conn.execute(
+            "SELECT question FROM questions WHERE student_telegram_id=? AND question NOT IN ('__ADMIN_FOLLOW_UP__', 'Adminstruatordan xabari', '(Admin xabari)') ORDER BY id DESC LIMIT 1",
+            (str(student_tg_id),)
+        ).fetchone()
+        return row[0] if row else None
+    except Exception as e:
+        import logging
+        logging.error(f"Error getting student last question: {e}")
+        return None
+    finally:
+        conn.close()
+
 def update_question_answer(qid, answer, answered_by=None, answered_by_name=None):
     conn = get_conn()
     conn.execute("""
