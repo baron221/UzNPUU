@@ -11,8 +11,20 @@ export default function QuestionsPage() {
   const [ans, setAns]           = useState('');
   const [sending, setSending]   = useState(false);
   const [loading, setLoading]   = useState(true);
+  const [replyToQuestion, setReplyToQuestion] = useState<Question | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  function cleanQuestionPreview(text: string) {
+    if (!text) return '';
+    let clean = text.replace(/\[IMAGE:\s*(https?:\/\/[^\s\]]+)\]/gi, '📷 Rasm')
+                    .replace(/\[FILE:\s*(https?:\/\/[^\s\]]+)\]/gi, '📎 Hujjat')
+                    .trim();
+    if (clean.length > 80) {
+      return clean.substring(0, 80) + '...';
+    }
+    return clean;
+  }
 
   async function load(showSkeleton = true) {
     if (showSkeleton) setLoading(true);
@@ -147,11 +159,15 @@ export default function QuestionsPage() {
   async function send() {
     if (!ans.trim() || !activeChat) return;
     
-    const sortedQuestions = [...activeChat.questions].sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-    const unanswered = sortedQuestions.filter(q => q.status !== 'answered');
+    let targetQ: Question | null = null;
+    if (replyToQuestion) {
+      targetQ = replyToQuestion;
+    } else {
+      const sortedQuestions = [...activeChat.questions].sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      const unanswered = sortedQuestions.filter(q => q.status !== 'answered');
+      targetQ = unanswered.length > 0 ? unanswered[unanswered.length - 1] : sortedQuestions[sortedQuestions.length - 1];
+    }
     
-    // Attach to latest pending question, or if all are answered, attach to the latest question
-    const targetQ = unanswered.length > 0 ? unanswered[unanswered.length - 1] : sortedQuestions[sortedQuestions.length - 1];
     if (!targetQ) return;
 
     setSending(true);
@@ -165,6 +181,7 @@ export default function QuestionsPage() {
           console.error('Failed to mark chat as read:', readErr);
         }
         setAns(''); 
+        setReplyToQuestion(null);
         await load(false); 
       } else {
         alert('Xatolik: ' + d.error);
@@ -355,7 +372,7 @@ export default function QuestionsPage() {
                 <div 
                   key={u.id} 
                   className={`ac-user-item ${isActive ? 'active' : ''}`}
-                  onClick={() => { setSelectedId(u.id); setAns(''); }}
+                  onClick={() => { setSelectedId(u.id); setAns(''); setReplyToQuestion(null); }}
                 >
                   <div className={`ac-avatar ${isUnread ? 'orange' : 'indigo'}`}>
                     {u.name.charAt(0).toUpperCase()}
@@ -397,7 +414,7 @@ export default function QuestionsPage() {
             <>
               <div className="ac-main-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <button className="ac-back-btn" onClick={() => setSelectedId(null)}>
+                  <button className="ac-back-btn" onClick={() => { setSelectedId(null); setReplyToQuestion(null); }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6 }}>
                       <line x1="19" y1="12" x2="5" y2="12"></line>
                       <polyline points="12 19 5 12 12 5"></polyline>
@@ -455,6 +472,19 @@ export default function QuestionsPage() {
                           <span className={`badge ${CAT[q.category] ?? 'badge-blue'}`} style={{ marginLeft: 8, fontSize: 10, borderRadius: 6, fontWeight: 700 }}>
                             {CAT_LABEL[q.category] ?? q.category}
                           </span>
+                          <button 
+                            className="ac-bubble-reply-btn"
+                            title="Javob berish"
+                            onClick={() => {
+                              setReplyToQuestion(q);
+                              const textarea = document.querySelector('.ac-textarea') as HTMLTextAreaElement;
+                              if (textarea) {
+                                textarea.focus();
+                              }
+                            }}
+                          >
+                            ↩️
+                          </button>
                         </div>
                         <div className="ac-msg-time">{formatTimeFull(q.created_at)}</div>
                       </div>
@@ -488,19 +518,38 @@ export default function QuestionsPage() {
               </div>
 
               <div className="ac-input-area">
-                  <textarea 
-                    className="ac-textarea" 
-                    rows={1}
-                    style={{ minHeight: '52px', maxHeight: '200px', overflowY: 'auto', resize: 'none' }}
-                    placeholder="Talabaga javob yozish (Yuborish uchun Enter)..."
-                    value={ans}
-                    onChange={e => {
-                      setAns(e.target.value);
-                      e.target.style.height = 'auto';
-                      e.target.style.height = e.target.scrollHeight + 'px';
-                    }}
-                    onKeyDown={handleKeyDown}
-                  />
+                {replyToQuestion && (
+                  <div className="ac-reply-preview">
+                    <div className="ac-reply-preview-content">
+                      <div className="ac-reply-preview-title">
+                        Javob berilmoqda:
+                      </div>
+                      <div className="ac-reply-preview-text">
+                        {cleanQuestionPreview(replyToQuestion.question)}
+                      </div>
+                    </div>
+                    <button 
+                      className="ac-reply-preview-close"
+                      onClick={() => setReplyToQuestion(null)}
+                      title="Bekor qilish"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+                <textarea 
+                  className="ac-textarea" 
+                  rows={1}
+                  style={{ minHeight: '52px', maxHeight: '200px', overflowY: 'auto', resize: 'none' }}
+                  placeholder="Talabaga javob yozish (Yuborish uchun Enter)..."
+                  value={ans}
+                  onChange={e => {
+                    setAns(e.target.value);
+                    e.target.style.height = 'auto';
+                    e.target.style.height = e.target.scrollHeight + 'px';
+                  }}
+                  onKeyDown={handleKeyDown}
+                />
                 <div className="ac-input-actions">
                   <span style={{ fontSize: 13, color: '#94a3b8' }}>
                     Javobingiz Telegram orqali yuboriladi.

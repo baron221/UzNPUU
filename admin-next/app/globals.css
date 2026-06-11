@@ -810,3 +810,91 @@ textarea.form-inp { resize: vertical; min-height: 120px; }
     width: 100%;
   }
 }
+
+/* ── Chat reply feature styles ──────────────────────────────────────────── */
+.ac-msg-wrap.user {
+  position: relative;
+}
+.ac-msg-wrap.user:hover .ac-bubble-reply-btn {
+  opacity: 1;
+}
+.ac-bubble-reply-btn {
+  position: absolute;
+  right: -36px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s, transform 0.2s;
+  font-size: 13px;
+  z-index: 5;
+  padding: 0;
+  line-height: 1;
+}
+.ac-bubble-reply-btn:hover {
+  background: #f1f5f9;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.ac-reply-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border-left: 4px solid #4f46e5;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  gap: 12px;
+  animation: slideDown 0.2s ease-out;
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.ac-reply-preview-content {
+  flex: 1;
+  min-width: 0;
+}
+.ac-reply-preview-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #4f46e5;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+.ac-reply-preview-text {
+  font-size: 13px;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ac-reply-preview-close {
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ac-reply-preview-close:hover {
+  background: #e2e8f0;
+  color: #475569;
+}
+
