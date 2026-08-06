@@ -1,6 +1,9 @@
 import os
 import json
 import logging
+from dotenv import load_dotenv
+load_dotenv()
+
 from typing import Optional, List
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -8,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 import database as db
+db.init_db()
 import ai_responder
 import logger
 import auth
