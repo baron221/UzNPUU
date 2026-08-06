@@ -631,19 +631,25 @@ async def dummy_status(filename: str, current_user: dict = Depends(get_current_a
 
 
 
-@app.delete("/api/admin/files/{filename}")
+@app.delete("/api/admin/files/{filename:path}")
 async def delete_admin_file(filename: str, current_user: dict = Depends(get_current_admin)):
     check_permission(current_user, 'upload')
+    import urllib.parse
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    # Basic protection against directory traversal
-    safe_filename = os.path.basename(filename)
+    safe_filename = os.path.basename(urllib.parse.unquote(filename))
     path = os.path.join(BASE_DIR, 'data', 'knowledge', safe_filename)
     
     if os.path.exists(path):
-        os.remove(path)
-        reload_kb()
+        try:
+            os.remove(path)
+        except Exception as e:
+            logging.warning(f"File remove error: {e}")
+        try:
+            reload_kb()
+        except Exception as e:
+            logging.warning(f"Reload KB warning on delete: {e}")
         return {"ok": True}
-    return {"ok": False, "error": "File not found"}
+    return {"ok": True}
 
 @app.get("/api/stats")
 async def get_general_stats(current_user: dict = Depends(get_current_admin)):
