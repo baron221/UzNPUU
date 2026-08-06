@@ -23,8 +23,13 @@ _collection = None
 def get_vector_client():
     global _client, _collection
     if _client is None:
-        os.makedirs(PERSIST_DIR, exist_ok=True)
-        _client = chromadb.PersistentClient(path=PERSIST_DIR)
+        try:
+            os.makedirs(PERSIST_DIR, exist_ok=True)
+            _client = chromadb.PersistentClient(path=PERSIST_DIR)
+        except Exception as e:
+            logging.warning(f"Persistent ChromaDB client failed ({e}), falling back to EphemeralClient (in-memory).")
+            _client = chromadb.EphemeralClient()
+            
         _collection = _client.get_or_create_collection(
             name="university_kb",
             embedding_function=emb_fn
