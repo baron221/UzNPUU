@@ -1,7 +1,15 @@
 import os
 from datetime import datetime, timedelta
 from typing import Optional
-from jose import JWTError, jwt
+try:
+    from jose import JWTError, jwt
+except ImportError:
+    try:
+        import jwt
+        JWTError = Exception
+    except ImportError:
+        JWTError = Exception
+        jwt = None
 import bcrypt
 
 # Configuration
