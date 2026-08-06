@@ -284,30 +284,34 @@ async def download_public_file(filename: str):
 # ── Admin Auth ────────────────────────────────────────────────────────────────
 @app.post("/api/admin/auth")
 async def admin_auth(request: Request):
-    data = await request.json()
-    username = data.get('username', '')
-    password = data.get('password', '')
-    
-    # Try Super Admin login
-    admin_user = db.verify_admin(username, password)
-    if admin_user:
-        access_token = auth.create_access_token(data={"sub": username, "role": "admin", "full_name": admin_user.get("full_name", "Super Admin"), "permissions": "all"})
-        return {"ok": True, "token": access_token}
+    try:
+        data = await request.json()
+        username = data.get('username', '')
+        password = data.get('password', '')
         
-    # Try Staff User login (username input is user's phone)
-    user = db.verify_user(username, password)
-    if user:
-        access_token = auth.create_access_token(data={
-            "sub": user['phone'],
-            "role": user['role'],
-            "full_name": user.get('full_name', 'Xodim'),
-            "faculty_id": user['faculty_id'],
-            "user_id": user['id'],
-            "permissions": user.get('permissions') or ""
-        })
-        return {"ok": True, "token": access_token}
-        
-    return {"ok": False, "error": "Invalid credentials"}
+        # Try Super Admin login
+        admin_user = db.verify_admin(username, password)
+        if admin_user:
+            access_token = auth.create_access_token(data={"sub": username, "role": "admin", "full_name": admin_user.get("full_name", "Super Admin"), "permissions": "all"})
+            return {"ok": True, "token": access_token}
+            
+        # Try Staff User login (username input is user's phone)
+        user = db.verify_user(username, password)
+        if user:
+            access_token = auth.create_access_token(data={
+                "sub": user['phone'],
+                "role": user['role'],
+                "full_name": user.get('full_name', 'Xodim'),
+                "faculty_id": user['faculty_id'],
+                "user_id": user['id'],
+                "permissions": user.get('permissions') or ""
+            })
+            return {"ok": True, "token": access_token}
+            
+        return JSONResponse(status_code=401, content={"ok": False, "error": "Foydalanuvchi nomi yoki parol noto'g'ri"})
+    except Exception as e:
+        logging.error(f"Auth error: {e}")
+        return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
 
 # ── Protected Admin API ───────────────────────────────────────────────────────
 @app.get("/api/admin/stats")
