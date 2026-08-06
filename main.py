@@ -153,5 +153,10 @@ if __name__ == "__main__":
     bot_thread = threading.Thread(target=run_bot_with_restart, daemon=True)
     bot_thread.start()
 
-    # Run API in the main thread (crucial for Railway health checks)
-    run_api()
+    # Run API in the main thread, fall back to standalone bot mode if port binding is restricted
+    try:
+        run_api()
+    except Exception as e:
+        logging.warning(f"⚠️ API server could not start (standalone bot mode): {e}")
+        logging.info("🤖 Telegram bot is running and listening for messages...")
+        bot_thread.join()
