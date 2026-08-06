@@ -594,8 +594,11 @@ async def upload_file(file: UploadFile = File(...), current_user: dict = Depends
 
 
 
-    # Reload KB (new file is trained so it will be active immediately)
-    reload_kb()
+    # Reload KB safely (new file is trained so it will be active immediately)
+    try:
+        reload_kb()
+    except Exception as e:
+        logging.warning(f"Reload KB warning: {e}")
 
     return {"ok": True, "filename": filename, "pairs": pair_count}
 
