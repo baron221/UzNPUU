@@ -328,7 +328,11 @@ async def get_admin_settings(current_user: dict = Depends(get_current_admin)):
         "bot_work_days": db.get_setting("bot_work_days", "0,1,2,3,4"),
         "bot_offline_message": db.get_setting("bot_offline_message", "Bot hozirda dam olish rejimida. Iltimos, ish vaqtida murojaat qiling."),
         "rate_limit_requests": db.get_setting("rate_limit_requests", "2"),
-        "rate_limit_window": db.get_setting("rate_limit_window", "120")
+        "rate_limit_window": db.get_setting("rate_limit_window", "120"),
+        "admin_bot_token": db.get_setting("admin_bot_token", ""),
+        "admin_bot_username": db.get_setting("admin_bot_username", ""),
+        "admin_group_id": db.get_setting("admin_group_id", ""),
+        "admin_group_title": db.get_setting("admin_group_title", ""),
     }
 
 @app.post("/api/admin/settings")
@@ -336,11 +340,55 @@ async def update_admin_settings(request: Request, current_user: dict = Depends(g
     if current_user.get('role') != 'admin':
         raise HTTPException(status_code=403, detail="Ushbu amalni bajarish uchun sizda yetarli huquqlar yo'q.")
     data = await request.json()
-    allowed_keys = ["bot_start_time", "bot_end_time", "bot_work_days", "bot_offline_message", "rate_limit_requests", "rate_limit_window"]
+    allowed_keys = [
+        "bot_start_time", "bot_end_time", "bot_work_days", "bot_offline_message",
+        "rate_limit_requests", "rate_limit_window",
+        "admin_bot_token", "admin_bot_username", "admin_group_id", "admin_group_title",
+    ]
     for key in allowed_keys:
         if key in data:
             db.set_setting(key, str(data[key]))
     return {"ok": True}
+
+@app.post("/api/admin/settings/verify_admin_bot")
+async def verify_admin_bot(request: Request, current_user: dict = Depends(get_current_admin)):
+    """Validate a notification-bot token and list the groups it has seen (so the
+    admin can add a freshly created bot to a freshly created group and pick it
+    here, instead of hunting for the numeric chat id by hand)."""
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Ushbu amalni bajarish uchun sizda yetarli huquqlar yo'q.")
+    data = await request.json()
+    token = (data.get('token') or '').strip()
+    if not token:
+        raise HTTPException(status_code=400, detail="Bot token kiritilmagan.")
+
+    from telegram import Bot
+    from telegram.error import TelegramError
+    bot = Bot(token=token)
+    try:
+        me = await bot.get_me()
+    except TelegramError as e:
+        raise HTTPException(status_code=400, detail=f"Token noto'g'ri yoki bot topilmadi: {e}")
+
+    groups = {}
+    try:
+        updates = await bot.get_updates(limit=100, timeout=0)
+        for u in updates:
+            chat = None
+            if u.my_chat_member:
+                chat = u.my_chat_member.chat
+            elif u.message:
+                chat = u.message.chat
+            if chat and chat.type in ("group", "supergroup"):
+                groups[str(chat.id)] = chat.title or str(chat.id)
+    except TelegramError:
+        pass
+
+    return {
+        "ok": True,
+        "bot_username": me.username,
+        "groups": [{"id": cid, "title": title} for cid, title in groups.items()],
+    }
 
 @app.get("/api/admin/faculties")
 async def get_admin_faculties(current_user: dict = Depends(get_current_admin)):

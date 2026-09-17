@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { getSettings, updateSettings, type Settings } from '@/lib/api';
+import { getSettings, updateSettings, verifyAdminBot, type Settings } from '@/lib/api';
 
 const DAYS = [
   { val: '0', label: 'Dushanba' },
@@ -19,11 +19,19 @@ export default function SettingsPage() {
     bot_work_days: '0,1,2,3,4',
     bot_offline_message: 'Bot hozirda dam olish rejimida. Iltimos, ish vaqtida murojaat qiling.',
     rate_limit_requests: '5',
-    rate_limit_window: '2'
+    rate_limit_window: '2',
+    admin_bot_token: '',
+    admin_bot_username: '',
+    admin_group_id: '',
+    admin_group_title: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState('');
+
+  const [checking, setChecking] = useState(false);
+  const [botCheck, setBotCheck] = useState('');
+  const [foundGroups, setFoundGroups] = useState<{ id: string; title: string }[]>([]);
 
   useEffect(() => {
     getSettings().then(s => {
@@ -54,6 +62,33 @@ export default function SettingsPage() {
     }
     setSaving(false);
     setTimeout(() => setStatus(''), 4000);
+  }
+
+  async function handleCheckBot() {
+    if (!form.admin_bot_token?.trim()) {
+      setBotCheck('❌ Avval bot tokenini kiriting.');
+      return;
+    }
+    setChecking(true);
+    setBotCheck('');
+    setFoundGroups([]);
+    try {
+      const res = await verifyAdminBot(form.admin_bot_token.trim());
+      if (res.ok) {
+        setForm(f => ({ ...f, admin_bot_username: res.bot_username || '' }));
+        setFoundGroups(res.groups || []);
+        setBotCheck(
+          res.groups && res.groups.length
+            ? `✅ @${res.bot_username} ishlayapti. Quyidagi guruhlardan birini tanlang.`
+            : `✅ @${res.bot_username} ishlayapti. Endi uni yangi guruhga qo'shib, guruhda bir xabar yozing, so'ng qayta "Tekshirish" bosing.`
+        );
+      } else {
+        setBotCheck(`❌ ${(res as any).detail || res.error || 'Token noto\'g\'ri.'}`);
+      }
+    } catch {
+      setBotCheck('❌ Serverga ulanishda xatolik.');
+    }
+    setChecking(false);
   }
 
   const toggleDay = (dayVal: string) => {
@@ -218,6 +253,80 @@ export default function SettingsPage() {
             📊 Hozirgi sozlama: <strong>{form.rate_limit_requests || '5'} ta savol</strong> / <strong>{form.rate_limit_window || '2'} daqiqada</strong>
           </div>
         </div>
+      </div>
+
+      {/* ADMIN NOTIFICATION BOT + GROUP */}
+      <div className="card" style={{ marginTop: 28 }}>
+        <div className="section-title" style={{ marginBottom: 8 }}>
+          <span style={{ marginRight: 8 }}>🔔</span>Admin bildirishnoma boti va guruhi
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 20, lineHeight: 1.6 }}>
+          Talabalarning savollari shu yerda ko'rsatilgan Telegram guruhga yuboriladi. Alohida fakultet guruhi
+          bo'lmasa, savollar shu "asosiy guruh"ga tushadi.
+          <br />
+          1) @BotFather orqali yangi bot yarating va tokenini pastga kiriting. 2) Yangi Telegram guruh yarating va
+          shu botni unga qo'shing. 3) Guruhda bir marta xabar yozing (masalan "salom"). 4) "Tekshirish" tugmasini
+          bosing va topilgan guruhni tanlang.
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="form-row" style={{ marginBottom: 0 }}>
+            <label className="form-label">Bot token</label>
+            <input
+              type="text"
+              className="form-inp"
+              placeholder="123456789:AA...."
+              value={form.admin_bot_token || ''}
+              onChange={e => setForm({ ...form, admin_bot_token: e.target.value, admin_bot_username: '' })}
+            />
+            {form.admin_bot_username && (
+              <div style={{ fontSize: 12, color: '#10b981', marginTop: 6 }}>✅ Bot: @{form.admin_bot_username}</div>
+            )}
+          </div>
+          <div className="form-row" style={{ marginBottom: 0 }}>
+            <label className="form-label">Asosiy guruh</label>
+            <input
+              type="text"
+              className="form-inp"
+              placeholder="Guruh ID (masalan -1001234567890)"
+              value={form.admin_group_id || ''}
+              onChange={e => setForm({ ...form, admin_group_id: e.target.value })}
+            />
+            {form.admin_group_title && (
+              <div style={{ fontSize: 12, color: '#10b981', marginTop: 6 }}>✅ Guruh: {form.admin_group_title}</div>
+            )}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
+          <button className="btn" onClick={handleCheckBot} disabled={checking} style={{ padding: '9px 20px' }}>
+            {checking ? 'Tekshirilmoqda...' : '🔍 Botni tekshirish'}
+          </button>
+          {botCheck && <div style={{ fontSize: 13 }}>{botCheck}</div>}
+        </div>
+
+        {foundGroups.length > 0 && (
+          <div style={{ marginTop: 14, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {foundGroups.map(g => (
+              <button
+                key={g.id}
+                onClick={() => setForm(f => ({ ...f, admin_group_id: g.id, admin_group_title: g.title }))}
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: '8px',
+                  border: `1.5px solid ${form.admin_group_id === g.id ? 'var(--indigo)' : '#e2e8f0'}`,
+                  background: form.admin_group_id === g.id ? 'var(--indigo)' : 'var(--bg)',
+                  color: form.admin_group_id === g.id ? '#fff' : 'var(--text)',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: 13,
+                }}
+              >
+                {g.title} <span style={{ opacity: 0.7, fontWeight: 400 }}>({g.id})</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', gap: 16 }}>

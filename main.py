@@ -1,4 +1,10 @@
 import sys
+# Force UTF-8 stdout/stderr so emoji/unicode logging doesn't crash on Windows
+# consoles or non-interactive service hosts (which default to cp1251/cp1252).
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
 # Patch sqlite3 with pysqlite3 for ChromaDB on systems with older sqlite3 version (like Oracle Linux 9)
 try:
     __import__('pysqlite3')

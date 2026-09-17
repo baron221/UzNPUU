@@ -35,6 +35,12 @@ export const getSettings = () => req<Settings>('/api/admin/settings');
 export const updateSettings = (data: Partial<Settings>) =>
   req<{ ok: boolean }>('/api/admin/settings', { method: 'POST', body: JSON.stringify(data) });
 
+export const verifyAdminBot = (adminBotToken: string) =>
+  req<{ ok: boolean; bot_username?: string; groups?: { id: string; title: string }[]; error?: string }>(
+    '/api/admin/settings/verify_admin_bot',
+    { method: 'POST', body: JSON.stringify({ token: adminBotToken }) },
+  );
+
 // ── Stats ─────────────────────────────────────────────────────────────────────
 export const getStats = () => req<Record<string, number>>('/api/admin/stats');
 export const getAnalytics = () => req<any>('/api/admin/analytics');
@@ -239,5 +245,9 @@ export interface Settings {
   bot_offline_message: string;
   rate_limit_requests?: string;
   rate_limit_window?: string;
+  admin_bot_token?: string;
+  admin_bot_username?: string;
+  admin_group_id?: string;
+  admin_group_title?: string;
 }
 
